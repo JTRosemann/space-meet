@@ -1,4 +1,5 @@
 /*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
+    Copyright 2020 Julian Rosemann
     
     written by : http://underscorediscovery.ca
     written for : http://buildnewgames.com/real-time-multiplayer/
@@ -208,6 +209,7 @@ game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x,
 
             //Set up initial values for our state information
         this.pos = { x:0, y:0 };
+	this.dir = Math.PI/4;
         this.size = { x:16, y:16, hx:8, hy:8 };
         this.state = 'not-connected';
         this.color = 'rgba(255,255,255,0.1)';
@@ -246,8 +248,18 @@ game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x,
             //Set the color for this player
         game.ctx.fillStyle = this.color;
 
-            //Draw a rectangle for us
-        game.ctx.fillRect(this.pos.x - this.size.hx, this.pos.y - this.size.hy, this.size.x, this.size.y);
+        //Draw a rectangle for us
+	game.ctx.beginPath();
+	game.ctx.translate(this.pos.x,this.pos.y);
+	game.ctx.rotate(this.dir);
+	game.ctx.moveTo(            0,            0);
+	game.ctx.lineTo( this.size.hx, this.size.hy);
+	game.ctx.lineTo(            0,-this.size.hy);
+	game.ctx.lineTo(-this.size.hx, this.size.hy);
+	game.ctx.closePath();
+	game.ctx.fill();
+	game.ctx.rotate(-this.dir);
+	game.ctx.translate(-this.pos.x,-this.pos.y);
 
             //Draw a status update
         game.ctx.fillStyle = this.info_color;
