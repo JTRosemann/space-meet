@@ -617,9 +617,24 @@ game_core.prototype.client_process_net_prediction_correction = function() {
                 this.players.self.last_input_seq = lastinputseq_index;
                     //Now we reapply all the inputs that we have locally that
                     //the server hasn't yet confirmed. This will 'keep' our position the same,
-                    //but also confirm the server position at the same time.
+                //but also confirm the server position at the same time.
+		
+/* DEBUGGING CODE
+
+	var before = this.players.self.cur_state.dir;
                 this.client_update_physics();
                 this.client_update_local_position();
+		
+	var after = this.players.self.cur_state.dir;
+	if (before != after) {
+	    console.log("before");
+	    console.log(before);
+	    console.log("after");
+	    console.log(my_server_state.dir);
+	    console.log(after);
+	}*/
+		//FIXME: this breaks smoothening
+		this.players.self.cur_state.dir = my_server_state.dir;
 
             } // if(lastinputseq_index != -1)
         } //if my_last_input_on_server
