@@ -619,12 +619,12 @@ game_core.prototype.client_process_net_prediction_correction = function() {
                     //the server hasn't yet confirmed. This will 'keep' our position the same,
                 //but also confirm the server position at the same time.
 		
-/* DEBUGGING CODE
+// DEBUGGING CODE
 
-	var before = this.players.self.cur_state.dir;
+//	var before = this.players.self.cur_state.dir;
                 this.client_update_physics();
                 this.client_update_local_position();
-		
+/*		
 	var after = this.players.self.cur_state.dir;
 	if (before != after) {
 	    console.log("before");
@@ -632,9 +632,12 @@ game_core.prototype.client_process_net_prediction_correction = function() {
 	    console.log("after");
 	    console.log(my_server_state.dir);
 	    console.log(after);
-	}*/
-		//FIXME: this breaks smoothening
-		this.players.self.cur_state.dir = my_server_state.dir;
+	    }*/
+		// WHY is the direction with the approach from above not set back, while the pos is ?
+		// anyway, this fixes it:
+		// the playback  of inputs is imprecise,
+		// thus finally force the direction of the player to be the same as the server one
+		this.players.self.state.dir = my_server_state.dir;
 
             } // if(lastinputseq_index != -1)
         } //if my_last_input_on_server
