@@ -106,8 +106,8 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
         }
 
             //The speed at which the clients move.
-        this.player_mv_speed  = 120;
-	this.player_trn_speed = 10;
+        this.player_mv_speed  = 120; // 
+	this.player_trn_speed = 3;
 
 	// the length of the physics loop
         this.physics_loop = 15;//ms
@@ -155,6 +155,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
             if(String(window.location).indexOf('debug') != -1) {
                 this.client_create_debug_gui();
             }
+	    
 
         } else { //if !server
 
@@ -227,7 +228,7 @@ var game_player = function( game_instance, start_state, player_instance) {
     //Set up initial values for our state information
     // FIXME: angles should be normalized
         this.state = this.game.cp_state(start_state);
-        this.size = { x:16, y:16, hx:8, hy:8 };
+        this.size = { x:64, y:64, hx:32, hy:32 };
         this.info = 'not-connected';
         this.color = 'rgba(255,255,255,0.1)';
         this.info_color = 'rgba(255,255,255,0.1)';
@@ -272,6 +273,26 @@ var game_player = function( game_instance, start_state, player_instance) {
             //Draw a status update
         this.game.ctx.fillStyle = this.info_color;
         this.game.ctx.fillText(this.info, this.state.pos.x+10, this.state.pos.y + 4);
+    
+    }; //game_player.draw
+  
+    game_player.prototype.draw_self = function(){
+
+            //Set the color for this player
+        this.game.ctx.fillStyle = this.color;
+
+        //Draw a rectangle for us
+	this.game.ctx.beginPath();
+	this.game.ctx.moveTo(            0,            0);
+	this.game.ctx.lineTo(-this.size.hx, this.size.hy);
+	this.game.ctx.lineTo( this.size.hx,            0);
+	this.game.ctx.lineTo(-this.size.hx,-this.size.hy);
+	this.game.ctx.closePath();
+	this.game.ctx.fill();
+
+            //Draw a status update
+        this.game.ctx.fillStyle = this.info_color;
+        this.game.ctx.fillText(this.info, 10, 4);
     
     }; //game_player.draw
 
@@ -866,16 +887,22 @@ game_core.prototype.client_update = function() {
     if( !this.naive_approach ) {
         this.client_process_net_updates();
     }
-
-        //Now they should have updated, we can draw the entity
-    this.players.other.draw();
-
         //When we are doing client side prediction, we smooth out our position
         //across frames using local input states we have stored.
     this.client_update_local_position();
 
+    //Now they should have updated, we can draw the entity
+	var mid_x = 000;
+	var mid_y = 000;
+    if (this.rel_pos) {
+	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);
+	this.ctx.rotate(-this.players.self.state.dir);
+	this.ctx.translate(mid_x, mid_y);
+    }
+    this.players.other.draw();
         //And then we finally draw
     this.players.self.draw();
+
 
         //and these
     if(this.show_dest_pos && !this.naive_approach) {
@@ -886,6 +913,12 @@ game_core.prototype.client_update = function() {
     if(this.show_server_pos && !this.naive_approach) {
         this.ghosts.server_pos_self.draw();
         this.ghosts.server_pos_other.draw();
+    }
+
+    if (this.rel_pos) {
+	this.ctx.translate(-mid_x, -mid_y);
+	this.ctx.rotate(this.players.self.state.dir);
+	this.ctx.translate(this.players.self.state.pos.x, this.players.self.state.pos.y);
     }
 
         //Work out the fps average
@@ -930,6 +963,7 @@ game_core.prototype.client_create_ping_timer = function() {
 game_core.prototype.client_create_configuration = function() {
 
     this.show_help = false;             //Whether or not to draw the help text
+    this.rel_pos = false;
     this.naive_approach = false;        //Whether or not to use the naive approach
     this.show_server_pos = false;       //Whether or not to show the server position
     this.show_dest_pos = false;         //Whether or not to show the interpolation goal
@@ -983,6 +1017,7 @@ game_core.prototype.client_create_debug_gui = function() {
 
     var _othersettings = this.gui.addFolder('Methods');
 
+        _othersettings.add(this, 'rel_pos').listen();
         _othersettings.add(this, 'naive_approach').listen();
         _othersettings.add(this, 'client_smoothing').listen();
         _othersettings.add(this, 'client_smooth').listen();
