@@ -60,7 +60,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
         this.server = this.instance !== undefined;
 
             //Used in collision etc.
-        this.world = {
+        this.world = { //FIXME: varying these values skews the view, thus they must be still hardcoded somewhere else 
             width : 720,
             height : 480
         };
@@ -289,10 +289,11 @@ game_player.prototype.draw_head = function(){
 
 	
 	this.game.ctx.beginPath();
-	this.game.ctx.moveTo(            0,            0);
-	this.game.ctx.lineTo(-this.size.hx, this.size.hy);
-	this.game.ctx.lineTo( this.size.hx,            0);
-	this.game.ctx.lineTo(-this.size.hx,-this.size.hy);
+	var rt2 = Math.sqrt(0.5);
+	this.game.ctx.moveTo(                  0,                   0);
+	this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 *  this.size.hy);
+	this.game.ctx.lineTo(       this.size.hx,                   0);
+	this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 * -this.size.hy);
 	this.game.ctx.closePath();
 	this.game.ctx.fill();
 	this.game.ctx.rotate(-this.state.dir);
@@ -311,10 +312,11 @@ game_player.prototype.draw_head = function(){
 
         //Draw a rectangle for us
 	this.game.ctx.beginPath();
-	this.game.ctx.moveTo(            0,            0);
-	this.game.ctx.lineTo(-this.size.hx, this.size.hy);
-	this.game.ctx.lineTo( this.size.hx,            0);
-	this.game.ctx.lineTo(-this.size.hx,-this.size.hy);
+	var rt2 = Math.sqrt(0.5);
+	this.game.ctx.moveTo(                  0,                   0);
+	this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 *  this.size.hy);
+	this.game.ctx.lineTo(       this.size.hx,                   0);
+	this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 * -this.size.hy);
 	this.game.ctx.closePath();
 	this.game.ctx.fill();
 
@@ -900,7 +902,7 @@ game_core.prototype.client_update_physics = function() {
 game_core.prototype.client_update = function() {
 
         //Clear the screen area
-    this.ctx.clearRect(0,0,720,480);
+    this.ctx.clearRect(0,0,this.world.width,this.world.height);
 
         //draw help/information if required
     this.client_draw_info();
