@@ -65,8 +65,8 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
             height : 480
         };
 
-	this.host_state = {pos: {x:20,y:20}, dir: 0};
-	this.join_state = {pos: {x:90,y:90}, dir: 5*Math.PI/4};
+	this.host_state = {pos: {x:200,y:300}, dir: 0};
+	this.join_state = {pos: {x:250,y:200}, dir: 5*Math.PI/4};
 
             //We create a player set, passing them
             //the game that is running them, as well
@@ -250,17 +250,45 @@ var game_player = function( game_instance, start_state, player_instance) {
             y_max: this.game.world.height - this.size.hy
         };
 
-    }; //game_player.constructor
+}; //game_player.constructor
+
+game_player.prototype.draw_head = function(){
+    
+    var pos_x = this.state.pos.x - this.game.players.self.state.pos.x;
+    var pos_y = this.state.pos.y - this.game.players.self.state.pos.y;
+    var abs_val = Math.sqrt( Math.pow(pos_x, 2) + Math.pow(pos_y,2));
+    var dist = 200/abs_val;
+//    var center_x = pos_x;
+//    var center_y = pos_y;
+    var center_x = dist * pos_x;//FIXME: divide by zero
+    var center_y = dist * pos_y;
+    var rad = this.size.hx * dist; //FIXME: only works for circles, but this is not reflected in size
+    this.game.ctx.translate(center_x, center_y);
+    this.game.ctx.rotate(this.game.players.self.state.dir + Math.PI/2); // rewind the rotation from outside
+	    this.game.ctx.beginPath();
+//	    this.game.ctx.arc( center_x, center_y, rad /*radius*/, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
+	    this.game.ctx.arc( 0, 0, rad, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
+	    this.game.ctx.moveTo(-10+0,10+0);
+	    this.game.ctx.lineTo(0,0);
+	    this.game.ctx.lineTo( 10,10);
+	    this.game.ctx.strokeStyle = this.color;
+	    this.game.ctx.stroke();
+    this.game.ctx.rotate(-this.game.players.self.state.dir - Math.PI/2);
+    this.game.ctx.translate(-center_x,-center_y);
+}
   
     game_player.prototype.draw = function(){
-
+	
             //Set the color for this player
         this.game.ctx.fillStyle = this.color;
+	
 
         //Draw a rectangle for us
-	this.game.ctx.beginPath();
 	this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
 	this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
+
+	
+	this.game.ctx.beginPath();
 	this.game.ctx.moveTo(            0,            0);
 	this.game.ctx.lineTo(-this.size.hx, this.size.hy);
 	this.game.ctx.lineTo( this.size.hx,            0);
@@ -294,7 +322,7 @@ var game_player = function( game_instance, start_state, player_instance) {
         this.game.ctx.fillStyle = this.info_color;
         this.game.ctx.fillText(this.info, 10, 4);
     
-    }; //game_player.draw
+    }; //game_player.draw_self
 
 /*
 
@@ -898,19 +926,25 @@ game_core.prototype.client_update = function() {
 	var mid_x = 300;
 	var mid_y = 200;
 	this.ctx.translate(mid_x, mid_y);
+	this.ctx.rotate(-Math.PI/2);
 	
 	this.players.self.draw_self();
 	this.ctx.rotate(-this.players.self.state.dir);
+	this.players.other.draw_head();
 //	this.ctx.fillStyle = "#FF0000";
 //	this.ctx.fillRect(-10, -10, 20, 20);// rotation point
+	
 	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);
 //	this.ctx.fillStyle = "#FF8800";
-//	this.ctx.fillRect(-10, -10, 20, 20);// (0,0) 
+	//	this.ctx.fillRect(-10, -10, 20, 20);// (0,0)
+	this.ctx.strokeStyle = "red";
+	this.ctx.strokeRect(0,0,this.world.width,this.world.height);
 	this.players.other.draw();
 
 	this.ctx.translate(this.players.self.state.pos.x, this.players.self.state.pos.y);
 	this.ctx.rotate(this.players.self.state.dir);
-	
+
+	this.ctx.rotate(Math.PI/2);
 	this.ctx.translate(-mid_x, -mid_y);
     } else {
 	this.players.other.draw();
@@ -968,7 +1002,7 @@ game_core.prototype.client_create_ping_timer = function() {
 game_core.prototype.client_create_configuration = function() {
 
     this.show_help = false;             //Whether or not to draw the help text
-    this.rel_pos = false;
+    this.rel_pos = true;
     this.naive_approach = false;        //Whether or not to use the naive approach
     this.show_server_pos = false;       //Whether or not to show the server position
     this.show_dest_pos = false;         //Whether or not to show the interpolation goal
