@@ -65,33 +65,33 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
             height : 480
         };
 
-	var host_state = {pos: {x:20,y:20}, dir: 0};
-	var join_state = {pos: {x:500,y:200}, dir: Math.PI};
+	this.host_state = {pos: {x:20,y:20}, dir: 0};
+	this.join_state = {pos: {x:90,y:90}, dir: 5*Math.PI/4};
 
             //We create a player set, passing them
             //the game that is running them, as well
         if(this.server) {
 
             this.players = {
-                self : new game_player(this, host_state, this.instance.player_host), // TODO: what is the instance ?!
-                other : new game_player(this, join_state, this.instance.player_client)
+                self : new game_player(this, this.host_state, this.instance.player_host), // TODO: what is the instance ?!
+                other : new game_player(this, this.join_state, this.instance.player_client)
             };
 
         } else {
 
             this.players = {
-                self : new game_player(this, join_state),
-                other : new game_player(this, host_state)
+                self : new game_player(this, this.join_state),
+                other : new game_player(this, this.host_state)
             };
 
                 //Debugging ghosts, to help visualise things
             this.ghosts = {
                     //Our ghost position on the server
-                server_pos_self : new game_player(this, host_state),
+                server_pos_self : new game_player(this, this.host_state),
                     //The other players server position as we receive it
-                server_pos_other : new game_player(this, join_state),
+                server_pos_other : new game_player(this, this.join_state),
                     //The other players ghost destination position (the lerp)
-                pos_other : new game_player(this, join_state)
+                pos_other : new game_player(this, this.join_state)
             };
 
 
@@ -887,40 +887,45 @@ game_core.prototype.client_update = function() {
     if( !this.naive_approach ) {
         this.client_process_net_updates();
     }
+
         //When we are doing client side prediction, we smooth out our position
         //across frames using local input states we have stored.
     this.client_update_local_position();
 
-    //Now they should have updated, we can draw the entity
-	var mid_x = 000;
-	var mid_y = 000;
+    //Now they should have updated, we can draw the entity    
     if (this.rel_pos) {
-	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);
-	this.ctx.rotate(-this.players.self.state.dir);
+
+	var mid_x = 300;
+	var mid_y = 200;
 	this.ctx.translate(mid_x, mid_y);
-    }
-    this.players.other.draw();
-        //And then we finally draw
-    this.players.self.draw();
+	
+	this.players.self.draw_self();
+	this.ctx.rotate(-this.players.self.state.dir);
+//	this.ctx.fillStyle = "#FF0000";
+//	this.ctx.fillRect(-10, -10, 20, 20);// rotation point
+	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);
+//	this.ctx.fillStyle = "#FF8800";
+//	this.ctx.fillRect(-10, -10, 20, 20);// (0,0) 
+	this.players.other.draw();
 
-
+	this.ctx.translate(this.players.self.state.pos.x, this.players.self.state.pos.y);
+	this.ctx.rotate(this.players.self.state.dir);
+	
+	this.ctx.translate(-mid_x, -mid_y);
+    } else {
+	this.players.other.draw();
+	this.players.self.draw();
         //and these
-    if(this.show_dest_pos && !this.naive_approach) {
-        this.ghosts.pos_other.draw();
-    }
+	if(this.show_dest_pos && !this.naive_approach) {
+            this.ghosts.pos_other.draw();
+	}
 
         //and lastly draw these
-    if(this.show_server_pos && !this.naive_approach) {
-        this.ghosts.server_pos_self.draw();
-        this.ghosts.server_pos_other.draw();
+	if(this.show_server_pos && !this.naive_approach) {
+            this.ghosts.server_pos_self.draw();
+            this.ghosts.server_pos_other.draw();
+	}
     }
-
-    if (this.rel_pos) {
-	this.ctx.translate(-mid_x, -mid_y);
-	this.ctx.rotate(this.players.self.state.dir);
-	this.ctx.translate(this.players.self.state.pos.x, this.players.self.state.pos.y);
-    }
-
         //Work out the fps average
     this.client_refresh_fps();
 
@@ -1060,12 +1065,8 @@ game_core.prototype.client_reset_positions = function() {
 
     console.log("reset positions");
 
-    //Host always spawns at the top left.
-    var host_state = {pos: {x:20,y:20}, dir: 0};
-    var join_state = {pos: {x:500,y:200}, dir: Math.PI};
-
     //Make sure the local player physics is updated
-    this.players.self.state = this.cp_state(this.players.self.host ? host_state : join_state);
+    this.players.self.state = this.cp_state(this.players.self.host ? this.cp_state(this.host_state) : this.cp_state(this.join_state));
     this.players.self.old_state = this.cp_state(this.players.self.state);
     this.players.self.cur_state = this.cp_state(this.players.self.state);
 

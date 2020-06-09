@@ -29,11 +29,6 @@ window.onload = function(){
 			//Set the draw style for the font
     game.ctx.font = '11px "Helvetica"';
     
-    if (game.rel_pos) {
-	// offset of position
-	game.ctx.translate(300,200);
-    }
-
 		//Finally, start the loop
 	game.update( new Date().getTime() );
 
