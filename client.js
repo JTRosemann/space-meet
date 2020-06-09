@@ -20,8 +20,8 @@ window.onload = function(){
 		game.viewport = document.getElementById('viewport');
 			
 			//Adjust their size
-		game.viewport.width = game.world.width;
-		game.viewport.height = game.world.height;
+    game.viewport.width = game.viewport.offsetWidth;
+    game.viewport.height = game.viewport.offsetHeight;
 
 			//Fetch the rendering contexts
 		game.ctx = game.viewport.getContext('2d');

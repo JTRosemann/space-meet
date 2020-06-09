@@ -228,7 +228,7 @@ var game_player = function( game_instance, start_state, player_instance) {
     //Set up initial values for our state information
     // FIXME: angles should be normalized
         this.state = this.game.cp_state(start_state);
-        this.size = { x:64, y:64, hx:32, hy:32 };
+        this.size = { x:32, y:32, hx:16, hy:16 };
         this.info = 'not-connected';
         this.color = 'rgba(255,255,255,0.1)';
         this.info_color = 'rgba(255,255,255,0.1)';
@@ -257,18 +257,20 @@ game_player.prototype.draw_head = function(){
     var pos_x = this.state.pos.x - this.game.players.self.state.pos.x;
     var pos_y = this.state.pos.y - this.game.players.self.state.pos.y;
     var abs_val = Math.sqrt( Math.pow(pos_x, 2) + Math.pow(pos_y,2));
-    var dist = 200/abs_val;
+    var dist_c = this.game.viewport.width/6;
+    var magic_c = 2; //FIXME: this is not the honest projection I had in mind
 //    var center_x = pos_x;
 //    var center_y = pos_y;
-    var center_x = dist * pos_x;//FIXME: divide by zero
-    var center_y = dist * pos_y;
-    var rad = this.size.hx * dist; //FIXME: only works for circles, but this is not reflected in size
+    var rad = magic_c * this.size.hx * dist_c / abs_val; //FIXME: only works for circles, but this is not reflected in size
+    var dist = dist_c + rad;
+    var center_x = dist * pos_x / abs_val;//FIXME: divide by zero
+    var center_y = dist * pos_y / abs_val;
     this.game.ctx.translate(center_x, center_y);
     this.game.ctx.rotate(this.game.players.self.state.dir + Math.PI/2); // rewind the rotation from outside
 	    this.game.ctx.beginPath();
 //	    this.game.ctx.arc( center_x, center_y, rad /*radius*/, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
 	    this.game.ctx.arc( 0, 0, rad, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
-	    this.game.ctx.moveTo(-10+0,10+0);
+	    this.game.ctx.moveTo(-10,10);
 	    this.game.ctx.lineTo(0,0);
 	    this.game.ctx.lineTo( 10,10);
 	    this.game.ctx.strokeStyle = this.color;
@@ -901,8 +903,10 @@ game_core.prototype.client_update_physics = function() {
 
 game_core.prototype.client_update = function() {
 
-        //Clear the screen area
-    this.ctx.clearRect(0,0,this.world.width,this.world.height);
+    //Clear the screen area
+    if (!this.traces) {
+	this.ctx.clearRect(0,0,this.viewport.width,this.viewport.height);
+    }
 
         //draw help/information if required
     this.client_draw_info();
@@ -925,14 +929,23 @@ game_core.prototype.client_update = function() {
     //Now they should have updated, we can draw the entity    
     if (this.rel_pos) {
 
-	var mid_x = 300;
-	var mid_y = 200;
+	this.ctx.save();
+	var mid_x = this.viewport.width/2;
+	var mid_y = this.viewport.height/2;
 	this.ctx.translate(mid_x, mid_y);
-	this.ctx.rotate(-Math.PI/2);
+	this.ctx.rotate(-Math.PI/2);	
 	
 	this.players.self.draw_self();
 	this.ctx.rotate(-this.players.self.state.dir);
 	this.players.other.draw_head();
+	
+	this.ctx.beginPath();
+	this.ctx.arc(0,0, this.viewport.width/6, 0, 2*Math.PI);
+	this.ctx.strokeStyle = "black";
+	this.ctx.stroke();
+	if (this.clip) {
+	    this.ctx.clip();
+	}
 //	this.ctx.fillStyle = "#FF0000";
 //	this.ctx.fillRect(-10, -10, 20, 20);// rotation point
 	
@@ -943,11 +956,12 @@ game_core.prototype.client_update = function() {
 	this.ctx.strokeRect(0,0,this.world.width,this.world.height);
 	this.players.other.draw();
 
-	this.ctx.translate(this.players.self.state.pos.x, this.players.self.state.pos.y);
-	this.ctx.rotate(this.players.self.state.dir);
+//	this.ctx.translate(this.players.self.state.pos.x, this.players.self.state.pos.y);
+//	this.ctx.rotate(this.players.self.state.dir);
 
-	this.ctx.rotate(Math.PI/2);
-	this.ctx.translate(-mid_x, -mid_y);
+//	this.ctx.rotate(Math.PI/2);
+//	this.ctx.translate(-mid_x, -mid_y);
+	this.ctx.restore(); // restore removes the need to reset the translations & rotations one by one
     } else {
 	this.players.other.draw();
 	this.players.self.draw();
@@ -1002,9 +1016,12 @@ game_core.prototype.client_create_ping_timer = function() {
 
 
 game_core.prototype.client_create_configuration = function() {
+    
+    this.rel_pos = true;                //use relative position to player self or absolute positions
+    this.traces = false;                 //whether to show traces of drawn items (i.e. don't clear)
+    this.clip = true;                   //whether to clip everything around the map circle
 
     this.show_help = false;             //Whether or not to draw the help text
-    this.rel_pos = true;
     this.naive_approach = false;        //Whether or not to use the naive approach
     this.show_server_pos = false;       //Whether or not to show the server position
     this.show_dest_pos = false;         //Whether or not to show the interpolation goal
@@ -1054,7 +1071,12 @@ game_core.prototype.client_create_debug_gui = function() {
             this.socket.send('c.' + value);
         }.bind(this));
 
-        _playersettings.open();
+    _playersettings.open();
+
+    var _drawsettings = this.gui.addFolder('Drawing');
+    _drawsettings.add(this, 'rel_pos').listen();
+    _drawsettings.add(this, 'traces').listen();
+    _drawsettings.add(this, 'clip').listen();
 
     var _othersettings = this.gui.addFolder('Methods');
 
@@ -1316,7 +1338,7 @@ game_core.prototype.client_draw_info = function() {
     if(this.players.self.host) {
 
         this.ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        this.ctx.fillText('You are the host', 10 , 465);
+        this.ctx.fillText('You are the host', 10 , this.viewport.height - 10);
 
     } //if we are the host
 
