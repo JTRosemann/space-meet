@@ -258,7 +258,7 @@ game_player.prototype.draw_head = function(){
     var pos_y = this.state.pos.y - this.game.players.self.state.pos.y;
     var abs_val = Math.sqrt( Math.pow(pos_x, 2) + Math.pow(pos_y,2));
     var dist_c = this.game.viewport.width/6;
-    var magic_c = 2; //FIXME: this is not the honest projection I had in mind
+    var magic_c = Math.sqrt(2); //FIXME: this is not the honest projection I had in mind
 //    var center_x = pos_x;
 //    var center_y = pos_y;
     var rad = Math.min(magic_c * this.size.hx * dist_c / abs_val, dist_c); //FIXME: only works for circles, but this is not reflected in size
@@ -938,7 +938,6 @@ game_core.prototype.client_update = function() {
 	this.players.self.draw_self();
 	this.ctx.rotate(-this.players.self.state.dir);
 	this.players.other.draw_head();
-	
 	this.ctx.beginPath();
 	this.ctx.arc(0,0, this.viewport.width/6, 0, 2*Math.PI);
 	this.ctx.strokeStyle = "black";
@@ -948,8 +947,20 @@ game_core.prototype.client_update = function() {
 	}
 //	this.ctx.fillStyle = "#FF0000";
 //	this.ctx.fillRect(-10, -10, 20, 20);// rotation point
-	
-	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);
+
+	if (this.show_support) {
+	    this.ctx.beginPath();
+	    this.ctx.moveTo(0,0);
+	    var alpha = Math.atan(this.players.self.size.hx / Math.sqrt(Math.pow(this.players.self.state.pos.x - this.players.other.state.pos.x,2)
+								   +Math.pow(this.players.self.state.pos.y - this.players.other.state.pos.y,2)));
+	    this.ctx.rotate(alpha);
+	    this.ctx.lineTo((this.players.other.state.pos.x - this.players.self.state.pos.x)*10,
+			    (this.players.other.state.pos.y - this.players.self.state.pos.y)*10);
+	    this.ctx.strokeStyle = "yellow";
+	    this.ctx.stroke();
+	    this.ctx.rotate(-alpha);
+	}
+	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);	
 //	this.ctx.fillStyle = "#FF8800";
 	//	this.ctx.fillRect(-10, -10, 20, 20);// (0,0)
 	this.ctx.strokeStyle = "red";
@@ -1020,6 +1031,7 @@ game_core.prototype.client_create_configuration = function() {
     this.rel_pos = true;                //use relative position to player self or absolute positions
     this.traces = false;                 //whether to show traces of drawn items (i.e. don't clear)
     this.clip = true;                   //whether to clip everything around the map circle
+    this.show_support = false;          //whether to show support lines
 
     this.show_help = false;             //Whether or not to draw the help text
     this.naive_approach = false;        //Whether or not to use the naive approach
@@ -1077,10 +1089,10 @@ game_core.prototype.client_create_debug_gui = function() {
     _drawsettings.add(this, 'rel_pos').listen();
     _drawsettings.add(this, 'traces').listen();
     _drawsettings.add(this, 'clip').listen();
+    _drawsettings.add(this, 'show_support').listen();
 
     var _othersettings = this.gui.addFolder('Methods');
 
-        _othersettings.add(this, 'rel_pos').listen();
         _othersettings.add(this, 'naive_approach').listen();
         _othersettings.add(this, 'client_smoothing').listen();
         _othersettings.add(this, 'client_smooth').listen();
