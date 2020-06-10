@@ -258,10 +258,15 @@ game_player.prototype.draw_head = function(){
     var pos_y = this.state.pos.y - this.game.players.self.state.pos.y;
     var abs_val = Math.sqrt( Math.pow(pos_x, 2) + Math.pow(pos_y,2));
     var dist_c = this.game.viewport.width/6;
-    var magic_c = Math.sqrt(2); //FIXME: this is not the honest projection I had in mind
-//    var center_x = pos_x;
-//    var center_y = pos_y;
-    var rad = Math.min(magic_c * this.size.hx * dist_c / abs_val, dist_c); //FIXME: only works for circles, but this is not reflected in size
+    
+    var sin_alpha
+	= this.game.players.self.size.hx /
+	Math.max(this.size.x,
+		 Math.sqrt(Math.pow(this.game.players.self.state.pos.x - this.state.pos.x,2)
+			   +Math.pow(this.game.players.self.state.pos.y - this.state.pos.y,2)));
+    var rad = /*Math.min(*/sin_alpha * dist_c / (1 - sin_alpha)/*, dist_c)*/;
+//    var magic_c = Math.sqrt(2); //FIXME: this is not the honest projection I had in mind
+//    var rad = Math.min(magic_c * this.size.hx * dist_c / abs_val, dist_c); //FIXME: only works for circles, but this is not reflected in size
     var dist = dist_c + rad;
     var center_x = dist * pos_x / abs_val;//FIXME: divide by zero
     var center_y = dist * pos_y / abs_val;
@@ -288,7 +293,12 @@ game_player.prototype.draw_head = function(){
         //Draw a rectangle for us
 	this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
 	this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
-
+	if (game.show_support) {
+	    this.game.ctx.beginPath();
+	    this.game.ctx.arc(0,0,this.size.hx,0,2*Math.PI);
+	    this.game.ctx.strokeStyle = "yellow";
+	    this.game.ctx.stroke();
+	}
 	
 	this.game.ctx.beginPath();
 	var rt2 = Math.sqrt(0.5);
@@ -311,6 +321,13 @@ game_player.prototype.draw_head = function(){
 
             //Set the color for this player
         this.game.ctx.fillStyle = this.color;
+	
+	if (game.show_support) {
+	    this.game.ctx.beginPath();
+	    this.game.ctx.arc(0,0,this.size.hx,0,2*Math.PI);
+	    this.game.ctx.strokeStyle = "yellow";
+	    this.game.ctx.stroke();
+	}
 
         //Draw a rectangle for us
 	this.game.ctx.beginPath();
@@ -938,6 +955,25 @@ game_core.prototype.client_update = function() {
 	this.players.self.draw_self();
 	this.ctx.rotate(-this.players.self.state.dir);
 	this.players.other.draw_head();
+
+	if (this.show_support) {
+	    this.ctx.beginPath();
+	    var alpha = Math.asin(this.players.self.size.hx / Math.sqrt(Math.pow(this.players.self.state.pos.x - this.players.other.state.pos.x,2)
+								   +Math.pow(this.players.self.state.pos.y - this.players.other.state.pos.y,2)));
+	    this.ctx.rotate(alpha);
+	    this.ctx.moveTo(0,0);
+	    this.ctx.lineTo((this.players.other.state.pos.x - this.players.self.state.pos.x)*10,
+			    (this.players.other.state.pos.y - this.players.self.state.pos.y)*10);
+	    this.ctx.rotate(-alpha);
+	    this.ctx.rotate(-alpha);
+	    this.ctx.moveTo(0,0);
+	    this.ctx.lineTo((this.players.other.state.pos.x - this.players.self.state.pos.x)*10,
+			    (this.players.other.state.pos.y - this.players.self.state.pos.y)*10);
+	    this.ctx.strokeStyle = "yellow";
+	    this.ctx.stroke();
+	    this.ctx.rotate(alpha);
+	}
+	//draw circle
 	this.ctx.beginPath();
 	this.ctx.arc(0,0, this.viewport.width/6, 0, 2*Math.PI);
 	this.ctx.strokeStyle = "black";
@@ -948,18 +984,6 @@ game_core.prototype.client_update = function() {
 //	this.ctx.fillStyle = "#FF0000";
 //	this.ctx.fillRect(-10, -10, 20, 20);// rotation point
 
-	if (this.show_support) {
-	    this.ctx.beginPath();
-	    this.ctx.moveTo(0,0);
-	    var alpha = Math.atan(this.players.self.size.hx / Math.sqrt(Math.pow(this.players.self.state.pos.x - this.players.other.state.pos.x,2)
-								   +Math.pow(this.players.self.state.pos.y - this.players.other.state.pos.y,2)));
-	    this.ctx.rotate(alpha);
-	    this.ctx.lineTo((this.players.other.state.pos.x - this.players.self.state.pos.x)*10,
-			    (this.players.other.state.pos.y - this.players.self.state.pos.y)*10);
-	    this.ctx.strokeStyle = "yellow";
-	    this.ctx.stroke();
-	    this.ctx.rotate(-alpha);
-	}
 	this.ctx.translate(-this.players.self.state.pos.x, -this.players.self.state.pos.y);	
 //	this.ctx.fillStyle = "#FF8800";
 	//	this.ctx.fillRect(-10, -10, 20, 20);// (0,0)
