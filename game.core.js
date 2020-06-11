@@ -17,23 +17,23 @@
 // requestAnimationFrame polyfill by Erik Möller
 // fixes from Paul Irish and Tino Zijdel
 
-var frame_time = 60/1000; // run the local game at 16ms/ 60hz
+let frame_time = 60/1000; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 22hz
 
 ( function () {
 
-    var lastTime = 0;
-    var vendors = [ 'ms', 'moz', 'webkit', 'o' ];
+    let lastTime = 0;
+    let vendors = [ 'ms', 'moz', 'webkit', 'o' ];
 
-    for ( var x = 0; x < vendors.length && !window.requestAnimationFrame; ++ x ) {
+    for ( let x = 0; x < vendors.length && !window.requestAnimationFrame; ++ x ) {
         window.requestAnimationFrame = window[ vendors[ x ] + 'RequestAnimationFrame' ];
         window.cancelAnimationFrame = window[ vendors[ x ] + 'CancelAnimationFrame' ] || window[ vendors[ x ] + 'CancelRequestAnimationFrame' ];
     }
 
     if ( !window.requestAnimationFrame ) {
         window.requestAnimationFrame = function ( callback, element ) {
-            var currTime = Date.now(), timeToCall = Math.max( 0, frame_time - ( currTime - lastTime ) );
-            var id = window.setTimeout( function() { callback( currTime + timeToCall ); }, timeToCall );
+            let currTime = Date.now(), timeToCall = Math.max( 0, frame_time - ( currTime - lastTime ) );
+            let id = window.setTimeout( function() { callback( currTime + timeToCall ); }, timeToCall );
             lastTime = currTime + timeToCall;
             return id;
         };
@@ -55,14 +55,14 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 */
 
 const game_core = function(game_instance) {
-
+    
     //Store the instance, if any
     this.instance = game_instance;
     //Store a flag if we are the server
     this.server = this.instance !== undefined;
 
     //Used in collision etc.
-    this.world = { //FIXME: varying these values skews the view, thus they must be still hardcoded somewhere else 
+    this.world = { //FIXME: letying these values skews the view, thus they must be still hardcoded somewhere else 
         width : 720,
         height : 480
     };
@@ -70,22 +70,23 @@ const game_core = function(game_instance) {
     this.host_state = {pos: {x:200,y:300}, dir: 0};
     this.join_state = {pos: {x:250,y:200}, dir: 5*Math.PI/4};
 
-    //We create a player set, passing them
-    //the game that is running them, as well
-    if(this.server) {
+    // initializer methods have to be public, otw. "this" is not handled well
 
-        this.players = {
-            self : new game_player(this, this.host_state, this.instance.player_host), // TODO: what is the instance ?!
-            other : new game_player(this, this.join_state, this.instance.player_client)
-        };
-
-    } else {
-
+    this.init_players_client = function() {
         this.players = {
             self : new game_player(this, this.join_state),
             other : new game_player(this, this.host_state)
         };
+    }
 
+    this.init_players_server = function() {
+        this.players = {
+            self : new game_player(this, this.host_state, game_instance.player_host), // TODO: what is the instance ?!
+            other : new game_player(this, this.join_state, game_instance.player_client)
+        };	
+    }
+
+    this.init_ghosts = function() {
         //Debugging ghosts, to help visualise things
         this.ghosts = {
             //Our ghost position on the server
@@ -107,33 +108,8 @@ const game_core = function(game_instance) {
         this.ghosts.pos_other.info_color = 'rgba(255,255,255,0.1)';
     }
 
-    //The speed at which the clients move.
-    this.player_mv_speed  = 120; // 
-    this.player_trn_speed = 3;
-
-    // the length of the physics loop
-    this.physics_loop = 15;//ms
-
-    //Set up some physics integration values
-    this._pdt = 0.0001;                 //The physics update delta time
-    this._pdte = new Date().getTime();  //The physics update last delta time
-    //A local timer for precision on server and client
-    this.local_time = 0.016;            //The local timer
-    this._dt = new Date().getTime();    //The local timer delta
-    this._dte = new Date().getTime();   //The local timer last frame time
-
-    //Start a physics loop, this is separate to the rendering
-    //as this happens at a fixed frequency
-    this.create_physics_simulation();
-
-    //Start a fast paced timer for measuring time easier
-    this.create_timer();
-
-    //Client specific initialisation
-    if (this.server) {
-        this.server_time = 0;
-        this.laststate = {};
-    } else {
+    this.init_ui = function() {
+	//Client specific initialisation
         //Create a keyboard handler
         this.keyboard = new THREEx.KeyboardState();
 
@@ -159,6 +135,44 @@ const game_core = function(game_instance) {
         if(String(window.location).indexOf('debug') != -1) {
             this.client_create_debug_gui();
         }
+    }
+
+    //We create a player set, passing them
+    //the game that is running them, as well
+    if(this.server) {
+	this.init_players_server();
+    } else {
+	this.init_players_client();
+	this.init_ghosts();
+    }
+
+    //The speed at which the clients move.
+    this.player_mv_speed  = 120; // 
+    this.player_trn_speed = 3;
+
+    // the length of the physics loop
+    this.physics_loop = 15;//ms
+
+    //Set up some physics integration values
+    this._pdt = 0.0001;                 //The physics update delta time
+    this._pdte = new Date().getTime();  //The physics update last delta time
+    //A local timer for precision on server and client
+    this.local_time = 0.016;            //The local timer
+    this._dt = new Date().getTime();    //The local timer delta
+    this._dte = new Date().getTime();   //The local timer last frame time
+
+    //Start a physics loop, this is separate to the rendering
+    //as this happens at a fixed frequency
+    this.create_physics_simulation();
+
+    //Start a fast paced timer for measuring time easier
+    this.create_timer();
+
+    if (this.server) {
+        this.server_time = 0;
+        this.laststate = {};
+    } else { 
+	this.init_ui();
     }
     
 }; //game_core.constructor
@@ -199,7 +213,7 @@ game_core.prototype.v_mul_scalar = function(a,b) { return {x: (a.x*b).fixed() , 
 //For the server, we need to cancel the setTimeout that the polyfill creates
 game_core.prototype.stop_update = function() {  window.cancelAnimationFrame( this.updateid );  };
 //Simple linear interpolation
-game_core.prototype.lerp = function(p, n, t) { var _t = Number(t); _t = (Math.max(0, Math.min(1, _t))).fixed(); return (p + _t * (n - p)).fixed(); };
+game_core.prototype.lerp = function(p, n, t) { let _t = Number(t); _t = (Math.max(0, Math.min(1, _t))).fixed(); return (p + _t * (n - p)).fixed(); };
 //Simple linear interpolation between 2 vectors
 game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x, t), y:this.lerp(v.y, tv.y, t) }; };
 //lerp for states
@@ -225,14 +239,14 @@ const game_player = function( game_instance, start_state, player_instance) {
     //Set up initial values for our state information
     // FIXME: angles should be normalized
     this.state = this.game.cp_state(start_state);
-    this.size = { x:32, y:32, hx:16, hy:16 };
+    this.size = 32;
+    this.hsize = this.size / 2;
     this.info = 'not-connected';
     this.color = 'rgba(255,255,255,0.1)';
     this.info_color = 'rgba(255,255,255,0.1)';
     this.id = '';
 
     //These are used in moving us around later
-    this.old_state = this.game.cp_state(this.state);
     this.cur_state = this.game.cp_state(this.state);
     this.state_time = new Date().getTime();
 
@@ -241,10 +255,10 @@ const game_player = function( game_instance, start_state, player_instance) {
 
     //The world bounds we are confined to
     this.pos_limits = {
-        x_min: this.size.hx,
-        x_max: this.game.world.width - this.size.hx,
-        y_min: this.size.hy,
-        y_max: this.game.world.height - this.size.hy
+        x_min: this.hsize,
+        x_max: this.game.world.width - this.hsize,
+        y_min: this.hsize,
+        y_max: this.game.world.height - this.hsize
     };
 
 }; //game_player.constructor
@@ -257,13 +271,13 @@ game_player.prototype.draw_head = function(){
     const dist_c = this.game.viewport.width/6;
     
     const sin_alpha
-	  = this.game.players.self.size.hx /
-	  Math.max(this.size.x,
+	  = this.game.players.self.hsize /
+	  Math.max(this.size,
 		   Math.sqrt(Math.pow(this.game.players.self.state.pos.x - this.state.pos.x,2)
 			     +Math.pow(this.game.players.self.state.pos.y - this.state.pos.y,2)));
     const rad = /*Math.min(*/sin_alpha * dist_c / (1 - sin_alpha)/*, dist_c)*/;
     //    const magic_c = Math.sqrt(2); //FIXME: this is not the honest projection I had in mind
-    //    const rad = Math.min(magic_c * this.size.hx * dist_c / abs_val, dist_c); //FIXME: only works for circles, but this is not reflected in size
+    //    const rad = Math.min(magic_c * this.hsize * dist_c / abs_val, dist_c); //FIXME: only works for circles, but this is not reflected in size
     const dist = dist_c + rad;
     const center_x = dist * pos_x / abs_val;//FIXME: divide by zero
     const center_y = dist * pos_y / abs_val;
@@ -292,17 +306,17 @@ game_player.prototype.draw = function(){
     this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
     if (game.show_support) {
 	this.game.ctx.beginPath();
-	this.game.ctx.arc(0,0,this.size.hx,0,2*Math.PI);
+	this.game.ctx.arc(0,0,this.hsize,0,2*Math.PI);
 	this.game.ctx.strokeStyle = "yellow";
 	this.game.ctx.stroke();
     }
     
     this.game.ctx.beginPath();
     const rt2 = Math.sqrt(0.5);
-    this.game.ctx.moveTo(                  0,                   0);
-    this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 *  this.size.hy);
-    this.game.ctx.lineTo(       this.size.hx,                   0);
-    this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 * -this.size.hy);
+    this.game.ctx.moveTo(                0,                 0);
+    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 *  this.hsize);
+    this.game.ctx.lineTo(       this.hsize,                 0);
+    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 * -this.hsize);
     this.game.ctx.closePath();
     this.game.ctx.fill();
     this.game.ctx.rotate(-this.state.dir);
@@ -321,7 +335,7 @@ game_player.prototype.draw_self = function(){
     
     if (game.show_support) {
 	this.game.ctx.beginPath();
-	this.game.ctx.arc(0,0,this.size.hx,0,2*Math.PI);
+	this.game.ctx.arc(0,0,this.hsize,0,2*Math.PI);
 	this.game.ctx.strokeStyle = "yellow";
 	this.game.ctx.stroke();
     }
@@ -329,10 +343,10 @@ game_player.prototype.draw_self = function(){
     //Draw a rectangle for us
     this.game.ctx.beginPath();
     const rt2 = Math.sqrt(0.5);
-    this.game.ctx.moveTo(                  0,                   0);
-    this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 *  this.size.hy);
-    this.game.ctx.lineTo(       this.size.hx,                   0);
-    this.game.ctx.lineTo(rt2 * -this.size.hx, rt2 * -this.size.hy);
+    this.game.ctx.moveTo(                0,                 0);
+    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 *  this.hsize);
+    this.game.ctx.lineTo(       this.hsize,                 0);
+    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 * -this.hsize);
     this.game.ctx.closePath();
     this.game.ctx.fill();
 
@@ -411,18 +425,18 @@ game_core.prototype.process_input = function( player ) {
 
     //It's possible to have recieved multiple inputs by now,
     //so we process each one
-    var r = 0;
-    var phi = 0;
-    var ic = player.inputs.length;
+    let r = 0;
+    let phi = 0;
+    let ic = player.inputs.length;
     if(ic) {
-        for(var j = 0; j < ic; ++j) {
+        for(let j = 0; j < ic; ++j) {
             //don't process ones we already have simulated locally
 	    if(player.inputs[j].seq <= player.last_input_seq) continue;
 
 	    const input = player.inputs[j].inputs;
-	    var c = input.length;
-	    for(var i = 0; i < c; ++i) {
-                var key = input[i];
+	    let c = input.length;
+	    for(let i = 0; i < c; ++i) {
+                let key = input[i];
                 if(key == 'l') {
 		    phi -= 1;
                 }
@@ -493,12 +507,10 @@ game_core.prototype.update_physics = function() {
 game_core.prototype.server_update_physics = function() {
 
     //Handle player one
-    this.players.self.old_state = this.cp_state(this.players.self.state);
     const self_mvmnt = this.process_input(this.players.self);
     this.players.self.state = this.apply_mvmnt( this.players.self.state, self_mvmnt );
 
     //Handle player two
-    this.players.other.old_state = this.cp_state( this.players.other.state );
     const other_mvmnt = this.process_input(this.players.other);
     this.players.other.state = this.apply_mvmnt( this.players.other.state, other_mvmnt );
 
@@ -571,8 +583,8 @@ game_core.prototype.client_handle_input = function(){
     //It also sends the input information to the server immediately
     //as it is pressed. It also tags each input with a sequence number.
 
-    var r = 0; //this represents movement relative to the current position & direction
-    var phi = 0;
+    let r = 0; //this represents movement relative to the current position & direction
+    let phi = 0;
     const base_phi = this.players.self.state.dir; //start with the current player direction
     const input = [];
     this.client_has_input = false;
@@ -623,7 +635,7 @@ game_core.prototype.client_handle_input = function(){
 
         //Send the packet of information to the server.
         //The input packets are labelled with an 'i' in front.
-        var server_packet = 'i.';
+        let server_packet = 'i.';
         server_packet += input.join('-') + '.';
         server_packet += this.local_time.toFixed(3).replace('.','-') + '.';
         server_packet += this.input_seq;
@@ -662,9 +674,9 @@ game_core.prototype.client_process_net_prediction_correction = function() {
     const my_last_input_on_server = this.players.self.host ? latest_server_data.his : latest_server_data.cis;
     if(my_last_input_on_server) {
         //The last input sequence index in my local input list
-        var lastinputseq_index = -1;
+        let lastinputseq_index = -1;
         //Find this input in the list, and store the index
-        for(var i = 0; i < this.players.self.inputs.length; ++i) {
+        for(let i = 0; i < this.players.self.inputs.length; ++i) {
             if(this.players.self.inputs[i].seq == my_last_input_on_server) {
                 lastinputseq_index = i;
                 break;
@@ -722,19 +734,19 @@ game_core.prototype.client_process_net_updates = function() {
     // Then :  other player position = lerp ( past_pos, target_pos, current_time );
 
     //Find the position in the timeline of updates we stored.
-    var current_time = this.client_time;
-    var count = this.server_updates.length-1;
-    var target = null;
-    var previous = null;
+    let current_time = this.client_time;
+    let count = this.server_updates.length-1;
+    let target = null;
+    let previous = null;
 
     //We look from the 'oldest' updates, since the newest ones
     //are at the end (list.length-1 for example). This will be expensive
     //only when our time is not found on the timeline, since it will run all
     //samples. Usually this iterates very little before breaking out with a target.
-    for(var i = 0; i < count; ++i) {
+    for(let i = 0; i < count; ++i) {
 
-        var point = this.server_updates[i];
-        var next_point = this.server_updates[i+1];
+        let point = this.server_updates[i];
+        let next_point = this.server_updates[i+1];
 
         //Compare our point in time with the server times we have
         if(current_time > point.t && current_time < next_point.t) {
@@ -762,7 +774,7 @@ game_core.prototype.client_process_net_updates = function() {
 
         const difference = this.target_time - current_time;
         const max_difference = (target.t - previous.t).fixed(3);
-        var time_point = (difference/max_difference).fixed(3);
+        let time_point = (difference/max_difference).fixed(3);
 
         //Because we use the same target and previous in extreme cases
         //It is possible to get incorrect values due to division by 0 difference
@@ -880,17 +892,8 @@ game_core.prototype.client_onserverupdate_recieved = function(data){
 game_core.prototype.client_update_local_position = function(){
 
     if(this.client_predict) {
-
-        //Work out the time we have since we updated the state
-        const t = (this.local_time - this.players.self.state_time) / this._pdt;
-
-        //Then store the states for clarity,
-        const old_state = this.players.self.old_state;
-        const current_state = this.players.self.cur_state;
-
         //Make sure the visual position matches the states we have stored
-        //this.players.self.pos = this.v_add( old_state, this.v_mul_scalar( this.v_sub(current_state,old_state), t )  );
-	this.players.self.state = current_state;
+	this.players.self.state = this.players.self.cur_state;
         
         //We handle collision on client if predicting.
         this.check_collision( this.players.self );
@@ -905,12 +908,9 @@ game_core.prototype.client_update_physics = function() {
     //and apply it to the state so we can smooth it in the visual state
 
     if(this.client_predict) {
-
-        this.players.self.old_state = this.cp_state( this.players.self.cur_state );
         const nd = this.process_input(this.players.self);
 	this.players.self.cur_state = this.apply_mvmnt( this.players.self.cur_state, nd);
         this.players.self.state_time = this.local_time;
-
     }
 
 }; //game_core.client_update_physics
@@ -940,6 +940,7 @@ game_core.prototype.client_update = function() {
     //across frames using local input states we have stored.
     this.client_update_local_position();
 
+
     //Now they should have updated, we can draw the entity    
     if (this.rel_pos) {
 
@@ -955,7 +956,7 @@ game_core.prototype.client_update = function() {
 
 	if (this.show_support) {
 	    this.ctx.beginPath();
-	    const alpha = Math.asin(this.players.self.size.hx / Math.sqrt(Math.pow(this.players.self.state.pos.x - this.players.other.state.pos.x,2)
+	    const alpha = Math.asin(this.players.self.hsize / Math.sqrt(Math.pow(this.players.self.state.pos.x - this.players.other.state.pos.x,2)
 									  +Math.pow(this.players.self.state.pos.y - this.players.other.state.pos.y,2)));
 	    this.ctx.rotate(alpha);
 	    this.ctx.moveTo(0,0);
@@ -1158,7 +1159,6 @@ game_core.prototype.client_reset_positions = function() {
 
     //Make sure the local player physics is updated
     this.players.self.state = this.cp_state(this.players.self.host ? this.cp_state(this.host_state) : this.cp_state(this.join_state));
-    this.players.self.old_state = this.cp_state(this.players.self.state);
     this.players.self.cur_state = this.cp_state(this.players.self.state);
 
     //Position all debug view items to their owners position
