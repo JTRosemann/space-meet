@@ -397,7 +397,7 @@ game_player.prototype.draw_self = function(){
     
 }; //game_player.draw_self
 
-game_player.prototype.draw = function(){
+game_player.prototype.draw = function() {
     this.game.ctx.save();
     this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
     this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
@@ -410,6 +410,10 @@ game_player.prototype.draw = function(){
     this.game.ctx.fillText(this.info, this.state.pos.x+10, this.state.pos.y + 4);
     
 }; //game_player.draw
+
+game_player.prototype.facing_vec = function() {
+    return new vec(Math.cos(this.state.dir), Math.sin(this.state.dir));
+}
 
 /*
 
@@ -1017,10 +1021,12 @@ game_core.prototype.client_update = function() {
     this.client_update_local_position();
 
     //audio update
-    //this.listener.positionX.value = this.players.self.state.pos.x;
-    //this.listener.positionZ.value = this.players.self.state.pos.y;//z is the new y
-    this.panner.positionX.value = this.players.self.state.pos.x;
-    this.panner.positionZ.value = this.players.self.state.pos.y;//z is the new y
+    this.panner.positionX.value = this.players.other.state.pos.x;
+    this.panner.positionZ.value = this.players.other.state.pos.y;//z is the new y
+    const listener_pos = this.players.self.state.pos;
+    const listener_facing = this.players.self.facing_vec();
+    this.listener.setPosition(listener_pos.x, 0, listener_pos.y);
+    this.listener.setOrientation(listener_facing.x, 0, listener_facing.y, 0, 1, 0);
 
     //Now they should have updated, we can draw the entity    
     if (this.rel_pos) {
