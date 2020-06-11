@@ -146,10 +146,26 @@ const game_core = function(game_instance) {
 	});
 	const audio_elem = document.querySelector('audio');
 	const track = audio_ctx.createMediaElementSource(audio_elem);
+//	const audio_elem = document.getElementById('jitsiConferenceFrame0');
+//	const track = audio_ctx.createMediaStreamSource(audio_elem);
 	const gain_node = audio_ctx.createGain();
 	const stereo_panner = new StereoPannerNode(audio_ctx, {pan: 0} /*stereo balance*/);
 	track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(audio_ctx.destination);//FIXME: gain node position
 	audio_elem.play();
+    }
+
+    this.init_meeting = function() {
+	const jitsi_config = {
+	    roomName: 'mau8Goo6gaenguW7o',
+	    parentNode: document.querySelector('meet'),
+	    interfaceConfigOverwrite: {
+		INITIAL_TOOLBAR_TIMEOUT: 0,//FIXME: hiding initially not possible...
+		TOOLBAR_TIMEOUT: 0,//this hides the toolbar
+		TOOLBAR_BUTTONS: [],
+		DISPLAY_WELCOME_PAGE_CONTENT: false
+	    }
+	}
+	this.jitsi = new JitsiMeetExternalAPI('meet.jit.si', jitsi_config);
     }
 
     this.init_players_client = function() {
@@ -224,6 +240,7 @@ const game_core = function(game_instance) {
     } else {
 	this.init_players_client();
 	this.init_ghosts();
+//	this.init_meeting();
 	this.init_audio();
     }
 
@@ -1020,13 +1037,15 @@ game_core.prototype.client_update = function() {
     //across frames using local input states we have stored.
     this.client_update_local_position();
 
-    //audio update
-    this.panner.positionX.value = this.players.other.state.pos.x;
-    this.panner.positionZ.value = this.players.other.state.pos.y;//z is the new y
-    const listener_pos = this.players.self.state.pos;
-    const listener_facing = this.players.self.facing_vec();
-    this.listener.setPosition(listener_pos.x, 0, listener_pos.y);
-    this.listener.setOrientation(listener_facing.x, 0, listener_facing.y, 0, 1, 0);
+    if (this.pos_audio) {
+	//audio update
+	this.panner.positionX.value = this.players.other.state.pos.x;
+	this.panner.positionZ.value = this.players.other.state.pos.y;//z is the new y
+	const listener_pos = this.players.self.state.pos;
+	const listener_facing = this.players.self.facing_vec();
+	this.listener.setPosition(listener_pos.x, 0, listener_pos.y);
+	this.listener.setOrientation(listener_facing.x, 0, listener_facing.y, 0, 1, 0);
+    }
 
     //Now they should have updated, we can draw the entity    
     if (this.rel_pos) {
@@ -1150,6 +1169,7 @@ game_core.prototype.client_create_configuration = function() {
     this.input_seq = 0;                 //When predicting client inputs, we store the last input as a sequence number
     this.client_smoothing = true;       //Whether or not the client side prediction tries to smooth things out
     this.client_smooth = 25;            //amount of smoothing to apply to client update dest
+    this.pos_audio = true;             //whether to enable positional audio
 
     this.net_latency = 0.001;           //the latency between the client and the server (ping/2)
     this.net_ping = 0.001;              //The round trip time from here to the server,and back
@@ -1206,6 +1226,7 @@ game_core.prototype.client_create_debug_gui = function() {
     _othersettings.add(this, 'client_smoothing').listen();
     _othersettings.add(this, 'client_smooth').listen();
     _othersettings.add(this, 'client_predict').listen();
+    _othersettings.add(this, 'pos_audio').listen();
 
     const _debugsettings = this.gui.addFolder('Debug view');
     
