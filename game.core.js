@@ -50,6 +50,58 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 //each game that is hosted, and client creates one
 //for itself to play the game.
 
+
+const vec = function(x, y) {
+    this.x = x;
+    this.y = y;
+};
+
+vec.prototype.add_mut = function(other) {
+    this.x += other.x;
+    this.y += other.y;
+};
+
+vec.prototype.add = function(other) {
+    return new vec(this.x + other.x, this.y + other.y);
+};
+
+vec.prototype.sub = function(other) {
+    return new vec(this.x - other.x, this.y - other.y);
+};
+
+vec.prototype.abs = function() {
+    return Math.sqrt(this.x*this.x + this.y*this.y);
+};
+
+vec.prototype.angle = function() {
+    return Math.atan2(this.y,this.x);
+};
+
+vec.prototype.polar = function () {
+    return {r: abs, phi: angle};
+};
+
+vec.prototype.clone = function() {
+    return new vec(this.x, this.y);
+};
+
+// (4.22208334636).fixed(n) will return fixed point value to n places, default n = 3
+Number.prototype.fixed = function(n) {
+    n = n || 3;
+    return parseFloat(this.toFixed(n));
+};
+//Simple linear interpolation
+const lerp = function(p, n, t) {
+    let _t = Number(t);
+    _t = (Math.max(0, Math.min(1, _t))).fixed();
+    return (p + _t * (n - p)).fixed();
+};
+//Simple linear interpolation between 2 vectors
+vec.prototype.v_lerp = function(tv,t) {
+    return new vec(lerp(this.x, tv.x, t),
+		   lerp(this.y, tv.y, t));
+};
+
 /** 
     The game_core class 
 */
@@ -67,10 +119,38 @@ const game_core = function(game_instance) {
         height : 480
     };
 
-    this.host_state = {pos: {x:200,y:300}, dir: 0};
-    this.join_state = {pos: {x:250,y:200}, dir: 5*Math.PI/4};
+    this.host_state = {pos: new vec( 200, 300), dir: 0};
+    this.join_state = {pos: new vec( 250, 200), dir: 5*Math.PI/4};
 
     // initializer methods have to be public, otw. "this" is not handled well
+    this.init_audio = function() {
+	// Set up audio
+	const AudioContext = window.AudioContext || window.webkitAudioContext;
+	const audio_ctx = new AudioContext();
+	this.listener = audio_ctx.listener; // keep the standard values for position, facing & up
+	this.listener.positionX = this.players.self.state.pos.x;
+	this.listener.positionZ = this.players.self.state.pos.y;
+	const panner_model = 'HRTF';
+	//for now, we don't use cones for simulation of speaking direction. this may be added later on
+	//cf. https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
+	const distance_model = 'linear'; // possible values are: 'linear', 'inverse' & 'exponential'
+	const max_distance = 10000;
+	const ref_distance = 1;
+	const roll_off = 20;
+	this.panner = new PannerNode(audio_ctx, {
+	    panningModel: panner_model,
+	    distanceModel: distance_model,
+	    refDistance: ref_distance,
+	    maxDistance: max_distance,
+	    rolloffFactor: roll_off
+	});
+	const audio_elem = document.querySelector('audio');
+	const track = audio_ctx.createMediaElementSource(audio_elem);
+	const gain_node = audio_ctx.createGain();
+	const stereo_panner = new StereoPannerNode(audio_ctx, {pan: 0} /*stereo balance*/);
+	track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(audio_ctx.destination);//FIXME: gain node position
+	audio_elem.play();
+    }
 
     this.init_players_client = function() {
         this.players = {
@@ -144,6 +224,7 @@ const game_core = function(game_instance) {
     } else {
 	this.init_players_client();
 	this.init_ghosts();
+	this.init_audio();
     }
 
     //The speed at which the clients move.
@@ -190,19 +271,20 @@ if( 'undefined' != typeof global ) {
 
 */
 
-// (4.22208334636).fixed(n) will return fixed point value to n places, default n = 3
-Number.prototype.fixed = function(n) { n = n || 3; return parseFloat(this.toFixed(n)); };
 //copies a 2d vector like object from one to another
 game_core.prototype.cp_pos = function(a) { return {x:a.x,y:a.y}; };
 //copis the state of the player
-game_core.prototype.cp_state = function(a) { return {pos: {x:a.pos.x,y:a.pos.y},
-						     dir:a.dir};
-					   };
+game_core.prototype.cp_state = function(a) {
+    return {
+	pos: a.pos.clone(),
+	dir:a.dir
+    };
+};
 //Add a 2d vector with another one and return the resulting vector
 game_core.prototype.v_add = function(a,b) { return { x:(a.x+b.x).fixed(), y:(a.y+b.y).fixed() }; };
 //move the player & update the direction
 game_core.prototype.apply_mvmnt = function (state, mvmnt) {
-    return { pos: this.v_add(state.pos, mvmnt.pos),
+    return { pos: state.pos.add(mvmnt.pos),
 	     dir: mvmnt.dir 
 	   }
 };
@@ -212,15 +294,12 @@ game_core.prototype.v_sub = function(a,b) { return { x:(a.x-b.x).fixed(),y:(a.y-
 game_core.prototype.v_mul_scalar = function(a,b) { return {x: (a.x*b).fixed() , y:(a.y*b).fixed() }; };
 //For the server, we need to cancel the setTimeout that the polyfill creates
 game_core.prototype.stop_update = function() {  window.cancelAnimationFrame( this.updateid );  };
-//Simple linear interpolation
-game_core.prototype.lerp = function(p, n, t) { let _t = Number(t); _t = (Math.max(0, Math.min(1, _t))).fixed(); return (p + _t * (n - p)).fixed(); };
-//Simple linear interpolation between 2 vectors
-game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x, t), y:this.lerp(v.y, tv.y, t) }; };
 //lerp for states
 game_core.prototype.s_lerp = function(s,ts,t) {
-    return { pos: this.v_lerp(s.pos, ts.pos, t),
-	     dir: this.lerp(s.dir, ts.dir, t)
-	   };
+    return {
+	pos: s.pos.v_lerp(ts.pos, t),
+	dir: lerp(s.dir, ts.dir, t)
+    };
 };
 
 /*
@@ -264,23 +343,20 @@ const game_player = function( game_instance, start_state, player_instance) {
 }; //game_player.constructor
 
 game_player.prototype.draw_head = function(){
-    
-    const pos_x = this.state.pos.x - this.game.players.self.state.pos.x;
-    const pos_y = this.state.pos.y - this.game.players.self.state.pos.y;
-    const abs_val = Math.sqrt( Math.pow(pos_x, 2) + Math.pow(pos_y,2));
+
+    const pos = this.state.pos.sub(this.game.players.self.state.pos);
+    const abs_val = pos.abs();
     const dist_c = this.game.viewport.width/6;
     
     const sin_alpha
 	  = this.game.players.self.hsize /
-	  Math.max(this.size,
-		   Math.sqrt(Math.pow(this.game.players.self.state.pos.x - this.state.pos.x,2)
-			     +Math.pow(this.game.players.self.state.pos.y - this.state.pos.y,2)));
+	  Math.max(this.size, abs_val);
     const rad = /*Math.min(*/sin_alpha * dist_c / (1 - sin_alpha)/*, dist_c)*/;
     //    const magic_c = Math.sqrt(2); //FIXME: this is not the honest projection I had in mind
     //    const rad = Math.min(magic_c * this.hsize * dist_c / abs_val, dist_c); //FIXME: only works for circles, but this is not reflected in size
     const dist = dist_c + rad;
-    const center_x = dist * pos_x / abs_val;//FIXME: divide by zero
-    const center_y = dist * pos_y / abs_val;
+    const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
+    const center_y = dist * pos.y / abs_val;
     this.game.ctx.translate(center_x, center_y);
     this.game.ctx.rotate(this.game.players.self.state.dir + Math.PI/2); // rewind the rotation from outside
     this.game.ctx.beginPath();
@@ -295,39 +371,6 @@ game_player.prototype.draw_head = function(){
     this.game.ctx.translate(-center_x,-center_y);
 }
 
-game_player.prototype.draw = function(){
-    
-    //Set the color for this player
-    this.game.ctx.fillStyle = this.color;
-    
-
-    //Draw a rectangle for us
-    this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
-    this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
-    if (game.show_support) {
-	this.game.ctx.beginPath();
-	this.game.ctx.arc(0,0,this.hsize,0,2*Math.PI);
-	this.game.ctx.strokeStyle = "yellow";
-	this.game.ctx.stroke();
-    }
-    
-    this.game.ctx.beginPath();
-    const rt2 = Math.sqrt(0.5);
-    this.game.ctx.moveTo(                0,                 0);
-    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 *  this.hsize);
-    this.game.ctx.lineTo(       this.hsize,                 0);
-    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 * -this.hsize);
-    this.game.ctx.closePath();
-    this.game.ctx.fill();
-    this.game.ctx.rotate(-this.state.dir);
-    this.game.ctx.translate(-this.state.pos.x,-this.state.pos.y);
-
-    //Draw a status update
-    this.game.ctx.fillStyle = this.info_color;
-    this.game.ctx.fillText(this.info, this.state.pos.x+10, this.state.pos.y + 4);
-    
-}; //game_player.draw
-
 game_player.prototype.draw_self = function(){
 
     //Set the color for this player
@@ -339,8 +382,6 @@ game_player.prototype.draw_self = function(){
 	this.game.ctx.strokeStyle = "yellow";
 	this.game.ctx.stroke();
     }
-
-    //Draw a rectangle for us
     this.game.ctx.beginPath();
     const rt2 = Math.sqrt(0.5);
     this.game.ctx.moveTo(                0,                 0);
@@ -355,6 +396,20 @@ game_player.prototype.draw_self = function(){
     this.game.ctx.fillText(this.info, 10, 4);
     
 }; //game_player.draw_self
+
+game_player.prototype.draw = function(){
+    this.game.ctx.save();
+    this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
+    this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
+    
+    this.draw_self();
+    this.game.ctx.restore();
+
+    //Draw a status update
+    this.game.ctx.fillStyle = this.info_color;
+    this.game.ctx.fillText(this.info, this.state.pos.x+10, this.state.pos.y + 4);
+    
+}; //game_player.draw
 
 /*
 
@@ -477,8 +532,8 @@ game_core.prototype.physics_movement_vector_from_direction = function(r,phi,base
     const r_s   =   r * (this.player_mv_speed  * (this.physics_loop / 1000));
     const phi_s = phi * (this.player_trn_speed * (this.physics_loop / 1000)) + base_phi;
     return {
-        pos: {x : (r_s * Math.cos(phi_s)).fixed(3),
-	      y : (r_s * Math.sin(phi_s)).fixed(3)},
+        pos: new vec((r_s * Math.cos(phi_s)).fixed(3),
+		     (r_s * Math.sin(phi_s)).fixed(3)),
 	dir : phi_s
     };
 
@@ -551,6 +606,21 @@ game_core.prototype.server_update = function(){
 
 }; //game_core.server_update
 
+game_core.prototype.unpack_server_data = function(data) {
+    return {
+	hs: {
+	    pos: new vec(data.hs.pos.x, data.hs.pos.y),
+	    dir: data.hs.dir
+	},
+	cs: {
+	    pos: new vec(data.cs.pos.x, data.cs.pos.y),
+	    dir: data.cs.dir
+	},
+	his: data.his,
+	cis: data.cis,
+	t : data.t
+    };
+};
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
 
@@ -660,7 +730,8 @@ game_core.prototype.client_process_net_prediction_correction = function() {
     if(!this.server_updates.length) return;
 
     //The most recent server update
-    const latest_server_data = this.server_updates[this.server_updates.length-1];
+    const lsd_raw = this.server_updates[this.server_updates.length-1];
+    const latest_server_data = this.unpack_server_data(lsd_raw);
 
     //Our latest server position
     const my_server_state = this.players.self.host ? latest_server_data.hs : latest_server_data.cs;
@@ -745,8 +816,10 @@ game_core.prototype.client_process_net_updates = function() {
     //samples. Usually this iterates very little before breaking out with a target.
     for(let i = 0; i < count; ++i) {
 
-        let point = this.server_updates[i];
-        let next_point = this.server_updates[i+1];
+        const point_raw = this.server_updates[i];
+	let point = this.unpack_server_data(point_raw);
+        const next_point_raw = this.server_updates[i+1];
+	let next_point = this.unpack_server_data(next_point_raw);
 
         //Compare our point in time with the server times we have
         if(current_time > point.t && current_time < next_point.t) {
@@ -759,8 +832,10 @@ game_core.prototype.client_process_net_updates = function() {
     //With no target we store the last known
     //server position and move to that instead
     if(!target) {
-        target = this.server_updates[0];
-        previous = this.server_updates[0];
+	const lsd_raw = this.server_updates[0];
+	const lsd = this.unpack_server_data(lsd_raw);
+        target = lsd;
+        previous = lsd;
     }
 
     //Now that we have a target and a previous destination,
@@ -784,7 +859,8 @@ game_core.prototype.client_process_net_updates = function() {
         if(time_point == Infinity) time_point = 0;
 
         //The most recent server update
-        const latest_server_data = this.server_updates[ this.server_updates.length-1 ];
+	const lsd_raw = this.server_updates[ this.server_updates.length-1 ];
+        const latest_server_data = this.unpack_server_data(lsd_raw);
 
         //These are the exact server positions from this tick, but only for the ghost
         const other_server_state = this.players.self.host ? latest_server_data.cs : latest_server_data.hs;
@@ -940,6 +1016,11 @@ game_core.prototype.client_update = function() {
     //across frames using local input states we have stored.
     this.client_update_local_position();
 
+    //audio update
+    //this.listener.positionX.value = this.players.self.state.pos.x;
+    //this.listener.positionZ.value = this.players.self.state.pos.y;//z is the new y
+    this.panner.positionX.value = this.players.self.state.pos.x;
+    this.panner.positionZ.value = this.players.self.state.pos.y;//z is the new y
 
     //Now they should have updated, we can draw the entity    
     if (this.rel_pos) {
@@ -956,17 +1037,17 @@ game_core.prototype.client_update = function() {
 
 	if (this.show_support) {
 	    this.ctx.beginPath();
-	    const alpha = Math.asin(this.players.self.hsize / Math.sqrt(Math.pow(this.players.self.state.pos.x - this.players.other.state.pos.x,2)
-									  +Math.pow(this.players.self.state.pos.y - this.players.other.state.pos.y,2)));
+	    const other_sub_self = this.players.other.state.pos.sub(this.players.self.state.pos);
+	    const alpha = Math.asin(this.players.self.hsize / other_sub_self.abs());
 	    this.ctx.rotate(alpha);
 	    this.ctx.moveTo(0,0);
-	    this.ctx.lineTo((this.players.other.state.pos.x - this.players.self.state.pos.x)*10,
-			    (this.players.other.state.pos.y - this.players.self.state.pos.y)*10);
+	    this.ctx.lineTo((other_sub_self.x)*10,
+			    (other_sub_self.y)*10);
 	    this.ctx.rotate(-alpha);
 	    this.ctx.rotate(-alpha);
 	    this.ctx.moveTo(0,0);
-	    this.ctx.lineTo((this.players.other.state.pos.x - this.players.self.state.pos.x)*10,
-			    (this.players.other.state.pos.y - this.players.self.state.pos.y)*10);
+	    this.ctx.lineTo((other_sub_self.x)*10,
+			    (other_sub_self.y)*10);
 	    this.ctx.strokeStyle = "yellow";
 	    this.ctx.stroke();
 	    this.ctx.rotate(alpha);
