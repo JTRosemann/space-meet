@@ -20,6 +20,8 @@
 let frame_time = 60/1000; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 22hz
 
+
+
 ( function () {
 
     let lastTime = 0;
@@ -122,8 +124,9 @@ const game_core = function(game_instance) {
     this.host_state = {pos: new vec( 200, 300), dir: 0};
     this.join_state = {pos: new vec( 250, 200), dir: 5*Math.PI/4};
 
+    const thisgame = this;
     // initializer methods have to be public, otw. "this" is not handled well
-    this.init_audio = function() {
+    this.init_audio = function(stream) {
 	// Set up audio
 	const AudioContext = window.AudioContext || window.webkitAudioContext;
 	const audio_ctx = new AudioContext();
@@ -144,28 +147,114 @@ const game_core = function(game_instance) {
 	    maxDistance: max_distance,
 	    rolloffFactor: roll_off
 	});
-	const audio_elem = document.querySelector('audio');
-	const track = audio_ctx.createMediaElementSource(audio_elem);
-//	const audio_elem = document.getElementById('jitsiConferenceFrame0');
-//	const track = audio_ctx.createMediaStreamSource(audio_elem);
 	const gain_node = audio_ctx.createGain();
 	const stereo_panner = new StereoPannerNode(audio_ctx, {pan: 0} /*stereo balance*/);
+	const audio_elem = document.querySelector('audio');
+	//	const track =  audio_ctx.createMediaElementSource(audio_elem);
+	const track = stream ? audio_ctx.createMediaStreamSource(stream) : audio_ctx.createMediaElementSource(audio_elem);
 	track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(audio_ctx.destination);//FIXME: gain node position
-	audio_elem.play();
     }
 
-    this.init_meeting = function() {
-	const jitsi_config = {
-	    roomName: 'mau8Goo6gaenguW7o',
-	    parentNode: document.querySelector('meet'),
-	    interfaceConfigOverwrite: {
-		INITIAL_TOOLBAR_TIMEOUT: 0,//FIXME: hiding initially not possible...
-		TOOLBAR_TIMEOUT: 0,//this hides the toolbar
-		TOOLBAR_BUTTONS: [],
-		DISPLAY_WELCOME_PAGE_CONTENT: false
+    this.onConnectionSuccess = function() {
+	console.log('onConnectionSuccess');
+	const conf_opt = { openBridgeChannel: true };
+	this.jitsi_conf = jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
+
+	this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, track => {
+	    if (track.getType() == 'audio') {
+		const container = document.querySelector('audio');
+//		track.attach(container);
+		console.warn(track);
+		thisgame.init_audio(track.stream);
 	    }
-	}
-	this.jitsi = new JitsiMeetExternalAPI('meet.jit.si', jitsi_config);
+	});
+//	thisgame.init_audio();
+	// const room = this.jitsi_conf;
+	// // room.on(JitsiMeetJS.events.conference.TRACK_ADDED, track => {
+	//     console.log('onRemoteTrack')
+	// });
+	// room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
+        //     console.log(`track removed!!!${track}`);
+	// });
+	// room.on(
+        //     JitsiMeetJS.events.conference.CONFERENCE_JOINED,
+        //     onConferenceJoined);
+	// room.on(JitsiMeetJS.events.conference.USER_JOINED, id => {
+        //     console.log('user join');
+        //     remoteTracks[id] = [];
+	// });
+	// room.on(JitsiMeetJS.events.conference.USER_LEFT, (id) => {
+	//     console.log('user ' + id + ' left');
+	// });
+	// room.on(JitsiMeetJS.events.conference.TRACK_MUTE_CHANGED, track => {
+        //     console.log(`${track.getType()} - ${track.isMuted()}`);
+	// });
+	// room.on(
+        //     JitsiMeetJS.events.conference.DISPLAY_NAME_CHANGED,
+        //     (userID, displayName) => console.log(`${userID} - ${displayName}`));
+	// room.on(
+        //     JitsiMeetJS.events.conference.TRACK_AUDIO_LEVEL_CHANGED,
+        //     (userID, audioLevel) => console.log(`${userID} - ${audioLevel}`));
+	// room.on(
+        //     JitsiMeetJS.events.conference.PHONE_NUMBER_CHANGED,
+        //     () => console.log(`${room.getPhoneNumber()} - ${room.getPhonePin()}`));
+
+	
+	this.jitsi_conf.join();
+    };
+    this.onConnectionFailed = function() {
+	console.log('onConnectionFailed');
+    };
+    this.disconnect = function() {
+	console.log('disconnect');
+    };
+    this.onDeviceListChanged = function() {
+	console.log('onDeviceListChanged');
+    };
+
+    this.init_meeting = function() {
+	const init_opt = {};
+	const connect_opt2 = {
+	    hosts: {
+		domain: 'beta.meet.jit.si',
+		muc: 'conference.beta.meet.jit.si',
+//		focus: 'focus.beta.meet.jit.si'
+	    },
+	    serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
+//	    serviceUrl: 'wss://meet.jit.si/xmpp-websocket',
+
+	    // The name of client node advertised in XEP-0115 'c' stanza
+	    clientNode: 'beta.meet.jit.si'
+	};
+	const connect_opt = {
+	    hosts: {
+		domain: 'talk.cs.uni-saarland.de',
+		muc: 'talk.cs.uni-saarland.de'
+	    },
+	    serviceUrl: '//talk.cs.uni-saarland.de/http-bind',
+//	    serviceUrl: 'wss://meet.jit.si/xmpp-websocket',
+
+	    // The name of client node advertised in XEP-0115 'c' stanza
+	    clientNode: 'http://jitsi.org/jitsimeet'
+	    //clientNode: 'meet.jit.si'
+	};
+	
+	JitsiMeetJS.init(init_opt);
+	jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt2);
+	jitsi_connect.addEventListener(
+	    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
+	    this.onConnectionSuccess);
+	jitsi_connect.addEventListener(
+	    JitsiMeetJS.events.connection.CONNECTION_FAILED,
+	    this.onConnectionFailed);
+	jitsi_connect.addEventListener(
+	    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
+	    this.disconnect);
+
+	JitsiMeetJS.mediaDevices.addEventListener(
+	    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
+	    this.onDeviceListChanged);
+	jitsi_connect.connect();
     }
 
     this.init_players_client = function() {
@@ -240,7 +329,7 @@ const game_core = function(game_instance) {
     } else {
 	this.init_players_client();
 	this.init_ghosts();
-//	this.init_meeting();
+	this.init_meeting();
 	this.init_audio();
     }
 
