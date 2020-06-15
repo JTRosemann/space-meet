@@ -124,7 +124,7 @@ const game_core = function(game_instance) {
     this.host_state = {pos: new vec( 200, 300), dir: 0};
     this.join_state = {pos: new vec( 250, 200), dir: 5*Math.PI/4};
 
-    const thisgame = this;
+    const thisgame = this;//to be able to refer to 'this' in event handlers (they are called from somewhere else, i.e. in another 'this')
     // initializer methods have to be public, otw. "this" is not handled well
     this.init_audio = function(stream) {
 	// Set up audio
@@ -158,7 +158,7 @@ const game_core = function(game_instance) {
     this.onConnectionSuccess = function() {
 	console.log('onConnectionSuccess');
 	const conf_opt = { openBridgeChannel: true };
-	this.jitsi_conf = jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
+	this.jitsi_conf = thisgame.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
 
 	this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, track => {
 	    if (track.getType() == 'audio') {
@@ -203,17 +203,11 @@ const game_core = function(game_instance) {
         //     JitsiMeetJS.events.conference.PHONE_NUMBER_CHANGED,
         //     () => console.log(`${room.getPhoneNumber()} - ${room.getPhonePin()}`));
 
-	
+	console.warn(this.jitsi_conf.myUserId());
 	this.jitsi_conf.join();
     };
     this.onConnectionFailed = function() {
-	console.log('onConnectionFailed');
-    };
-    this.disconnect = function() {
-	console.log('disconnect');
-    };
-    this.onDeviceListChanged = function() {
-	console.log('onDeviceListChanged');
+	console.warn('onConnectionFailed');
     };
 
     this.init_meeting = function() {
@@ -244,21 +238,14 @@ const game_core = function(game_instance) {
 	};
 	
 	JitsiMeetJS.init(init_opt);
-	jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt2);
-	jitsi_connect.addEventListener(
+	thisgame.jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt2);
+	thisgame.jitsi_connect.addEventListener(
 	    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
 	    this.onConnectionSuccess);
-	jitsi_connect.addEventListener(
+	thisgame.jitsi_connect.addEventListener(
 	    JitsiMeetJS.events.connection.CONNECTION_FAILED,
 	    this.onConnectionFailed);
-	jitsi_connect.addEventListener(
-	    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
-	    this.disconnect);
-
-	JitsiMeetJS.mediaDevices.addEventListener(
-	    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
-	    this.onDeviceListChanged);
-	jitsi_connect.connect();
+	thisgame.jitsi_connect.connect();
     }
 
     this.init_players_client = function() {

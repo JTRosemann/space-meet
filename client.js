@@ -17,9 +17,6 @@ window.onload = function(){
     //Create our game client instance.
     game = new game_core();
 
-    //
-    let jitsi_connect = null;
-
     //Fetch the viewport
     game.viewport = document.getElementById('viewport');
     
