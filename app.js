@@ -85,7 +85,7 @@
         //Socket.io will call this function when a client connects,
         //So we can send that client looking for a game to play,
         //as well as give that client a unique ID to use so we can
-        //maintain the list if players.
+        //maintain the list of players.
     sio.sockets.on('connection', function (client) {
         
             //Generate a new UUID, looks something like
