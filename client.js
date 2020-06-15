@@ -34,6 +34,6 @@ window.onload = function(){
     game.ctx.font = '11px "Helvetica"';
     
     //Finally, start the loop
-    game.update( new Date().getTime() );
+    game.update( new Date().getTime() );    
 
 }; //window.onload

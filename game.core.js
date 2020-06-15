@@ -116,7 +116,7 @@ const game_core = function(game_instance) {
     this.server = this.instance !== undefined;
 
     //Used in collision etc.
-    this.world = { //FIXME: letying these values skews the view, thus they must be still hardcoded somewhere else 
+    this.world = {
         width : 720,
         height : 480
     };
@@ -164,8 +164,12 @@ const game_core = function(game_instance) {
 	    if (track.getType() == 'audio') {
 		const container = document.querySelector('audio');
 //		track.attach(container);
-		console.warn(track);
 		thisgame.init_audio(track.stream);
+	    } else if (track.getType() == 'video') {
+		$('body').append(
+		    `<video autoplay='1' id='myvideo' style='visibility:hidden;'/>`);
+		const vid = document.getElementById('myvideo');
+		track.attach(vid);
 	    }
 	});
 //	thisgame.init_audio();
@@ -463,18 +467,42 @@ game_player.prototype.draw_head = function(){
     const dist = dist_c + rad;
     const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
     const center_y = dist * pos.y / abs_val;
+    this.game.ctx.save();
     this.game.ctx.translate(center_x, center_y);
     this.game.ctx.rotate(this.game.players.self.state.dir + Math.PI/2); // rewind the rotation from outside
+
     this.game.ctx.beginPath();
-    //	    this.game.ctx.arc( center_x, center_y, rad /*radius*/, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
     this.game.ctx.arc( 0, 0, rad, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
-    this.game.ctx.moveTo(-10,10);
-    this.game.ctx.lineTo(0,0);
-    this.game.ctx.lineTo( 10,10);
+    this.game.ctx.clip();
+    if (this.game.show_video) {
+	const vid = document.querySelector('video');
+	if (vid) {
+	    const w = vid.offsetWidth;
+	    const h = vid.offsetHeight;
+	    if (w > h) { //landscape video input
+		const ratio = w / h;
+		const h_scaled = 2 * rad;
+		const w_scaled = ratio * h_scaled;
+		const diff = w_scaled - h_scaled;
+		this.game.ctx.drawImage(vid, - rad - diff / 2, -rad, w_scaled, h_scaled);
+	    } else { //portrait video input
+		const ratio = h / w;
+		const w_scaled = 2 * rad;
+		const h_scaled = ratio * w_scaled;
+		const diff = h_scaled - w_scaled;
+		this.game.ctx.drawImage(vid, - rad, - rad - diff / 2, w_scaled, h_scaled);
+	    }
+	}
+    } else {
+	this.game.ctx.moveTo(-10,10);
+	this.game.ctx.lineTo(0,0);
+	this.game.ctx.lineTo( 10,10);
+    }
     this.game.ctx.strokeStyle = this.color;
     this.game.ctx.stroke();
-    this.game.ctx.rotate(-this.game.players.self.state.dir - Math.PI/2);
-    this.game.ctx.translate(-center_x,-center_y);
+    this.game.ctx.restore();
+//    this.game.ctx.rotate(-this.game.players.self.state.dir - Math.PI/2);
+//    this.game.ctx.translate(-center_x,-center_y);
 }
 
 game_player.prototype.draw_self = function(){
@@ -1249,6 +1277,7 @@ game_core.prototype.client_create_configuration = function() {
     this.traces = false;                 //whether to show traces of drawn items (i.e. don't clear)
     this.clip = true;                   //whether to clip everything around the map circle
     this.show_support = false;          //whether to show support lines
+    this.show_video = true;             //whether to draw the video in the head
 
     this.show_help = false;             //Whether or not to draw the help text
     this.naive_approach = false;        //Whether or not to use the naive approach
@@ -1308,6 +1337,7 @@ game_core.prototype.client_create_debug_gui = function() {
     _drawsettings.add(this, 'traces').listen();
     _drawsettings.add(this, 'clip').listen();
     _drawsettings.add(this, 'show_support').listen();
+    _drawsettings.add(this, 'show_video').listen();
 
     const _othersettings = this.gui.addFolder('Methods');
 
