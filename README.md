@@ -29,5 +29,5 @@ See LICENSE if required.
 
 ## Disclaimer
 
-This project is built up on [this tutorial](http://buildnewgames.com/real-time-multiplayer/) multiplayer games in JavaScript and greatly influenced by [this one](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics) about spatial sound on the web.
+This project is built up on [this tutorial](http://buildnewgames.com/real-time-multiplayer/) on multiplayer games in JavaScript and greatly influenced by [this one](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics) about spatial sound on the web.
 It makes major use of [jitsi](https://jitsi.org), in particular [lib-jitsi-meet](https://github.com/jitsi/lib-jitsi-meet) and at least for now the videocalls are hosted on [https://meet.jit.si/](https://meet.jit.si/).
