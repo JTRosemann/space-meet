@@ -1,13 +1,7 @@
-Realtime Multiplayer In HTML5
+Space Meet
 =============================
 
-Read the article here : 
-http://buildnewgames.com/real-time-multiplayer/
-
-View the demo here :
-http://notes.underscorediscovery.com:4004/?debug
-
-An example using node.js, socket.io and HTML5 Canvas to explain and demonstrate realtime multiplayer games in the browser.
+Space Meet is a meeting space, where you can walk & talk.
 
 ## Getting started (Using npm package.json)
 * Get node.js
@@ -29,3 +23,7 @@ An example using node.js, socket.io and HTML5 Canvas to explain and demonstrate 
 MIT Licensed. 
 See LICENSE if required.
 
+## Disclaimer
+
+This project is built up on [this tutorial](http://buildnewgames.com/real-time-multiplayer/) multiplayer games in JavaScript and greatly influenced by [this one](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics) about spatial sound on the web.
+It makes major use of [jitsi](https://jitsi.org), in particular [lib-jitsi-meet](https://github.com/jitsi/lib-jitsi-meet) and at least for now the videocalls are hosted on [https://meet.jit.si/](https://meet.jit.si/).
