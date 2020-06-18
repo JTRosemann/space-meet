@@ -7,7 +7,9 @@ Space Meet is a meeting space, where you can walk & talk.
 * Get node.js
 * run `npm install` inside the cloned folder
 * run `node app.js` inside the cloned folder
+* Visit https://beta.meet.jit.si/mau8goo6gaenguw7o and enable microphone & camera
 * Visit http://127.0.0.1:4004/?debug
+* you should now see yourself and hear yourself differently as you walk through the room
 
 ## Getting started (Manual install)
 
@@ -16,7 +18,9 @@ Space Meet is a meeting space, where you can walk & talk.
 * Install node-udid `npm install node-uuid`
 * Install express `npm install express`
 * Run `node app.js` inside the cloned folder
+* Visit https://beta.meet.jit.si/mau8goo6gaenguw7o and enable microphone & camera
 * Visit http://127.0.0.1:4004/?debug
+* you should now see yourself and hear yourself differently as you walk through the room
 
 ## License
 
