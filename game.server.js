@@ -7,9 +7,10 @@
     MIT Licensed.
 */
 
-const game_server = module.exports = { games : {}, game_count:0 };
+const game_server = module.exports = { games : {} };
 const UUID        = require('node-uuid');
 const verbose     = true;
+let running_id    = 0;
 
 //Since we are sharing code with the browser, we
 //are going to include some values to handle that.
@@ -59,13 +60,9 @@ game_server.onMessage = function(client,message) {
 game_server._onMessage = function(client,message) {
 
     //Cut the message up into sub components
-    var message_parts = message.split('.');
+    const message_parts = message.split('.');
     //The first is always the type of message
-    var message_type = message_parts[0];
-
-    var other_client =
-        (client.game.player_host.userid == client.userid) ?
-        client.game.player_client : client.game.player_host;
+    const message_type = message_parts[0];
 
     if(message_type == 'i') {
         //Input handler will forward this
@@ -73,12 +70,16 @@ game_server._onMessage = function(client,message) {
     } else if(message_type == 'p') {
         client.send('s.p.' + message_parts[1]);
     } else if(message_type == 'c') {    //Client changed their color!
-        if(other_client)
-            other_client.send('s.c.' + message_parts[1]);
+	for (let other_c in client.game.players) {
+	    // JS bs
+	    if (!client.game.players.hasOwnProperty(other_c)) continue;
+	    if (other_c.id != client.userid) {
+		other_c.send('s.c.' + client.userid + '.' + message_parts[1]);
+	    }
+	}
     } else if(message_type == 'l') {    //A client is asking for lag simulation
         this.fake_latency = parseFloat(message_parts[1]);
     }
-
 }; //game_server.onMessage
 
 game_server.onInput = function(client, parts) {
@@ -97,129 +98,35 @@ game_server.onInput = function(client, parts) {
 
 }; //game_server.onInput
 
-//Define some required functions
-game_server.createGame = function(player) {
-    //Create a new game instance
-    const thegame = {
-        id : UUID(),                //generate a new id for the game
-        players: [player],         //the host is always at position 0
-    };
-
-    //Store it in the list of game
-    //        this.games[ thegame.id ] = thegame;
-    this.games[0] = thegame; // for now there is only one game
-
-    //Create a new game core instance, this actually runs the
-    //game code like collisions and such.
-    thegame.gamecore = new game_core( thegame );
-    //Start updating the game loop on the server
-    thegame.gamecore.update( new Date().getTime() );
-
-    //tell the player that they are now the host
-    //s=server message, h=you are hosting
-
-    player.send('s.h.'+ String(thegame.gamecore.local_time).replace('.','-'));
-    console.log('server host at  ' + thegame.gamecore.local_time);
-    player.game = thegame;
-    player.hosting = true;
-    
-    this.log('player ' + player.userid + ' created a game with id ' + player.game.id);
-    //return it
-    return thegame;
-
-}; //game_server.createGame
-
 //we are requesting to kill a game in progress.
-game_server.endGame = function(gameid, userid) {
-
-    const thegame = this.games[gameid];
-
-    if(thegame) {
-        //stop the game updates immediate
-        thegame.gamecore.stop_update();
-
-        //if the game has two players, the one is leaving
-        if(thegame.player_count > 1) {
-
-            //send the players the message the game is ending
-            if(userid == thegame.player_host.userid) {
-
-                //the host left, oh snap. Lets try join another game
-                if(thegame.player_client) {
-                    //tell them the game is over
-                    thegame.player_client.send('s.e');
-                    //now look for/create a new game.
-                    this.findGame(thegame.player_client);
-                }
-                
-            } else {
-                //the other player left, we were hosting
-                if(thegame.player_host) {
-                    //tell the client the game is ended
-                    thegame.player_host.send('s.e');
-                    //i am no longer hosting, this game is going down
-                    thegame.player_host.hosting = false;
-                    //now look for/create a new game.
-                    this.findGame(thegame.player_host);
-                }
-            }
-        }
-
-        delete this.games[gameid];
-
-        this.log('game removed. there are now ' + this.game_count + ' games' );
-
+game_server.disconnect = function(gameid, userid) {
+    if(this.game) {
+	this.game.gamecore.rm_player(userid);
     } else {
         this.log('that game was not found!');
     }
-
-}; //game_server.endGame
-
-game_server.startGame = function(game) {
-
-    //now we tell both that the game is ready to start
-    //clients will reset their positions in this case.
-    game.player_client.send('s.r.'+ String(game.gamecore.local_time).replace('.','-'));
-    game.player_host.send('s.r.'+ String(game.gamecore.local_time).replace('.','-'));
-    
-    //set this flag, so that the update loop can run it.
-    game.active = true;
-
-}; //game_server.startGame
+}; //game_server.disconnect
 
 game_server.findGame = function(player) {
-
-    this.log('looking for a game. We have : ' + this.games.length);
+    this.log('looking for a game. We have : ?');
 
     //so there are games active,
     //lets see if one needs another player
-    if(this.games) {
-        //Check the list of games for an open game
-	//            for(var gameid in this.games) {
-        //only care about our own properties.
-	//this is necessary for some JS bullshit reasons...
-	//                if(!this.games.hasOwnProperty(gameid)) continue;
-        //get the game we are checking against
-	// for now there is only one game & everyone joins this game
-        const game_instance = this.games[0];
-
-        //increase the player count and store
-        //the player as the client of this game
-        game_instance.players.push(player); //clients are pushed to the player list
-	game_instance.gamecore.push_player(player);
-        //game_instance.gamecore.players.other.instance = player;//FIXME
-	//the host already knows they are hosting,
-	//tell the other client they are joining a game
-	//s=server message, j=you are joining, send them the host id
-	player.send('s.j.' + game.players[0].userid);
-	player.game = game_instance;
-    } else { //if there are no games at all
-	//no games? create one!
-	this.createGame(player);
-	//start running the game on the server,
-	//which will tell them to respawn/start
-	this.startGame(game_instance);
+    if(!this.game) {
+	this.game = {
+	    id : UUID(),
+	    players: []
+	};
+	this.game.gamecore = new game_core( this.game );
+	this.game.gamecore.update( new Date().getTime() );
     }
+    this.game.gamecore.push_player(player, running_id); //clients are pushed to the player list
+    running_id++;
+    player.emit('onjoin', this.game.gamecore.get_game_state());
+    const loc_time = String(this.game.gamecore.local_time).replace('.','-');
+    // joining & game ready are separated for more modularity
+    // in this setting they always happen the same time
+    player.send('s.r.'+ loc_time);
+    player.game = this.game;
+    this.game.active = true;    //set this flag, so that the update loop can run it.
 }; //game_server.findGame
-
-

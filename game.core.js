@@ -20,8 +20,6 @@
 let frame_time = 60/1000; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 22hz
 
-
-
 ( function () {
 
     let lastTime = 0;
@@ -147,11 +145,39 @@ const game_core = function(game_instance) {
 	this.listener = null;
 	this.panner = null;
 	this.jitsi_connect = null;
+	this.user_id = '';
+    }
+    //Start a physics loop, this is separate to the rendering
+    //as this happens at a fixed frequency
+    this.create_physics_simulation();
+
+    //Start a fast paced timer for measuring time easier
+    this.create_timer();
+    if (!this.server) { 
+	this.init_ui();
     }
 };
 
+game_core.prototype.get_player_ids = function() {
+    let res = []
+    for (let p in this.players) {
+	if (!this.players.hasOwnProperty(p)) continue;
+	res.push(p.id);
+    }
+    return res;
+};
+
+game_core.prototype.get_game_state = function() {
+    let res = {};
+    for (let p in this.players) {
+	if (!this.players.hasOwnProperty(p)) continue;
+	res[p.id] = p.state;
+    };
+    return res;
+};
+
 game_core.prototype.get_self = function() {
-    return this.players[0];//FIXME
+    return this.players[this.user_id];//FIXME
 };
 // initializer methods have to be public, otw. "this" is not handled well
 game_core.prototype.init_audio = function() {
@@ -243,7 +269,7 @@ game_core.prototype.init_meeting = function() {
     this.jitsi_connect.connect();
 };
 
-this.init_ghosts = function() {
+game_core.prototype.init_ghosts = function() {
     //Debugging ghosts, to help visualise things
     this.ghosts = {
         //Our ghost position on the server
@@ -265,7 +291,7 @@ this.init_ghosts = function() {
     this.ghosts.pos_other.info_color = 'rgba(255,255,255,0.1)';
 }
 
-this.init_ui = function() {
+game_core.prototype.init_ui = function() {
     //Create the default configuration settings
     this.client_create_configuration();
 
@@ -280,9 +306,9 @@ this.init_ui = function() {
     this.client_create_ping_timer();
 
     //Set their colors from the storage or locally
-    this.color = localStorage.getItem('color') || '#cc8822' ;
-    localStorage.setItem('color', this.color);
-    this.get_self().color = this.color;
+//    this.color = localStorage.getItem('color') || '#cc8822' ;
+//    localStorage.setItem('color', this.color);
+//    this.get_self().color = this.color;
 
     //Make this only if requested
     if(String(window.location).indexOf('debug') != -1) {
@@ -294,21 +320,12 @@ game_core.prototype.init = function() {
     //We create a player set, passing them
     //the game that is running them, as well
     if(this.server) {
-        this.players = [new game_player(this, this.host_state, game_instance.player_host)];
+        this.players = [];
     } else {
-        this.players = [new game_player(this, this.host_state)];
+        this.players = [];
 	this.init_ghosts();//FIXME
 	this.init_audio();
 	this.init_meeting();
-    }
-    //Start a physics loop, this is separate to the rendering
-    //as this happens at a fixed frequency
-    this.create_physics_simulation();
-
-    //Start a fast paced timer for measuring time easier
-    this.create_timer();
-    if (!this.server) { 
-	this.init_ui();
     }
 }; // game_core.init()
 
@@ -363,21 +380,22 @@ game_core.prototype.s_lerp = function(s,ts,t) {
   as well as to draw that state when required.
 */
 
-const game_player = function( game_instance, start_state, player_instance) {
-
-    //Store the instance, if any
-    this.instance = player_instance;
-    this.game = game_instance;
+// the game_instance & start_state are required
+const game_player = function( game_instance, start_state, id , socket) {
+    //store the instance
+    this.instance = socket;
+    this.game = game_instance;//FIXME: this is actually a design flaw...
 
     //Set up initial values for our state information
     // FIXME: angles should be normalized
     this.state = this.game.cp_state(start_state);
     this.size = 32;
     this.hsize = this.size / 2;
-    this.info = 'not-connected';
+    this.info = 'no-name';
     this.color = 'rgba(255,255,255,0.1)';
     this.info_color = 'rgba(255,255,255,0.1)';
-    this.id = '';
+    this.id = id;
+    this.call_id = '';
 
     //These are used in moving us around later
     this.cur_state = this.game.cp_state(this.state);
@@ -493,7 +511,9 @@ game_player.prototype.facing_vec = function() {
     return new vec(Math.cos(this.state.dir), Math.sin(this.state.dir));
 }
 
-game_core.prototype.push_player = function(player) {
+game_core.prototype.push_player = function(player, r_id) {
+    r_id = r_id || 0;
+    const p = new game_player( this, {pos: new vec ( 10, 10), dir: 0}, player.id, player);
     this.players.push(player);
 }
 
@@ -509,7 +529,7 @@ game_core.prototype.push_player = function(player) {
 
 //Main update loop
 game_core.prototype.update = function(t) {
-    
+    //console.log('update');
     //Work out the delta time
     this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016;
 
@@ -668,23 +688,18 @@ game_core.prototype.server_update = function(){
 
     //Make a snapshot of the current state, for updating the clients
     this.laststate = {
-        hs  : this.cp_state(this.get_self().state), //'host state', the game creators position
-        cs  : this.cp_state(this.players.other.state),//'client position', the person that joined, their position
-        his : this.get_self().last_input_seq,     //'host input sequence', the last input we processed for the host
-        cis : this.players.other.last_input_seq,    //'client input sequence', the last input we processed for the client
+//        hs  : this.cp_state(this.get_self().state), //'host state', the game creators position
+//        cs  : this.cp_state(this.players.other.state),//'client position', the person that joined, their position
+//        his : this.get_self().last_input_seq,     //'host input sequence', the last input we processed for the host
+//        cis : this.players.other.last_input_seq,    //'client input sequence', the last input we processed for the client
         t   : this.server_time                      // our current local time on the server
     };
 
     //Send the snapshot to the 'host' player
-    if(this.get_self().instance) {
-        this.get_self().instance.emit( 'onserverupdate', this.laststate );
+    for (let p in this.players) {
+	if (!this.players.hasOwnProperty(p)) continue;
+	p.instance.emit( 'onserverupdate', this.laststate );
     }
-
-    //Send the snapshot to the 'client' player
-    if(this.players.other.instance) {
-        this.players.other.instance.emit( 'onserverupdate', this.laststate );
-    }
-
 }; //game_core.server_update
 
 game_core.prototype.unpack_server_data = function(data) {
@@ -1064,7 +1079,7 @@ game_core.prototype.client_update_physics = function() {
     //Fetch the new direction from the input buffer,
     //and apply it to the state so we can smooth it in the visual state
 
-    if(this.client_predict) {
+    if(this.get_self() && this.client_predict) {
         const nd = this.process_input(this.get_self());
 	this.get_self().cur_state = this.apply_mvmnt( this.get_self().cur_state, nd);
         this.get_self().state_time = this.local_time;
@@ -1073,6 +1088,7 @@ game_core.prototype.client_update_physics = function() {
 }; //game_core.client_update_physics
 
 game_core.prototype.client_update = function() {
+    if (!this.get_self()) return;
 
     //Clear the screen area
     if (!this.traces) {
@@ -1263,16 +1279,16 @@ game_core.prototype.client_create_debug_gui = function() {
 
     const _playersettings = this.gui.addFolder('Your settings');
 
-    this.colorcontrol = _playersettings.addColor(this, 'color');
+//    this.colorcontrol = _playersettings.addColor(this, 'color');
 
     //We want to know when we change our color so we can tell
     //the server to tell the other clients for us
-    this.colorcontrol.onChange(function(value) {
+/*    this.colorcontrol.onChange(function(value) {
         this.get_self().color = value;
         localStorage.setItem('color', value);
         this.socket.send('c.' + value);
     }.bind(this));
-
+*/
     _playersettings.open();
 
     const _drawsettings = this.gui.addFolder('Drawing');
@@ -1343,78 +1359,30 @@ game_core.prototype.client_onreadygame = function(data) {
 
     const server_time = parseFloat(data.replace('-','.'));
 
-    const player_host = this.get_self().host ?  this.get_self() : this.players.other;
-    const player_client = this.get_self().host ?  this.players.other : this.get_self();
-
     this.local_time = server_time + this.net_latency;
     console.log('server time is about ' + this.local_time);
 
-    //Store their info colors for clarity. server is always blue
-    player_host.info_color = '#2288cc';
-    player_client.info_color = '#cc8822';
-    
-    //Update their information
-    player_host.info = 'local_pos(hosting)';
-    player_client.info = 'local_pos(joined)';
-
-    this.get_self().info = 'YOU ' + this.get_self().info;
-
-    //Make sure colors are synced up
-    this.socket.send('c.' + this.get_self().color);
+    this.init();
 
 }; //client_onreadygame
 
 game_core.prototype.client_onjoingame = function(data) {
-
-    //We are not the host
-    this.get_self().host = false;
-    //Update the local state
-    this.get_self().info = 'connected.joined.waiting';
-    this.get_self().info_color = '#00bb00';
-
-    //Make sure the positions match servers and other clients
-    this.client_reset_positions();
-
+    console.log('onjoin');
+    for (let [p_id, p_state] in data) {
+	if (!data.hasOwnProperty(p_id)) continue;
+	this.players.push(new game_player(this, p_state, p_id));
+    }
+    this.players.sort(function (a,b) {
+	return a.localeCompare(b);
+    });
 }; //client_onjoingame
 
-game_core.prototype.client_onhostgame = function(data) {
-
-    //The server sends the time when asking us to host, but it should be a new game.
-    //so the value will be really small anyway (15 or 16ms)
-    const server_time = parseFloat(data.replace('-','.'));
-
-    //Get an estimate of the current time on the server
-    this.local_time = server_time + this.net_latency;
-
-    //Set the flag that we are hosting, this helps us position respawns correctly
-    this.get_self().host = true;
-
-    //Update debugging information to display state
-    this.get_self().info = 'hosting.waiting for a player';
-    this.get_self().info_color = '#cc0000';
-
-    //Make sure we start in the correct place as the host.
-    this.client_reset_positions();
-
-}; //client_onhostgame
-
 game_core.prototype.client_onconnected = function(data) {
-
+    console.log('onconnected');
     //The server responded that we are now in a game,
-    //this lets us store the information about ourselves and set the colors
-    //to show we are now ready to be playing.
-    this.get_self().id = data.id;
-    this.get_self().info_color = '#cc0000';
-    this.get_self().info = 'connected';
-    this.get_self().online = true;
-
+    //this lets us store our id
+    this.user_id = data.id;
 }; //client_onconnected
-
-game_core.prototype.client_on_otherclientcolorchange = function(data) {
-
-    this.players.other.color = data;
-
-}; //game_core.client_on_otherclientcolorchange
 
 game_core.prototype.client_onping = function(data) {
 
@@ -1423,7 +1391,7 @@ game_core.prototype.client_onping = function(data) {
 
 }; //client_onping
 
-game_core.prototype.client_onnetmessage = function(data) {
+game_core.prototype.client_onnetmessage = function(data) {//FIXME: replace every send with emit & remove this
 
     const commands = data.split('.');
     const command = commands[0];
@@ -1467,7 +1435,6 @@ game_core.prototype.client_ondisconnect = function(data) {
 
     this.get_self().info_color = 'rgba(255,255,255,0.1)';
     this.get_self().info = 'not-connected';
-    this.get_self().online = false;
 
     this.players.other.info_color = 'rgba(255,255,255,0.1)';
     this.players.other.info = 'not-connected';
@@ -1495,6 +1462,8 @@ game_core.prototype.client_connect_to_server = function() {
     this.socket.on('error', this.client_ondisconnect.bind(this));
     //On message from the server, we parse the commands and send it to the handlers
     this.socket.on('message', this.client_onnetmessage.bind(this));
+
+    this.socket.on('onjoingame', this.client_onjoingame.bind(this));
 
 }; //game_core.client_connect_to_server
 
