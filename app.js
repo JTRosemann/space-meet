@@ -106,7 +106,7 @@
 
             //Now we want to handle some of the messages that clients will send.
             //They send messages here, and we send them to the game_server to handle.
-        client.on('message', function(m) {
+        client.on('message', function(m) {//FIXME: don't use 'message' & send
 
             game_server.onMessage(client, m);
 
@@ -125,7 +125,7 @@
             if(client.game && client.game.id) {
 
                 //player leaving a game should destroy that game
-                game_server.endGame(client.game.id, client.userid);
+                game_server.disconnect(client.game.id, client.userid);
 
             } //client.game_id
 
