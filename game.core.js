@@ -186,6 +186,9 @@ game_core.prototype.get_game_state = function() {
 */
 
 game_core.prototype.push_player = function(player) {
+    for (const p of this.players) {
+	if (p.id == player.id) return;//don't add someone who is already there
+    }
     this.players.push(player);
     this.players.sort(function (a,b) {
 	return a.id.localeCompare(b.id);
@@ -228,11 +231,9 @@ game_core.prototype.set_game = function(game_data) {
     for (const p of game_data.players) {
 	//	if (!game_data.players.hasOwnProperty(p_id)) continue;
 	const socket = p.socket || '';//no socket info for the client
-	this.players.push(new game_player(this, format_state(p.state), p.id, p.call_id, socket));
+	const player = new game_player(this, format_state(p.state), p.id, p.call_id, socket);
+	this.push_player(player);
     }
-    this.players.sort(function (a,b) {
-	return a.id.localeCompare(b.id);
-    });
 }; //set_game
     
 game_core.prototype.get_self = function() {
@@ -250,17 +251,22 @@ game_core.prototype.get_self = function() {
 // initializer methods have to be public, otw. "this" is not handled well
     
 
-game_core.prototype.server_on_update_cid = function(data) {
-    for (const p of this.players) {
-	if (p.id == data.id) {
-	    p.call_id = data.call_id;
-	} else {
-	    p.instance.emit(data);
+game_core.prototype.server_on_update_cid = function (u_id) {
+    return function(data) {
+	console.log('update cid');
+	for (const p of this.players) {
+	    if (p.id == u_id) {
+		p.call_id = data;
+	    } else {
+		const msg = {id: u_id, call_id: data};
+		p.instance.emit('on_update_cid', msg);
+	    }
 	}
-    }
+    };
 };
 
 game_core.prototype.client_on_update_cid = function(data) {
+    console.log('update cid client');
     for (const p of this.players) {
 	if (p.id == data.id) {
 	    p.call_id = data.call_id;
@@ -474,14 +480,14 @@ game_player.prototype.add_audio_track = function(stream) {
 };
 
 game_core.prototype.onConnectionSuccess = function() {
-    const thisgame = this;//to be able to refer to 'this' in event handlers (they are called from somewhere else, i.e. in another 'this')
-    return function on_connection_success() {
+//    const thisgame = this;//to be able to refer to 'this' in event handlers (they are called from somewhere else, i.e. in another 'this')
+//    return function on_connection_success() {
 	console.log('onConnectionSuccess');
 	const conf_opt = { openBridgeChannel: true };
-	const jitsi_conf = thisgame.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
+	const jitsi_conf = this.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
 	
 	jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, track => {
-	    for (const p of thisgame.players) {
+	    for (const p of this.players) {
 		const p_id = track.getParticipantId();
 		if (p.call_id == p_id) {
 		    if (track.getType() == 'audio') {
@@ -497,10 +503,10 @@ game_core.prototype.onConnectionSuccess = function() {
 		}
 	    }
 	});
-	thisgame.get_self().call_id = jitsi_conf.myUserId();
+	this.get_self().call_id = jitsi_conf.myUserId();
 	this.socket.emit('on_update_cid', this.get_self().call_id);
 	jitsi_conf.join();
-    };
+//    };
 }; // game_core.onConnectionSuccess
 
 /*

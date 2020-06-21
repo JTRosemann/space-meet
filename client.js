@@ -65,6 +65,8 @@ game_core.prototype.client_connect_to_server = function() {
 
     this.socket.on('on_push_player', this.client_on_push_player.bind(this));
 
+    this.socket.on('on_update_cid', this.client_on_update_cid.bind(this));
+
 }; //game_core.client_connect_to_server
 
 game_core.prototype.init_ui = function() {
@@ -132,7 +134,7 @@ game_core.prototype.init_meeting = function() {
     this.jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
     this.jitsi_connect.addEventListener(
 	JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-	this.onConnectionSuccess());
+	this.onConnectionSuccess.bind(this));
     this.jitsi_connect.addEventListener(
 	JitsiMeetJS.events.connection.CONNECTION_FAILED,
 	this.onConnectionFailed);
