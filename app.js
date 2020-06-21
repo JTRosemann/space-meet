@@ -131,6 +131,7 @@
 
         }); //client.on disconnect
 
-	client.on('on_update_cid', client.game.gamecore.server_on_update_cid);
+	client.on('on_update_cid', (client.game.gamecore.server_on_update_cid(client.userid)).bind(client.game.gamecore));
+//	client.on('on_update_cid', function (data) { console.log('cid_called' + client.userid)});
      
     }); //sio.sockets.on connection
