@@ -130,5 +130,7 @@
             } //client.game_id
 
         }); //client.on disconnect
+
+	client.on('on_update_cid', client.game.gamecore.server_on_update_cid);
      
     }); //sio.sockets.on connection

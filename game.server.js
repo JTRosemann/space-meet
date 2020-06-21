@@ -107,26 +107,23 @@ game_server.disconnect = function(gameid, userid) {
     }
 }; //game_server.disconnect
 
-game_server.findGame = function(player) {
-    this.log('looking for a game. We have : ?');
-
-    //so there are games active,
-    //lets see if one needs another player
+game_server.findGame = function(client) {
+    this.log('looking for a game.');
     if(!this.game) {
 	this.game = {
 	    id : UUID(),
-	    players: []
+	    clients: []
 	};
 	this.game.gamecore = new game_core( this.game );
-	this.game.gamecore.update( new Date().getTime() );
+	this.game.gamecore.update( new Date().getTime() );// starts the update loop
     }
-    this.game.gamecore.push_player(player, running_id); //clients are pushed to the player list
+    this.game.gamecore.push_client(client, running_id); //clients are pushed to the client list
     running_id++;
-    player.emit('onjoin', this.game.gamecore.get_game_state());
-    const loc_time = String(this.game.gamecore.local_time).replace('.','-');
-    // joining & game ready are separated for more modularity
-    // in this setting they always happen the same time
-    player.send('s.r.'+ loc_time);
-    player.game = this.game;
+    const data = {
+	game: this.game.gamecore.get_game_state(),
+	time: this.game.gamecore.local_time
+    };
+    client.emit('onjoingame', data);
+    client.game = this.game;
     this.game.active = true;    //set this flag, so that the update loop can run it.
 }; //game_server.findGame
