@@ -61,6 +61,10 @@ game_core.prototype.client_connect_to_server = function() {
 
     this.socket.on('onjoingame', this.client_onjoingame.bind(this));
 
+    this.socket.on('on_rm_player', this.client_on_rm_player.bind(this));
+
+    this.socket.on('on_push_player', this.client_on_push_player.bind(this));
+
 }; //game_core.client_connect_to_server
 
 game_core.prototype.init_ui = function() {

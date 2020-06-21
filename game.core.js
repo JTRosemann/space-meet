@@ -192,9 +192,19 @@ game_core.prototype.push_player = function(player) {
     });
 };
 
+game_core.prototype.notify = function(listener, msg) {
+    for (const p of this.players) {
+	p.instance.emit(listener, msg);
+    }
+};
+
 game_core.prototype.rm_player = function(id) {
-    //FIXME
-    return;
+    this.players = this.players.filter(p => p.id !== id);
+    this.notify('on_rm_player', id);
+};
+//FIXME: should I also remove other data?
+game_core.prototype.client_on_rm_player = function(data) {
+    this.players = this.players.filter(p => p.id !== data);
 };
 
 game_core.prototype.push_client = function(client, r_id) {
@@ -202,18 +212,27 @@ game_core.prototype.push_client = function(client, r_id) {
     const start_state = {pos: new vec( r_id * 40, 50 ), dir: 0};
     const p = new game_player( this, start_state, client.userid, '' /* call_id */, client);//Beware: id != userid
     this.push_player(p);
+    this.notify('on_push_player', {id: client.userid, call_id: '', state: start_state});
 }; // push_client
 
 const format_state = function(state) {
     return {pos: new vec(state.pos.x, state.pos.y), dir: state.dir};
 };
 
+game_core.prototype.client_on_push_player = function(data) {
+    const player = new game_player(this, format_state(data.state), data.id, data.call_id);
+    this.push_player(player);
+};
+		      
 game_core.prototype.set_game = function(game_data) {
     for (const p of game_data.players) {
 	//	if (!game_data.players.hasOwnProperty(p_id)) continue;
 	const socket = p.socket || '';//no socket info for the client
 	this.players.push(new game_player(this, format_state(p.state), p.id, p.call_id, socket));
     }
+    this.players.sort(function (a,b) {
+	return a.id.localeCompare(b.id);
+    });
 }; //set_game
     
 game_core.prototype.get_self = function() {
@@ -931,14 +950,26 @@ game_core.prototype.client_process_net_updates = function() {
 
         //These are the exact server positions from this tick, but only for the ghost
 
+	/*this.foreach_player = function(f) {
+	    for (const p of this.players) {
+		if (p.id == this.user_id) continue;
+		if (
+		f(p);
+	    }
+	};*/
+
 	for (const p of this.players) {
 	    if (p.id == this.user_id) continue;//skip yourself
 	    const other_data = latest_server_data.players[p.id];
+	    const target_data = target.players[p.id];
+	    const past_data = previous.players[p.id];
+	    //maybe we don't have an update from a new player yet
+	    if (!other_data || !target_data || !past_data) continue;
             const other_server_state = other_data.state;
 
             //The other players positions in this timeline, behind us and in front of us
-            const other_target_state = target.players[p.id].state;
-            const other_past_state = previous.players[p.id].state;
+            const other_target_state = target_data.state;
+            const other_past_state = past_data.state;
 	    
             //update the dest block, this is a simple lerp
             //to the target from the previous point in the server_updates buffer
@@ -999,7 +1030,9 @@ game_core.prototype.client_onserverupdate_recieved = function(raw_data){
     
     if(this.naive_approach) {
 	for (const p of this.players) {
-	    p.state = this.cp_state(data.players[p.id].state);
+	    const p_data = data.players[p.id];
+	    if (!p_data) continue;
+	    p.state = this.cp_state(p_data.state);
 	}
     } else {
 
