@@ -479,36 +479,6 @@ game_player.prototype.add_audio_track = function(stream) {
     track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(this.audio_ctx.destination);
 };
 
-game_core.prototype.onConnectionSuccess = function() {
-//    const thisgame = this;//to be able to refer to 'this' in event handlers (they are called from somewhere else, i.e. in another 'this')
-//    return function on_connection_success() {
-	console.log('onConnectionSuccess');
-	const conf_opt = { openBridgeChannel: true };
-	const jitsi_conf = this.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
-	
-	jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, track => {
-	    for (const p of this.players) {
-		const p_id = track.getParticipantId();
-		if (p.call_id == p_id) {
-		    if (track.getType() == 'audio') {
-			// if there is a player with a matching id, add the audio track
-			// FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
-			p.add_audio_track(track.stream);
-			break;
-		    } else if (track.getType() == 'video') {
-			$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;'/>`);
-			const vid = document.getElementById('vid${p_id}');
-			track.attach(vid);
-		    }
-		}
-	    }
-	});
-	this.get_self().call_id = jitsi_conf.myUserId();
-	this.socket.emit('on_update_cid', this.get_self().call_id);
-	jitsi_conf.join();
-//    };
-}; // game_core.onConnectionSuccess
-
 /*
 
   Common functions
