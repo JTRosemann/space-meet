@@ -29,6 +29,55 @@ game_core.prototype.client_onconnected = function(data) {
     this.user_id = data.id;
 }; //client_onconnected
 
+game_core.prototype.onRemoteTrack = function(track) {
+    for (const p of this.players) {
+	const p_id = track.getParticipantId();
+	if (p.call_id == p_id) {
+	    if (track.getType() == 'audio') {
+		// if there is a player with a matching id, add the audio track
+		// FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
+		p.add_audio_track(track.stream);
+		break;
+	    } else if (track.getType() == 'video') {
+		$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;'/>`);
+		const vid = document.getElementById('vid${p_id}');
+		track.attach(vid);
+	    }
+	}
+    }
+};
+
+game_core.prototype.add_all_loc_tracks = function() {
+/*    if (this.joined_jitsi) {
+	for (const track of tracks) {
+	    this.jitsi_conf.addTrack(track);
+	}
+    }*/
+};
+
+game_core.prototype.onLocalTracks = function(tracks) {
+/*    this.loc_tracks = tracks;
+    this.add_all_loc_tracks();*/
+};
+
+game_core.prototype.onConferenceJoined = function() {
+/*    this.joined_jitsi = true;
+    this.add_all_loc_tracks();*/
+};
+
+game_core.prototype.onConnectionSuccess = function() {
+    console.log('onConnectionSuccess');
+    const conf_opt = { openBridgeChannel: true };
+    this.jitsi_conf = this.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
+    
+    this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
+    this.jitsi_conf.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
+    this.get_self().call_id = this.jitsi_conf.myUserId();
+    this.socket.emit('on_update_cid', this.get_self().call_id);
+
+    this.jitsi_conf.join();
+}; // game_core.onConnectionSuccess
+
 game_core.prototype.client_ondisconnect = function(data) {
     
     //When we disconnect, we don't know if the other player is
@@ -139,6 +188,11 @@ game_core.prototype.init_meeting = function() {
 	JitsiMeetJS.events.connection.CONNECTION_FAILED,
 	this.onConnectionFailed);
     this.jitsi_connect.connect();
+
+    this.loc_tracks = [];
+    const loc_tracks_opt = {devices: [ 'audio', 'video' ] };
+    //FIXME: uncaught exception: Object -> in chrome it's device not found -- but chrome also fails to open cam & mic on jitsit, so probably unrelated
+    JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)) // 'desktop' for screensharing
 };
 
 //When loading, we store references to our
