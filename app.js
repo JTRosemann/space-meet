@@ -19,7 +19,7 @@
         http            = require('http'),
         app             = express(),
         server          = http.createServer(app);
-
+//FIXME: CORS request error (in Chrome), maybe this way: https://daveceddia.com/access-control-allow-origin-cors-errors-in-react-express/
 /* Express server set up. */
 
 //The express server handles passing our content to the browser,
