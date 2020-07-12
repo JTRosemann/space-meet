@@ -3,7 +3,7 @@
 
     written by : http://underscorediscovery.ca
     written for : http://buildnewgames.com/real-time-multiplayer/
-    
+
     MIT Licensed.
 */
 
@@ -48,28 +48,28 @@ game_core.prototype.onRemoteTrack = function(track) {
 };
 
 game_core.prototype.add_all_loc_tracks = function() {
-/*    if (this.joined_jitsi) {
+    if (this.joined_jitsi) {
 	for (const track of tracks) {
 	    this.jitsi_conf.addTrack(track);
 	}
-    }*/
+    }
 };
 
 game_core.prototype.onLocalTracks = function(tracks) {
-/*    this.loc_tracks = tracks;
-    this.add_all_loc_tracks();*/
+    this.loc_tracks = tracks;
+    this.add_all_loc_tracks();
 };
 
 game_core.prototype.onConferenceJoined = function() {
-/*    this.joined_jitsi = true;
-    this.add_all_loc_tracks();*/
+    this.joined_jitsi = true;
+    this.add_all_loc_tracks();
 };
 
 game_core.prototype.onConnectionSuccess = function() {
     console.log('onConnectionSuccess');
     const conf_opt = { openBridgeChannel: true };
     this.jitsi_conf = this.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
-    
+
     this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
     this.jitsi_conf.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
     this.get_self().call_id = this.jitsi_conf.myUserId();
@@ -79,7 +79,7 @@ game_core.prototype.onConnectionSuccess = function() {
 }; // game_core.onConnectionSuccess
 
 game_core.prototype.client_ondisconnect = function(data) {
-    
+
     //When we disconnect, we don't know if the other player is
     //connected or not, and since we aren't, everything goes to offline
     //FIXME
@@ -87,7 +87,7 @@ game_core.prototype.client_ondisconnect = function(data) {
 }; //client_ondisconnect
 
 game_core.prototype.client_connect_to_server = function() {
-    
+
     //Store a local reference to our connection to the server
     this.socket = io.connect();
 
@@ -144,7 +144,7 @@ game_core.prototype.init_ui = function() {
 
     //Fetch the viewport
     game.viewport = document.getElementById('viewport');
-    
+
     //Adjust their size
     game.viewport.width = game.viewport.offsetWidth;
     game.viewport.height = game.viewport.offsetHeight;
@@ -174,11 +174,11 @@ game_core.prototype.init_meeting = function() {
 	    muc: 'conference.beta.meet.jit.si'
 	},
 	serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
-	
+
 	// The name of client node advertised in XEP-0115 'c' stanza
 	clientNode: 'beta.meet.jit.si'
     };
-    
+
     JitsiMeetJS.init(init_opt);
     this.jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
     this.jitsi_connect.addEventListener(
@@ -201,7 +201,7 @@ window.onload = function(){
 
     //Create our game client instance.
     game = new game_core();
-     
+
     game.init_ui();
 
 }; //window.onload
