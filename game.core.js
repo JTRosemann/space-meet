@@ -1,9 +1,9 @@
 /*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
     Copyright 2020 Julian Rosemann
-    
+
     written by : http://underscorediscovery.ca
     written for : http://buildnewgames.com/real-time-multiplayer/
-    
+
     MIT Licensed.
 */
 
@@ -102,8 +102,8 @@ vec.prototype.v_lerp = function(tv,t) {
 		   lerp(this.y, tv.y, t));
 };
 
-/** 
-    The game_core class 
+/**
+    The game_core class
 */
 
 const game_core = function(game_instance) {
@@ -121,7 +121,7 @@ const game_core = function(game_instance) {
     this.players = [];
 
     //The speed at which the clients move.
-    this.player_mv_speed  = 120; // 
+    this.player_mv_speed  = 120; //
     this.player_trn_speed = 3;
 
     // the length of the physics loop
@@ -226,7 +226,7 @@ game_core.prototype.client_on_push_player = function(data) {
     const player = new game_player(this, format_state(data.state), data.id, data.call_id);
     this.push_player(player);
 };
-		      
+
 game_core.prototype.set_game = function(game_data) {
     for (const p of game_data.players) {
 	//	if (!game_data.players.hasOwnProperty(p_id)) continue;
@@ -235,7 +235,7 @@ game_core.prototype.set_game = function(game_data) {
 	this.push_player(player);
     }
 }; //set_game
-    
+
 game_core.prototype.get_self = function() {
     if (!this.self) {
 	for (const p of this.players) {
@@ -249,7 +249,7 @@ game_core.prototype.get_self = function() {
     return this.self;
 };
 // initializer methods have to be public, otw. "this" is not handled well
-    
+
 
 game_core.prototype.server_on_update_cid = function (u_id) {
     return function(data) {
@@ -305,7 +305,7 @@ game_core.prototype.v_add = function(a,b) { return { x:(a.x+b.x).fixed(), y:(a.y
 //move the player & update the direction
 game_core.prototype.apply_mvmnt = function (state, mvmnt) {
     return { pos: state.pos.add(mvmnt.pos),
-	     dir: mvmnt.dir 
+	     dir: mvmnt.dir
 	   }
 };
 //Subtract a 2d vector with another one and return the resulting vector
@@ -369,7 +369,7 @@ game_player.prototype.draw_head = function(){
     const pos = this.state.pos.sub(this.game.get_self().state.pos);
     const abs_val = pos.abs();
     const dist_c = this.game.viewport.width/6;
-    
+
     const sin_alpha
 	  = this.game.get_self().hsize /
 	  Math.max(this.size, abs_val);
@@ -419,7 +419,7 @@ game_player.prototype.draw_self = function(){
 
     //Set the color for this player
     this.game.ctx.fillStyle = this.color;
-    
+
     if (game.show_support) {
 	this.game.ctx.beginPath();
 	this.game.ctx.arc(0,0,this.hsize,0,2*Math.PI);
@@ -438,21 +438,21 @@ game_player.prototype.draw_self = function(){
     //Draw a status update
     this.game.ctx.fillStyle = this.info_color;
     this.game.ctx.fillText(this.info, 10, 4);
-    
+
 }; //game_player.draw_self
 
 game_player.prototype.draw = function() {
     this.game.ctx.save();
     this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
     this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
-    
+
     this.draw_self();
     this.game.ctx.restore();
 
     //Draw a status update
     this.game.ctx.fillStyle = this.info_color;
     this.game.ctx.fillText(this.info, this.state.pos.x+10, this.state.pos.y + 4);
-    
+
 }; //game_player.draw
 
 game_player.prototype.facing_vec = function() {
@@ -460,7 +460,7 @@ game_player.prototype.facing_vec = function() {
 }
 game_player.prototype.add_audio_track = function(stream) {
     const gain_node = this.game.audio_ctx.createGain();
-    const stereo_panner = new StereoPannerNode(audio_ctx, {pan: 0} /*stereo balance*/);
+    const stereo_panner = new StereoPannerNode(this.game.audio_ctx, {pan: 0} /*stereo balance*/);
     const track = this.game.audio_ctx.createMediaStreamSource(stream);
     const panner_model = 'HRTF';
     //for now, we don't use cones for simulation of speaking direction. this may be added later on
@@ -469,20 +469,20 @@ game_player.prototype.add_audio_track = function(stream) {
     const max_distance = 10000;
     const ref_distance = 1;
     const roll_off = 20;
-    this.panner = new PannerNode(this.audio_ctx, {
+    this.panner = new PannerNode(this.game.audio_ctx, {
 	panningModel: panner_model,
 	distanceModel: distance_model,
 	refDistance: ref_distance,
 	maxDistance: max_distance,
 	rolloffFactor: roll_off
     });
-    track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(this.audio_ctx.destination);
+    track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(this.game.audio_ctx.destination);
 };
 
 /*
 
   Common functions
-  
+
   These functions are shared between client and server, and are generic
   for the game state. The client functions are client_* and server functions
   are server_* so these have no prefix.
@@ -526,7 +526,7 @@ game_core.prototype.check_collision = function( item ) {
     if(item.state.pos.x >= item.pos_limits.x_max ) {
         item.state.pos.x = item.pos_limits.x_max;
     }
-    
+
     //Roof wall.
     if(item.state.pos.y <= item.pos_limits.y_min) {
         item.state.pos.y = item.pos_limits.y_min;
@@ -540,7 +540,7 @@ game_core.prototype.check_collision = function( item ) {
     //Fixed point helps be more deterministic
     item.state.pos.x = item.state.pos.x.fixed(4);
     item.state.pos.y = item.state.pos.y.fixed(4);
-    
+
 }; //game_core.check_collision
 
 
@@ -618,7 +618,7 @@ game_core.prototype.update_physics = function() {
 /*
 
   Server side functions
-  
+
   These functions below are specific to the server side only,
   and usually start with server_* to make things clearer.
 
@@ -630,7 +630,7 @@ game_core.prototype.server_update_physics = function() {
 
 	const mvmnt = this.process_input(p);
 	p.state = this.apply_mvmnt( p.state, mvmnt );
-	
+
 	//Keep the physics position in the world
 	this.check_collision( p );
 	p.inputs = []; //we have cleared the input buffer, so remove this
@@ -654,7 +654,7 @@ game_core.prototype.server_update = function(){
     let p_s = {};
     for (const p of this.players) {
 	p_s[p.id] = p.get_input_obj();
-    }	
+    }
     this.laststate = {
 	players: p_s,
         t: this.server_time                      // our current local time on the server
@@ -830,13 +830,13 @@ game_core.prototype.client_process_net_prediction_correction = function() {
             //Now we reapply all the inputs that we have locally that
             //the server hasn't yet confirmed. This will 'keep' our position the same,
             //but also confirm the server position at the same time.
-	    
+
 	    // DEBUGGING CODE
 
 	    //	const before = this.get_self().cur_state.dir;
             this.client_update_physics();
             this.client_update_local_position();
-	    /*		
+	    /*
 			const after = this.get_self().cur_state.dir;
 			if (before != after) {
 			console.log("before");
@@ -946,7 +946,7 @@ game_core.prototype.client_process_net_updates = function() {
             //The other players positions in this timeline, behind us and in front of us
             const other_target_state = target_data.state;
             const other_past_state = past_data.state;
-	    
+
             //update the dest block, this is a simple lerp
             //to the target from the previous point in the server_updates buffer
 //            this.ghosts.server_pos_other.state = this.cp_state(other_server_state);
@@ -954,7 +954,7 @@ game_core.prototype.client_process_net_updates = function() {
 	    const ghost_pos_other = this.s_lerp(other_past_state, other_target_state, time_point);
             if(this.client_smoothing) {
 		p.state = this.s_lerp( p.state, ghost_pos_other, this._pdt*this.client_smooth);
-            } else { 
+            } else {
 		p.state = this.cp_state(ghost_pos_other);
             }
 	}
@@ -967,7 +967,7 @@ game_core.prototype.client_process_net_updates = function() {
 
             //The other players positions in this timeline, behind us and in front of us
 	    const my_target_state = target.players[this.user_id].state;
-	    
+
 	    const my_past_state = previous.players[this.user_id].state;
 
             //Snap the ghost to the new server position
@@ -992,7 +992,7 @@ game_core.prototype.client_onserverupdate_recieved = function(raw_data){
     //Lets clarify the information we have locally. One of the players is 'hosting' and
     //the other is a joined in client, so we name these host and client for making sure
     //the positions we get from the server are mapped onto the correct local sprites
-    
+
     //Store the server time (this is offset by the latency in the network, by the time we get it)
     this.server_time = data.t;
     //Update our local offset time from the last server update
@@ -1003,7 +1003,7 @@ game_core.prototype.client_onserverupdate_recieved = function(raw_data){
     //but causes terrible lag when any ping/latency is introduced. The player can not deduce any
     //information to interpolate with so it misses positions, and packet loss destroys this approach
     //even more so. See 'the bouncing ball problem' on Wikipedia.
-    
+
     if(this.naive_approach) {
 	for (const p of this.players) {
 	    const p_data = data.players[p.id];
@@ -1033,7 +1033,7 @@ game_core.prototype.client_onserverupdate_recieved = function(raw_data){
         //Handle the latest positions from the server
         //and make sure to correct our local predictions, making the server have final say.
         this.client_process_net_prediction_correction();
-        
+
     } //non naive
 
 }; //game_core.client_onserverupdate_recieved
@@ -1043,7 +1043,7 @@ game_core.prototype.client_update_local_position = function(){
     if(this.client_predict) {
         //Make sure the visual position matches the states we have stored
 	this.get_self().state = this.get_self().cur_state;
-        
+
         //We handle collision on client if predicting.
         this.check_collision( this.get_self() );
 
@@ -1105,15 +1105,15 @@ game_core.prototype.client_update = function() {
 	}
     }
 
-    //Now they should have updated, we can draw the entity    
+    //Now they should have updated, we can draw the entity
     if (this.rel_pos) {
 
 	this.ctx.save();
 	const mid_x = this.viewport.width/2;
 	const mid_y = this.viewport.height/2;
 	this.ctx.translate(mid_x, mid_y);
-	this.ctx.rotate(-Math.PI/2);	
-	
+	this.ctx.rotate(-Math.PI/2);
+
 	this.get_self().draw_self();
 	this.ctx.rotate(-this.get_self().state.dir);
 	for (const p of this.players) {
@@ -1151,7 +1151,7 @@ game_core.prototype.client_update = function() {
 	//	this.ctx.fillStyle = "#FF0000";
 	//	this.ctx.fillRect(-10, -10, 20, 20);// rotation point
 
-	this.ctx.translate(-this.get_self().state.pos.x, -this.get_self().state.pos.y);	
+	this.ctx.translate(-this.get_self().state.pos.x, -this.get_self().state.pos.y);
 	//	this.ctx.fillStyle = "#FF8800";
 	//	this.ctx.fillRect(-10, -10, 20, 20);// (0,0)
 	this.ctx.strokeStyle = "red";
@@ -1196,7 +1196,7 @@ game_core.prototype.create_timer = function(){
 }
 
 game_core.prototype.create_physics_simulation = function() {
-    
+
     setInterval(function(){
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
         this._pdte = new Date().getTime();
@@ -1217,12 +1217,12 @@ game_core.prototype.client_create_ping_timer = function() {
         this.socket.send('p.' + (this.last_ping_time) );
 
     }.bind(this), 1000);
-    
+
 }; //game_core.client_create_ping_timer
 
 
 game_core.prototype.client_create_configuration = function() {
-    
+
     this.rel_pos = true;                //use relative position to player self or absolute positions
     this.traces = false;                 //whether to show traces of drawn items (i.e. don't clear)
     this.clip = true;                   //whether to clip everything around the map circle
@@ -1252,7 +1252,7 @@ game_core.prototype.client_create_configuration = function() {
 
     this.client_time = 0.01;            //Our local 'clock' based on server time - client interpolation(net_offset).
     this.server_time = 0.01;            //The time the server reported it was at, last we heard from it
-    
+
     this.dt = 0.016;                    //The time that the last frame took to run
     this.fps = 0;                       //The current instantaneous fps (1/this.dt)
     this.fps_avg_count = 0;             //The number of samples we have taken for fps_avg
@@ -1298,7 +1298,7 @@ game_core.prototype.client_create_debug_gui = function() {
     _othersettings.add(this, 'pos_audio').listen();
 
     const _debugsettings = this.gui.addFolder('Debug view');
-    
+
     _debugsettings.add(this, 'show_help').listen();
     _debugsettings.add(this, 'fps_avg').listen();
     _debugsettings.add(this, 'show_server_pos').listen();
@@ -1320,7 +1320,7 @@ game_core.prototype.client_create_debug_gui = function() {
     _consettings.open();
 
     const _netsettings = this.gui.addFolder('Networking');
-    
+
     _netsettings.add(this, 'net_offset').min(0.01).step(0.001).listen();
     _netsettings.add(this, 'server_time').step(0.001).listen();
     _netsettings.add(this, 'client_time').step(0.001).listen();
@@ -1387,7 +1387,7 @@ game_core.prototype.client_onnetmessage = function(data) {//FIXME: replace every
 
         break; //'s'
     } //command
-    
+
 }; //client_onnetmessage
 
 

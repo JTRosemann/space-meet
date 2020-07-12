@@ -39,9 +39,13 @@ game_core.prototype.onRemoteTrack = function(track) {
 		p.add_audio_track(track.stream);
 		break;
 	    } else if (track.getType() == 'video') {
-		$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;'/>`);
-		const vid = document.getElementById('vid${p_id}');
-		track.attach(vid);
+		$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' />`);
+//		$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
+		this.remote_video[`${p_id}`] = track;
+//		setTimeout(function () { // timeout not needed
+		    const vid = document.getElementById(`vid${p_id}`);
+		    track.attach(vid);
+//		}, 500);
 	    }
 	}
     }
@@ -49,7 +53,7 @@ game_core.prototype.onRemoteTrack = function(track) {
 
 game_core.prototype.add_all_loc_tracks = function() {
     if (this.joined_jitsi) {
-	for (const track of tracks) {
+	for (const track of this.loc_tracks) {
 	    this.jitsi_conf.addTrack(track);
 	}
     }
@@ -70,6 +74,7 @@ game_core.prototype.onConnectionSuccess = function() {
     const conf_opt = { openBridgeChannel: true };
     this.jitsi_conf = this.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
 
+    this.remote_video = {};
     this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
     this.jitsi_conf.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
     this.get_self().call_id = this.jitsi_conf.myUserId();
