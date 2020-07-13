@@ -1,13 +1,14 @@
 {
-  "name": "realtime-multiplayer-in-html5",
-  "author" : "Sven Bergström",
-  "description": "An article and demo explaining how multiplayer games work, with a demo in HTML5 using socket.io, node.js and canvas.",
+  "name": "space-meet",
+  "author": "Julian Rosemann",
+  "description": "Space Meet is a meeting space, where you can walk & talk. This is work in progress, it's only a proof of concept yet.",
   "license": "MIT",
   "version": "1.0.0",
   "dependencies": {
     "express": "3.3.x",
-    "socket.io": "0.9.x",
-    "node-uuid": "1.3.3"
+    "ngrok": "^3.2.7",
+    "node-uuid": "1.3.3",
+    "socket.io": "0.9.x"
   },
   "engine": {
     "node": "0.10.x"

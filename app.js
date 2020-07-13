@@ -1,8 +1,8 @@
 /*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
-    
+
     written by : http://underscorediscovery.ca
     written for : http://buildnewgames.com/real-time-multiplayer/
-    
+
     MIT Licensed.
 
     Usage : node app.js
@@ -56,12 +56,17 @@
 
     }); //app.get *
 
+const ngrok = require('ngrok');
+(async function () {
+    const url = await ngrok.connect(4004);
+})();
+
 
 /* Socket.IO server set up. */
 
 //Express and socket.io can work together to serve the socket.io client files for you.
 //This way, when the client requests '/socket.io/' files, socket.io determines what the client needs.
-        
+
         //Create a socket.io instance using our express server
     var sio = io.listen(server);
 
@@ -87,7 +92,7 @@
         //as well as give that client a unique ID to use so we can
         //maintain the list of players.
     sio.sockets.on('connection', function (client) {
-        
+
             //Generate a new UUID, looks something like
             //5b2ca132-64bd-4513-99da-90e838ca47d1
             //and store this on their socket/connection
@@ -102,7 +107,7 @@
 
             //Useful to know when someone connects
         console.log('\t socket.io:: player ' + client.userid + ' connected');
-        
+
 
             //Now we want to handle some of the messages that clients will send.
             //They send messages here, and we send them to the game_server to handle.
@@ -119,7 +124,7 @@
 
                 //Useful to know when soomeone disconnects
             console.log('\t socket.io:: client disconnected ' + client.userid + ' ' + client.game_id);
-            
+
                 //If the client was in a game, set by game_server.findGame,
                 //we can tell the game server to update that game state.
             if(client.game && client.game.id) {
@@ -133,5 +138,5 @@
 
 	client.on('on_update_cid', (client.game.gamecore.server_on_update_cid(client.userid)).bind(client.game.gamecore));
 //	client.on('on_update_cid', function (data) { console.log('cid_called' + client.userid)});
-     
+
     }); //sio.sockets.on connection
