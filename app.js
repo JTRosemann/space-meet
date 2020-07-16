@@ -1,7 +1,5 @@
 /*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
-
-    written by : http://underscorediscovery.ca
-    written for : http://buildnewgames.com/real-time-multiplayer/
+    Copyright 2020 Julian Rosemann
 
     MIT Licensed.
 
