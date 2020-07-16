@@ -336,7 +336,7 @@ const game_player = function( game_instance, start_state, id , call_id, socket) 
     this.size = 32;
     this.hsize = this.size / 2;
     this.info = 'no-name';
-    this.color = 'rgba(255,255,255,0.1)';
+    this.color = 'rgba(255,255,255,0.5)';
     this.info_color = 'rgba(255,255,255,0.1)';
     this.id = id;
     this.call_id = call_id || '';
@@ -1056,7 +1056,7 @@ game_core.prototype.client_update_physics = function() {
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
-    if (!this.traces) {
+    if (!this.traces && this.ctx) {
 	this.ctx.clearRect(0,0,this.viewport.width,this.viewport.height);
     }
 
@@ -1096,8 +1096,7 @@ game_core.prototype.client_update = function() {
     }
 
     //Now they should have updated, we can draw the entity
-    if (this.rel_pos) {
-
+    if (this.ctx) {
 	this.ctx.save();
 	const mid_x = this.viewport.width/2;
 	const mid_y = this.viewport.height/2;
@@ -1157,20 +1156,6 @@ game_core.prototype.client_update = function() {
 	//	this.ctx.rotate(Math.PI/2);
 	//	this.ctx.translate(-mid_x, -mid_y);
 	this.ctx.restore(); // restore removes the need to reset the translations & rotations one by one
-    } else {
-	//FIXME: absolute positions are not supported anymore
-	p.draw();
-	this.get_self().draw();
-        //and these
-	if(this.show_dest_pos && !this.naive_approach) {
-	    this.ghosts.pos_other.draw();
-	}
-
-        //and lastly draw these
-	if(this.show_server_pos && !this.naive_approach) {
-	    this.ghosts.server_pos_self.draw();
-	    this.ghosts.server_pos_other.draw();
-	}
     }
     //Work out the fps average
     this.client_refresh_fps();
@@ -1213,9 +1198,8 @@ game_core.prototype.client_create_ping_timer = function() {
 
 game_core.prototype.client_create_configuration = function() {
 
-    this.rel_pos = true;                //use relative position to player self or absolute positions
     this.traces = false;                 //whether to show traces of drawn items (i.e. don't clear)
-    this.clip = true;                   //whether to clip everything around the map circle
+    this.clip = false;                   //whether to clip everything around the map circle
     this.show_support = false;          //whether to show support lines
     this.show_video = true;             //whether to draw the video in the head
 
@@ -1258,7 +1242,7 @@ game_core.prototype.client_create_debug_gui = function() {
 
     this.gui = new dat.GUI();
 
-    const _playersettings = this.gui.addFolder('Your settings');
+//    const _playersettings = this.gui.addFolder('Your settings');
 
 //    this.colorcontrol = _playersettings.addColor(this, 'color');
 
@@ -1270,14 +1254,15 @@ game_core.prototype.client_create_debug_gui = function() {
         this.socket.send('c.' + value);
     }.bind(this));
 */
-    _playersettings.open();
+//    _playersettings.open();
 
     const _drawsettings = this.gui.addFolder('Drawing');
-    _drawsettings.add(this, 'rel_pos').listen();
     _drawsettings.add(this, 'traces').listen();
     _drawsettings.add(this, 'clip').listen();
     _drawsettings.add(this, 'show_support').listen();
     _drawsettings.add(this, 'show_video').listen();
+
+    _drawsettings.open();
 
     const _othersettings = this.gui.addFolder('Methods');
 
@@ -1295,8 +1280,6 @@ game_core.prototype.client_create_debug_gui = function() {
     _debugsettings.add(this, 'show_dest_pos').listen();
     _debugsettings.add(this, 'local_time').listen();
 
-    _debugsettings.open();
-
     const _consettings = this.gui.addFolder('Connection');
     _consettings.add(this, 'net_latency').step(0.001).listen();
     _consettings.add(this, 'net_ping').step(0.001).listen();
@@ -1307,16 +1290,12 @@ game_core.prototype.client_create_debug_gui = function() {
         this.socket.send('l.' + value);
     }.bind(this));
 
-    _consettings.open();
-
     const _netsettings = this.gui.addFolder('Networking');
 
     _netsettings.add(this, 'net_offset').min(0.01).step(0.001).listen();
     _netsettings.add(this, 'server_time').step(0.001).listen();
     _netsettings.add(this, 'client_time').step(0.001).listen();
     //_netsettings.add(this, 'oldest_tick').step(0.001).listen();
-
-    _netsettings.open();
 
 }; //game_core.client_create_debug_gui
 
@@ -1386,6 +1365,7 @@ game_core.prototype.client_refresh_fps = function() {
 
 game_core.prototype.client_draw_info = function() {
 
+    if (!this.ctx) return;
     //We don't want this to be too distracting
     this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
 
