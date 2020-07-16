@@ -431,8 +431,8 @@ game_player.prototype.draw_self = function(){
     this.game.ctx.fill();
 
     //Draw a status update
-    this.game.ctx.fillStyle = this.info_color;
-    this.game.ctx.fillText(this.info, 10, 4);
+//    this.game.ctx.fillStyle = this.info_color;
+//    this.game.ctx.fillText(this.info, 10, 4);
 
 }; //game_player.draw_self
 
@@ -443,11 +443,6 @@ game_player.prototype.draw = function() {
 
     this.draw_self();
     this.game.ctx.restore();
-
-    //Draw a status update
-    this.game.ctx.fillStyle = this.info_color;
-    this.game.ctx.fillText(this.info, this.state.pos.x+10, this.state.pos.y + 4);
-
 }; //game_player.draw
 
 game_player.prototype.facing_vec = function() {
@@ -1111,10 +1106,6 @@ game_core.prototype.client_update = function() {
 
 	this.get_self().draw_self();
 	this.ctx.rotate(-this.get_self().state.dir);
-	for (const p of this.players) {
-	    if (p.id == this.user_id) continue;
-	    p.draw_head();
-	}
 	if (this.show_support) {
 	    for (const p of this.players) {
 		this.ctx.beginPath()
@@ -1134,6 +1125,10 @@ game_core.prototype.client_update = function() {
 		this.ctx.stroke();
 		this.ctx.rotate(alpha);
 	    }
+	}
+	for (const p of this.players) {
+	    if (p.id == this.user_id) continue;
+	    p.draw_head();
 	}
 	//draw circle
 	this.ctx.beginPath();
