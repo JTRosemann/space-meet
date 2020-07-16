@@ -116,8 +116,6 @@ const game_core = function(game_instance) {
         width : 720,
         height : 480
     };
-    this.host_state = {pos: new vec( 200, 300), dir: 0};
-    this.join_state = {pos: new vec( 250, 200), dir: 5*Math.PI/4};
     this.players = [];
 
     //The speed at which the clients move.
@@ -385,7 +383,7 @@ game_player.prototype.draw_head = function(){
     this.game.ctx.arc( 0, 0, rad, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
     this.game.ctx.clip();
     if (this.game.show_video) {
-	const vid = document.querySelector('video');
+	const vid = document.getElementById('vid' + this.call_id);
 	if (vid) {
 	    const w = vid.offsetWidth;
 	    const h = vid.offsetHeight;
@@ -1329,22 +1327,6 @@ game_core.prototype.client_create_debug_gui = function() {
     _netsettings.open();
 
 }; //game_core.client_create_debug_gui
-
-game_core.prototype.client_reset_positions = function() {
-
-    console.log("reset positions");
-//UNUSED
-    //Make sure the local player physics is updated
-    this.get_self().state = this.cp_state(this.get_self().host ? this.cp_state(this.host_state) : this.cp_state(this.join_state));
-    this.get_self().cur_state = this.cp_state(this.get_self().state);
-
-    //Position all debug view items to their owners position
-    this.ghosts.server_pos_self.state = this.cp_state(this.get_self().state);
-
-    this.ghosts.server_pos_other.state = this.cp_state(this.players.other.state);
-    this.ghosts.pos_other.state = this.cp_state(this.players.other.state);
-
-}; //game_core.client_reset_positions
 
 game_core.prototype.client_onping = function(data) {
 

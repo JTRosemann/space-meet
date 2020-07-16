@@ -30,6 +30,9 @@ game_core.prototype.client_onconnected = function(data) {
 }; //client_onconnected
 
 game_core.prototype.onRemoteTrack = function(track) {
+    if (track.isLocal()) {
+	return;
+    }
     for (const p of this.players) {
 	const p_id = track.getParticipantId();
 	if (p.call_id == p_id) {
@@ -197,7 +200,7 @@ game_core.prototype.init_meeting = function() {
     this.loc_tracks = [];
     const loc_tracks_opt = {devices: [ 'audio', 'video' ] };
     //FIXME: uncaught exception: Object -> in chrome it's device not found -- but chrome also fails to open cam & mic on jitsit, so probably unrelated
-    JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)) // 'desktop' for screensharing
+    JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)).catch(error => console.log(error)); // 'desktop' for screensharing
 };
 
 //When loading, we store references to our

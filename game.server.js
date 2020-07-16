@@ -1,9 +1,9 @@
 /*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
     Copyright 2020 Julian Rosemann
-    
+
     written by : http://underscorediscovery.ca
     written for : http://buildnewgames.com/real-time-multiplayer/
-    
+
     MIT Licensed.
 */
 
@@ -117,8 +117,8 @@ game_server.findGame = function(client) {
 	this.game.gamecore = new game_core( this.game );
 	this.game.gamecore.update( new Date().getTime() );// starts the update loop
     }
-    this.game.gamecore.push_client(client, running_id); //clients are pushed to the client list
     running_id++;
+    this.game.gamecore.push_client(client, running_id); //clients are pushed to the client list
     const data = {
 	game: this.game.gamecore.get_game_state(),
 	time: this.game.gamecore.local_time
