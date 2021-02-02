@@ -6,12 +6,13 @@
     Usage : node app.js
 */
 
+const dir = '/home/jt/projects/space-meet'; // de-hardcode this!
     var
         gameport        = process.env.PORT || 4004,
 
-        io              = require('socket.io'),
-        express         = require('express'),
-        UUID            = require('node-uuid'),
+        io              = require('../node_modules/socket.io'),
+        express         = require('../node_modules/express'),
+        UUID            = require('../node_modules/node-uuid'),
 
         verbose         = false,
         http            = require('http'),
@@ -33,8 +34,8 @@
 
         //By default, we forward the / path to index.html automatically.
     app.get( '/', function( req, res ){
-        console.log('trying to load %s', __dirname + '/index.html');
-        res.sendfile( '/index.html' , { root:__dirname });
+        console.log('trying to load %s', '../index.html');
+        res.sendfile( 'index.html' , { root:dir });
     });
 
 
@@ -50,15 +51,16 @@
         if(verbose) console.log('\t :: Express :: file requested : ' + file);
 
             //Send the requesting client the file.
-        res.sendfile( __dirname + '/' + file );
+        res.sendfile( dir + '/' + file );
 
     }); //app.get *
 
+/* This mirrors it on an accessible server
 const ngrok = require('ngrok');
 (async function () {
     const url = await ngrok.connect(4004);
 })();
-
+*/
 
 /* Socket.IO server set up. */
 

@@ -5,7 +5,7 @@
     <title>Space-Meet</title>
 
     <!-- Load style sheet -->
-    <link href="index.css" media="screen" rel="stylesheet" type="text/css">
+    <link href="../index.css" media="screen" rel="stylesheet" type="text/css">
 
     <!-- Library code -->
 
@@ -34,9 +34,10 @@
     <!-- Game code -->
 
     <!-- Load the common game code. -->
-    <script type="text/javascript" src="game.core.js"></script>
+    <!-- these are more or less ugly hacks, but the imports shouldn't be requested by the html anyway -->
+    <script type="text/javascript" src="built/game.core.js"></script>
     <!-- Finally, Load the game client code. -->
-    <script type="text/javascript" src="client.js"></script>
+    <script type="text/javascript" src="built/client.js"></script>
 
   </head>
 
