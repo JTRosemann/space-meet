@@ -23,9 +23,16 @@ This is work in progress, it's only a proof of concept yet.
 * Visit http://127.0.0.1:4004/?debug
 * you should now see yourself and hear yourself differently as you walk through the room
 
+## Roadmap
+
+* Switch to TypeScript
+* Create lobby with options for creating rooms & make server more secure on the way
+* Invent game config data structure
+* Implement smooth transition between rooms in a brickwork like tiling (minimises number of touching rooms to three while being very simple)
+
 ## License
 
-MIT Licensed. 
+MIT Licensed.
 See LICENSE if required.
 
 ## Disclaimer
