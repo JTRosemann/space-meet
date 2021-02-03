@@ -67,13 +67,13 @@ game_server._onMessage = function(client,message) {
     } else if(message_type == 'p') {
         client.send('s.p.' + message_parts[1]);
     } else if(message_type == 'c') {    //Client changed their color!
-	for (let other_c in client.game.players) {
-	    // JS bs
-	    if (!client.game.players.hasOwnProperty(other_c)) continue;
-	    if (other_c.id != client.userid) {
-		other_c.send('s.c.' + client.userid + '.' + message_parts[1]);
-	    }
-	}
+    for (let other_c in client.game.players) {
+        // JS bs
+        if (!client.game.players.hasOwnProperty(other_c)) continue;
+        if (other_c.id != client.userid) {
+        other_c.send('s.c.' + client.userid + '.' + message_parts[1]);
+        }
+    }
     } else if(message_type == 'l') {    //A client is asking for lag simulation
         this.fake_latency = parseFloat(message_parts[1]);
     }
@@ -98,7 +98,7 @@ game_server.onInput = function(client, parts) {
 //we are requesting to kill a game in progress.
 game_server.disconnect = function(gameid, userid) {
     if(this.game) {
-	this.game.gamecore.rm_player(userid);
+    this.game.gamecore.rm_player(userid);
     } else {
         this.log('that game was not found!');
     }
@@ -107,18 +107,18 @@ game_server.disconnect = function(gameid, userid) {
 game_server.findGame = function(client) {
     this.log('looking for a game.');
     if(!this.game) {
-	this.game = {
-	    id : UUID(),
-	    clients: []
-	};
-	this.game.gamecore = new game_core( this.game );
-	this.game.gamecore.update( new Date().getTime() );// starts the update loop
+    this.game = {
+        id : UUID(),
+        clients: []
+    };
+    this.game.gamecore = new game_core( this.game );
+    this.game.gamecore.update( new Date().getTime() );// starts the update loop
     }
     running_id++;
     this.game.gamecore.push_client(client, running_id); //clients are pushed to the client list
     const data = {
-	game: this.game.gamecore.get_game_state(),
-	time: this.game.gamecore.local_time
+    game: this.game.gamecore.get_game_state(),
+    time: this.game.gamecore.local_time
     };
     client.emit('onjoingame', data);
     client.game = this.game;

@@ -28,34 +28,34 @@ game_core.prototype.client_onconnected = function(data) {
 
 game_core.prototype.onRemoteTrack = function(track) {
     if (track.isLocal()) {
-	return;
+    return;
     }
     for (const p of this.players) {
-	const p_id = track.getParticipantId();
-	if (p.call_id == p_id) {
-	    if (track.getType() == 'audio') {
-		// if there is a player with a matching id, add the audio track
-		// FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
-		p.add_audio_track(track.stream);
-		break;
-	    } else if (track.getType() == 'video') {
-		$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' />`);
-//		$('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
-		this.remote_video[`${p_id}`] = track;
-//		setTimeout(function () { // timeout not needed
-		    const vid = document.getElementById(`vid${p_id}`);
-		    track.attach(vid);
-//		}, 500);
-	    }
-	}
+    const p_id = track.getParticipantId();
+    if (p.call_id == p_id) {
+        if (track.getType() == 'audio') {
+        // if there is a player with a matching id, add the audio track
+        // FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
+        p.add_audio_track(track.stream);
+        break;
+        } else if (track.getType() == 'video') {
+        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' />`);
+//        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
+        this.remote_video[`${p_id}`] = track;
+//        setTimeout(function () { // timeout not needed
+            const vid = document.getElementById(`vid${p_id}`);
+            track.attach(vid);
+//        }, 500);
+        }
+    }
     }
 };
 
 game_core.prototype.add_all_loc_tracks = function() {
     if (this.joined_jitsi) {
-	for (const track of this.loc_tracks) {
-	    this.jitsi_conf.addTrack(track);
-	}
+    for (const track of this.loc_tracks) {
+        this.jitsi_conf.addTrack(track);
+    }
     }
 };
 
@@ -174,24 +174,24 @@ game_core.prototype.init_audio = function() {
 game_core.prototype.init_meeting = function() {
     const init_opt = {};
     const connect_opt = {
-	hosts: {
-	    domain: 'beta.meet.jit.si',
-	    muc: 'conference.beta.meet.jit.si'
-	},
-	serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
+    hosts: {
+        domain: 'beta.meet.jit.si',
+        muc: 'conference.beta.meet.jit.si'
+    },
+    serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
 
-	// The name of client node advertised in XEP-0115 'c' stanza
-	clientNode: 'beta.meet.jit.si'
+    // The name of client node advertised in XEP-0115 'c' stanza
+    clientNode: 'beta.meet.jit.si'
     };
 
     JitsiMeetJS.init(init_opt);
     this.jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
     this.jitsi_connect.addEventListener(
-	JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-	this.onConnectionSuccess.bind(this));
+    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
+    this.onConnectionSuccess.bind(this));
     this.jitsi_connect.addEventListener(
-	JitsiMeetJS.events.connection.CONNECTION_FAILED,
-	this.onConnectionFailed);
+    JitsiMeetJS.events.connection.CONNECTION_FAILED,
+    this.onConnectionFailed);
     this.jitsi_connect.connect();
 
     this.loc_tracks = [];
