@@ -81,7 +81,7 @@ sio.configure(function (){
 //Enter the game server code. The game server handles
 //client connections looking for a game, creating games,
 //leaving games, joining games and ending games when they leave.
-import game_server = require('./game.server.js');
+import game_server = require('./game.server');
 
 //Socket.io will call this function when a client connects,
 //So we can send that client looking for a game to play,
@@ -94,6 +94,8 @@ type client_type = {
     game: any,
     game_id: string
 }
+
+// .sockets selects every client
 sio.sockets.on('connection', function (client : client_type) {
     //Generate a new UUID, looks something like
     //5b2ca132-64bd-4513-99da-90e838ca47d1
