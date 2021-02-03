@@ -13,7 +13,7 @@ game_core.prototype.client_onjoingame = function(data) {
     this.local_time = data.time + this.net_latency;
     console.log('server time is about ' + this.local_time);
     this.set_game(data.game);
-    this.init_meeting();
+    //this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
     this.init_audio();
     //Finally, start the loop
     this.update( new Date().getTime() );

@@ -28,7 +28,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
     }
 
     if ( !window.requestAnimationFrame ) {
-        window.requestAnimationFrame = function ( callback, element ) {
+        window.requestAnimationFrame = function ( callback ) {
             let currTime = Date.now(), timeToCall = Math.max( 0, frame_time - ( currTime - lastTime ) );
             let id = window.setTimeout( function() { callback( currTime + timeToCall ); }, timeToCall );
             lastTime = currTime + timeToCall;
@@ -48,60 +48,81 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 //for itself to play the game.
 
 
-const vec = function(x, y) {
-    this.x = x;
-    this.y = y;
-};
-
-vec.prototype.add_mut = function(other) {
-    this.x += other.x;
-    this.y += other.y;
-};
-
-vec.prototype.add = function(other) {
-    return new vec(this.x + other.x, this.y + other.y);
-};
-
-vec.prototype.sub = function(other) {
-    return new vec(this.x - other.x, this.y - other.y);
-};
-
-vec.prototype.abs = function() {
-    return Math.sqrt(this.x*this.x + this.y*this.y);
-};
-
-vec.prototype.angle = function() {
-    return Math.atan2(this.y,this.x);
-};
-
-vec.prototype.polar = function () {
-    return {r: abs, phi: angle};
-};
-
-vec.prototype.clone = function() {
-    return new vec(this.x, this.y);
-};
-
-// (4.22208334636).fixed(n) will return fixed point value to n places, default n = 3
-Number.prototype.fixed = function(n) {
-    n = n || 3;
-    return parseFloat(this.toFixed(n));
-};
+// fixed(4.22208334636) will return fixed point value to n places, default n = 3
+function fixed(x) {
+    const n = 3; 
+    //return parseFloat(x.toFixed(n));
+    return x;
+}
+//import {lerp, vec, fixed } from './vec';
 //Simple linear interpolation
 const lerp = function(p, n, t) {
     let _t = Number(t);
-    _t = (Math.max(0, Math.min(1, _t))).fixed();
-    return (p + _t * (n - p)).fixed();
+    _t = fixed(Math.max(0, Math.min(1, _t)));
+    return fixed(p + _t * (n - p));
 };
-//Simple linear interpolation between 2 vectors
-vec.prototype.v_lerp = function(tv,t) {
-    return new vec(lerp(this.x, tv.x, t),
-		   lerp(this.y, tv.y, t));
-};
+
+class vec {
+    x: number;
+    y: number;
+    constructor(x:number, y:number) {
+        this.x = x;
+        this.y = y;
+    }
+
+    add_mut(other:vec) {
+        this.x += other.x;
+        this.y += other.y;
+    }
+
+    add(other:vec) {
+        return new vec(this.x + other.x, this.y + other.y);
+    }
+
+    sub(other:vec) {
+        return new vec(this.x - other.x, this.y - other.y);
+    }
+    
+    abs() {
+        return Math.sqrt(this.x*this.x + this.y*this.y);
+    };
+    
+    angle() {
+        return Math.atan2(this.y,this.x);
+    };
+    
+    polar() : {r: number, phi: number} {
+        return {r: this.abs(), phi: this.angle()};
+    };
+    
+    clone() {
+        return new vec(this.x, this.y);
+    };
+
+    //Simple linear interpolation between 2 vectors
+    v_lerp(tv,t) {
+        return new vec(lerp(this.x, tv.x, t),
+               lerp(this.y, tv.y, t));
+    };    
+}
+
+interface Shape {}
+
+interface Player {
+    mv_speed : number;
+    trn_speed : number;
+    shape : Shape;
+}
+
+interface World {}
 
 /**
     The game_core class
 */
+interface Game_core {
+    world : World;
+    players : Player[];
+}
 
 const game_core = function(game_instance) {
     //Store the instance, if any
@@ -135,12 +156,13 @@ const game_core = function(game_instance) {
     } else {
 	//Client specific initialisation
         //Create a keyboard handler
+        //const THREEx = require('../lib/keyboard'); // <- this solution doesn't work
         this.keyboard = new THREEx.KeyboardState();
-	this.audio_ctx = null;
-	this.listener = null;
-	this.panner = null;
-	this.jitsi_connect = null;
-	this.user_id = '';
+        this.audio_ctx = null;
+        this.listener = null;
+        this.panner = null;
+        this.jitsi_connect = null;
+        this.user_id = '';
     }
     //Start a physics loop, this is separate to the rendering
     //as this happens at a fixed frequency
@@ -218,7 +240,7 @@ const format_state = function(state) {
 };
 
 game_core.prototype.client_on_push_player = function(data) {
-    const player = new game_player(this, format_state(data.state), data.id, data.call_id);
+    const player = new game_player(this, format_state(data.state), data.id, data.call_id, undefined);
     this.push_player(player);
 };
 
@@ -263,9 +285,9 @@ game_core.prototype.server_on_update_cid = function (u_id) {
 game_core.prototype.client_on_update_cid = function(data) {
     console.log('update cid client');
     for (const p of this.players) {
-	if (p.id == data.id) {
-	    p.call_id = data.call_id;
-	}
+        if (p.id == data.id) {
+            p.call_id = data.call_id;
+        }
     }
 };
 
@@ -276,6 +298,7 @@ game_core.prototype.onConnectionFailed = function() {
 //server side we set the 'game_core' class to a global type, so that it can use it anywhere.
 if( 'undefined' != typeof global ) {
     module.exports = global.game_core = game_core;
+    // only fixable with sensible game core class & reasonable exporting?
 }
 
 /*
@@ -296,7 +319,7 @@ game_core.prototype.cp_state = function(a) {
     };
 };
 //Add a 2d vector with another one and return the resulting vector
-game_core.prototype.v_add = function(a,b) { return { x:(a.x+b.x).fixed(), y:(a.y+b.y).fixed() }; };
+game_core.prototype.v_add = function(a,b) { return { x:fixed(a.x+b.x), y:fixed(a.y+b.y) }; };
 //move the player & update the direction
 game_core.prototype.apply_mvmnt = function (state, mvmnt) {
     return { pos: state.pos.add(mvmnt.pos),
@@ -304,9 +327,9 @@ game_core.prototype.apply_mvmnt = function (state, mvmnt) {
 	   }
 };
 //Subtract a 2d vector with another one and return the resulting vector
-game_core.prototype.v_sub = function(a,b) { return { x:(a.x-b.x).fixed(),y:(a.y-b.y).fixed() }; };
+game_core.prototype.v_sub = function(a,b) { return { x:fixed(a.x-b.x), y:fixed((a.y-b.y)) }; };
 //Multiply a 2d vector with a scalar value and return the resulting vector
-game_core.prototype.v_mul_scalar = function(a,b) { return {x: (a.x*b).fixed() , y:(a.y*b).fixed() }; };
+game_core.prototype.v_mul_scalar = function(a,b) { return {x: fixed(a.x*b) , y:fixed(a.y*b) }; };
 //For the server, we need to cancel the setTimeout that the polyfill creates
 game_core.prototype.stop_update = function() {  window.cancelAnimationFrame( this.updateid );  };
 //lerp for states
@@ -483,7 +506,7 @@ game_player.prototype.add_audio_track = function(stream) {
 game_core.prototype.update = function(t) {
     //console.log('update');
     //Work out the delta time
-    this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016;
+    this.dt = this.lastframetime ? (fixed((t - this.lastframetime)/1000.0)) : 0.016;
 
     //Store the last frame time
     this.lastframetime = t;
@@ -496,7 +519,7 @@ game_core.prototype.update = function(t) {
     }
 
     //schedule the next update
-    this.updateid = window.requestAnimationFrame( this.update.bind(this), this.viewport );
+    this.updateid = window.requestAnimationFrame( this.update.bind(this));//, this.viewport );
 
 }; //game_core.update
 
@@ -528,8 +551,10 @@ game_core.prototype.check_collision = function( item ) {
     }
 
     //Fixed point helps be more deterministic
-    item.state.pos.x = item.state.pos.x.fixed(4);
-    item.state.pos.y = item.state.pos.y.fixed(4);
+    if (typeof item.state.pos.x == 'number')
+        item.state.pos.x = fixed(item.state.pos.x);
+    if (typeof item.state.pos.y == 'number')
+        item.state.pos.y = fixed(item.state.pos.y);
 
 }; //game_core.check_collision
 
@@ -588,9 +613,9 @@ game_core.prototype.physics_movement_vector_from_direction = function(r,phi,base
     const r_s   =   r * (this.player_mv_speed  * (this.physics_loop / 1000));
     const phi_s = phi * (this.player_trn_speed * (this.physics_loop / 1000)) + base_phi;
     return {
-        pos: new vec((r_s * Math.cos(phi_s)).fixed(3),
-		     (r_s * Math.sin(phi_s)).fixed(3)),
-	dir : phi_s
+        pos: new vec(fixed(r_s * Math.cos(phi_s)),
+		     fixed(r_s * Math.sin(phi_s))),
+	    dir : phi_s
     };
 
 }; //game_core.physics_movement_vector_from_direction
@@ -618,12 +643,12 @@ game_core.prototype.update_physics = function() {
 game_core.prototype.server_update_physics = function() {
     for (const p of this.players) {
 
-	const mvmnt = this.process_input(p);
-	p.state = this.apply_mvmnt( p.state, mvmnt );
+        const mvmnt = this.process_input(p);
+        p.state = this.apply_mvmnt( p.state, mvmnt );
 
-	//Keep the physics position in the world
-	this.check_collision( p );
-	p.inputs = []; //we have cleared the input buffer, so remove this
+        //Keep the physics position in the world
+        this.check_collision( p );
+        p.inputs = []; //we have cleared the input buffer, so remove this
     }
 }; //game_core.server_update_physics
 
@@ -750,7 +775,7 @@ game_core.prototype.client_handle_input = function(){
         //Store the input state as a snapshot of what happened.
         this.get_self().inputs.push({
 	    inputs : input,
-	    time : this.local_time.fixed(3),
+	    time : fixed(this.local_time),
 	    seq : this.input_seq
         });
 
@@ -900,8 +925,8 @@ game_core.prototype.client_process_net_updates = function() {
         this.target_time = target.t;
 
         const difference = this.target_time - current_time;
-        const max_difference = (target.t - previous.t).fixed(3);
-        let time_point = (difference/max_difference).fixed(3);
+        const max_difference = fixed(target.t - previous.t);
+        let time_point = fixed(difference/max_difference);
 
         //Because we use the same target and previous in extreme cases
         //It is possible to get incorrect values due to division by 0 difference
@@ -1240,7 +1265,7 @@ game_core.prototype.client_create_configuration = function() {
 
 game_core.prototype.client_create_debug_gui = function() {
 
-    this.gui = new dat.GUI();
+    this.gui = new dat.GUI();// <- see THREEx.keyboard issue
 
 //    const _playersettings = this.gui.addFolder('Your settings');
 
