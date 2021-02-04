@@ -51,7 +51,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 // fixed(4.22208334636) will return fixed point value to n places, default n = 3
 function fixed(x) {
     const n = 3; 
-    //return parseFloat(x.toFixed(n));
+    //return parseFloat(x.toFixed(n)); // FIXME
     return x;
 }
 //import {lerp, vec, fixed } from './vec';
@@ -110,8 +110,13 @@ function rgba(r:number, g:number, b:number, a:number) : string {
     return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 }
 
-interface Item {
+interface State {
     pos : vec;
+    dir : number;
+}
+
+interface Item {
+    state : State;
     rad : number;
 }
 
@@ -122,19 +127,25 @@ interface Projectable extends Item {
     draw_projection(ctx : Ctx, rad : number) : void;
 }
 
-class Player implements Item {// possibly abstract?
-    pos: vec;
+interface MobileProjectable extends Projectable {
+    cur_state: State;
+}
+
+class Player implements Item {
+    state: State;// possibly abstract?
     rad: number;
     id: string;
     call_id: string;// TODO: move to some VideoEnv or something
 }
 
 class PlayerServer extends Player {
+
 }
 
-class PlayerClient extends Player implements Projectable {
+class PlayerClient extends Player implements MobileProjectable {
     static mv_speed : number = 120; 
     static trn_speed : number = 3;
+    cur_state: State;
     video_enabled : boolean;
     color: string;
 
@@ -214,27 +225,31 @@ class GameClient implements Game {
     id: string;
     world: World;
     players: Player[];
-    //update_draw_head:
-    /*
-
-        const pos = this.state.pos.sub(this.game.get_self().state.pos);
-        const abs_val = pos.abs();
-        const dist_c = this.game.viewport.width/6;
+    self: Player;
     
-        const sin_alpha
-          = this.game.get_self().hsize /
-          Math.max(this.size, abs_val);
-        const rad = sin_alpha * dist_c / (1 - sin_alpha);
-        const dist = dist_c + rad;
+    draw_projection(ctx : Ctx, player : PlayerClient, projector_rad : number, max_projection_rad : number) { // projector_rad = this.game.viewport.width/6
+        const pos = player.state.pos.sub(this.self.state.pos);
+        const abs_val = pos.abs();
+    
+        const eps = 1;
+        // use intercept theorem: (projector_rad + rad) / (abs_val) = (rad / player.rad) and solve it
+        // prevent non-positive values in the divisor using Math.max(eps, ..)
+        const divisor = Math.max(eps,abs_val - player.rad);
+        // bound the maximum size of the radius
+        const rad = Math.min(player.rad * projector_rad / divisor, max_projection_rad);
+        const dist = projector_rad + rad;
         const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
         const center_y = dist * pos.y / abs_val;
-        this.game.ctx.save();
-        this.game.ctx.translate(center_x, center_y);
-        this.game.ctx.rotate(this.game.get_self().state.dir + Math.PI/2); // rewind the rotation from outside
-        CALL draw_projection(..)
+        ctx.save();
+        ctx.translate(center_x, center_y);
+        ctx.rotate(this.self.state.dir + Math.PI/2); // rewind the rotation from outside
+        
+        player.draw_projection(ctx, rad);
 
-        this.game.ctx.restore();
-    */
+        ctx.restore();
+        //FIXME for some reason it glitchy, but only on the screen that does move <-- but this was also the case before re-implementing
+    }
+    // update
 }
 
 class GameServer implements Game {
@@ -501,16 +516,15 @@ const game_player = function( game_instance, start_state, id , call_id, socket) 
 
 }; //game_player.constructor
 
-game_player.prototype.draw_head = function(){ //FIXME
+game_player.prototype.draw_head = function(){ // done
 
     const pos = this.state.pos.sub(this.game.get_self().state.pos);
     const abs_val = pos.abs();
     const dist_c = this.game.viewport.width/6;
 
-    const sin_alpha
-      = this.game.get_self().hsize /
-      Math.max(this.size, abs_val);
-    const rad = /*Math.min(*/sin_alpha * dist_c / (1 - sin_alpha)/*, dist_c)*/;
+    const eps = 1;
+    const max_rad = dist_c;
+    const rad = Math.min(this.hsize * dist_c / Math.max(eps,abs_val - this.hsize), max_rad);
     const dist = dist_c + rad;
     const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
     const center_y = dist * pos.y / abs_val;
@@ -548,6 +562,7 @@ game_player.prototype.draw_head = function(){ //FIXME
     this.game.ctx.strokeStyle = this.color;
     this.game.ctx.stroke();
     this.game.ctx.restore();
+    //FIXME for some reason it glitchy, but only on the screen that does move
 //    this.game.ctx.rotate(-this.game.get_self().state.dir - Math.PI/2);
 //    this.game.ctx.translate(-center_x,-center_y);
 }
