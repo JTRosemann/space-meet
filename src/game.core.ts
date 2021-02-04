@@ -106,22 +106,141 @@ class vec {
     };    
 }
 
-interface Shape {}
+function rgba(r:number, g:number, b:number, a:number) : string {
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
 
-interface Player {
-    mv_speed : number;
-    trn_speed : number;
-    shape : Shape;
+interface Item {
+    pos : vec;
+    rad : number;
+}
+
+type Ctx = any;
+
+interface Projectable extends Item {
+    draw_icon(ctx : Ctx) : void;
+    draw_projection(ctx : Ctx, rad : number) : void;
+}
+
+class Player implements Item {// possibly abstract?
+    pos: vec;
+    rad: number;
+    id: string;
+    call_id: string;// TODO: move to some VideoEnv or something
+}
+
+class PlayerServer extends Player {
+}
+
+class PlayerClient extends Player implements Projectable {
+    static mv_speed : number = 120; 
+    static trn_speed : number = 3;
+    video_enabled : boolean;
+    color: string;
+
+    draw_icon(ctx : Ctx, support : boolean = false) : void {
+        // the ctx should be appropriately rotated and translated
+        //Set the color for this player
+        ctx.fillStyle = this.color;
+
+        if (support) {
+            ctx.beginPath();
+            ctx.arc(0,0,this.rad,0,2*Math.PI);
+            ctx.strokeStyle = "yellow";
+            ctx.stroke();
+        }
+        ctx.beginPath();
+        const rt2 = Math.sqrt(0.5);
+        ctx.moveTo(              0,               0);
+        ctx.lineTo(rt2 * -this.rad, rt2 *  this.rad);
+        ctx.lineTo(       this.rad,               0);
+        ctx.lineTo(rt2 * -this.rad, rt2 * -this.rad);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    draw_projection(ctx : Ctx, rad : number, support : boolean = false) : void {
+        // the ctx should be appropriately rotated and translated
+        ctx.beginPath();
+        ctx.arc( 0, 0, rad, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
+        ctx.clip();
+        if (this.video_enabled) {
+            const vid = document.getElementById('vid' + this.call_id);
+            if (vid) {
+                const w = vid.offsetWidth;
+                const h = vid.offsetHeight;
+                if (w > h) { //landscape video input
+                    const ratio = w / h;
+                    const h_scaled = 2 * rad;
+                    const w_scaled = ratio * h_scaled;
+                    const diff = w_scaled - h_scaled;
+                    ctx.drawImage(vid, - rad - diff / 2, -rad, w_scaled, h_scaled);
+                } else { //portrait video input
+                    const ratio = h / w;
+                    const w_scaled = 2 * rad;
+                    const h_scaled = ratio * w_scaled;
+                    const diff = h_scaled - w_scaled;
+                    ctx.drawImage(vid, - rad, - rad - diff / 2, w_scaled, h_scaled);
+                }
+            }
+        } else {
+            ctx.moveTo(-10,10);
+            ctx.lineTo(0,0);
+            ctx.lineTo( 10,10);
+        }
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+    }
 }
 
 interface World {}
 
+/* TODO outsource the simulation 
+interface Simulation {
+    
+}
+*/
+
 /**
     The game_core class
 */
-interface Game_core {
+interface Game {
+    id : string;
     world : World;
     players : Player[];
+}
+
+class GameClient implements Game {
+    id: string;
+    world: World;
+    players: Player[];
+    //update_draw_head:
+    /*
+
+        const pos = this.state.pos.sub(this.game.get_self().state.pos);
+        const abs_val = pos.abs();
+        const dist_c = this.game.viewport.width/6;
+    
+        const sin_alpha
+          = this.game.get_self().hsize /
+          Math.max(this.size, abs_val);
+        const rad = sin_alpha * dist_c / (1 - sin_alpha);
+        const dist = dist_c + rad;
+        const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
+        const center_y = dist * pos.y / abs_val;
+        this.game.ctx.save();
+        this.game.ctx.translate(center_x, center_y);
+        this.game.ctx.rotate(this.game.get_self().state.dir + Math.PI/2); // rewind the rotation from outside
+        CALL draw_projection(..)
+
+        this.game.ctx.restore();
+    */
+}
+
+class GameServer implements Game {
+    id: string;
+    world: World;
+    players: Player[];
 }
 
 const game_core = function(game_instance) {
@@ -156,7 +275,7 @@ const game_core = function(game_instance) {
     } else {
     //Client specific initialisation
         //Create a keyboard handler
-        //const THREEx = require('../lib/keyboard'); // <- this solution doesn't work
+        // import THREEx = require('../lib/keyboard'); // <- this solution doesn't work, solution: decoupling client&server code
         this.keyboard = new THREEx.KeyboardState();
         this.audio_ctx = null;
         this.listener = null;
@@ -382,7 +501,7 @@ const game_player = function( game_instance, start_state, id , call_id, socket) 
 
 }; //game_player.constructor
 
-game_player.prototype.draw_head = function(){
+game_player.prototype.draw_head = function(){ //FIXME
 
     const pos = this.state.pos.sub(this.game.get_self().state.pos);
     const abs_val = pos.abs();
@@ -433,7 +552,7 @@ game_player.prototype.draw_head = function(){
 //    this.game.ctx.translate(-center_x,-center_y);
 }
 
-game_player.prototype.draw_self = function(){
+game_player.prototype.draw_self = function(){ // done
 
     //Set the color for this player
     this.game.ctx.fillStyle = this.color;
@@ -459,7 +578,7 @@ game_player.prototype.draw_self = function(){
 
 }; //game_player.draw_self
 
-game_player.prototype.draw = function() {
+game_player.prototype.draw = function() { // FIXME
     this.game.ctx.save();
     this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
     this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
@@ -468,10 +587,10 @@ game_player.prototype.draw = function() {
     this.game.ctx.restore();
 }; //game_player.draw
 
-game_player.prototype.facing_vec = function() {
+game_player.prototype.facing_vec = function() { // FIXME
     return new vec(Math.cos(this.state.dir), Math.sin(this.state.dir));
 }
-game_player.prototype.add_audio_track = function(stream) {
+game_player.prototype.add_audio_track = function(stream) { // FIXME
     const gain_node = this.game.audio_ctx.createGain();
     const stereo_panner = new StereoPannerNode(this.game.audio_ctx, {pan: 0} /*stereo balance*/);
     const track = this.game.audio_ctx.createMediaStreamSource(stream);
@@ -652,7 +771,7 @@ game_core.prototype.server_update_physics = function() {
     }
 }; //game_core.server_update_physics
 
-game_player.prototype.get_input_obj = function() {
+game_player.prototype.get_input_obj = function() { // FIXME
     return {
     state: this.state,
     lis: this.last_input_seq
