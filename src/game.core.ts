@@ -110,9 +110,17 @@ function rgba(r:number, g:number, b:number, a:number) : string {
     return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 }
 
-interface State {
+class State {
     pos : vec;
     dir : number;
+    constructor(pos: vec, dir: number) {
+        this.pos = pos;
+        this.dir = dir;
+    }
+
+    clone() {
+        return new State(this.pos.clone(), this.dir);
+    }
 }
 
 interface Item {
@@ -132,22 +140,156 @@ interface MobileProjectable extends Projectable {
 }
 
 class Player implements Item {
-    state: State;// possibly abstract?
-    rad: number;
-    id: string;
-    call_id: string;// TODO: move to some VideoEnv or something
-}
-
-class PlayerServer extends Player {
-
-}
-
-class PlayerClient extends Player implements MobileProjectable {
     static mv_speed : number = 120; 
     static trn_speed : number = 3;
+    state: State;// possibly abstract?
+    rad: number = 16;
+    id: string;
+    call_id: string;// TODO: move to some VideoEnv or something
+
+    constructor(state: State, id: string, call_id: string) {
+        this.state = state.clone();
+        this.id = id;
+        this.call_id = call_id;
+    }
+}
+
+interface Input {
+    inputs: string;
+    time: number;
+    seq: number;
+}
+
+interface InputProcessor {
+    last_input_seq: number;
+    last_input_time: number;
+    inputs: Input[];
+    get_input_obj() : {state: State, lis: number};
+    process_inputs() : Mvmnt;
+}
+
+function get_input_obj(state: State, last_input_seq: number) {
+    return {
+        state: state,
+        lis: last_input_seq
+    };
+}
+
+type Mvmnt = State;
+
+//move the player & update the direction
+function apply_mvmnt(state: State, mvmnt: Mvmnt) : State {
+    return new State(state.pos.add(mvmnt.pos), mvmnt.dir);
+}
+
+// TODO move at a fitting point
+function physics_movement_vector_from_direction(r: number, phi: number, base_phi: number) : Mvmnt {
+    //Must be fixed step, at physics sync speed.
+    //TODO de-hardcode the physics loop
+    const physics_loop = 15;//ms
+    const r_s   =   r * (Player.mv_speed  * (physics_loop / 1000));
+    const phi_s = phi * (Player.trn_speed * (physics_loop / 1000)) + base_phi;
+    return new State(new vec(fixed(r_s * Math.cos(phi_s)), fixed(r_s * Math.sin(phi_s))), phi_s);
+}
+
+function process_inputs(player : InputProcessor, player_dir: number) : Mvmnt {
+    //It's possible to have recieved multiple inputs by now,
+    //so we process each one
+    let r = 0;
+    let phi = 0;
+    let ic = player.inputs.length;
+    if(ic) {
+        for(let j = 0; j < ic; ++j) {
+            //don't process ones we already have simulated locally
+            //FIXME this does not seem to be performant
+            if(player.inputs[j].seq <= player.last_input_seq) continue;
+
+            const input = player.inputs[j].inputs;
+            let c = input.length;
+            for(let i = 0; i < c; ++i) {
+                    let key = input[i];
+                    if(key == 'l') {
+                        phi -= 1;
+                    }
+                    if(key == 'r') {
+                        phi += 1;
+                    }
+                    if(key == 'd') {
+                        r -= 1;
+                    }
+                    if(key == 'u') {
+                        r += 1;
+                    }
+            } //for all input values
+
+        } //for each input command
+    } //if we have inputs
+
+    //we have a direction vector now, so apply the same physics as the client
+    const base_phi = player_dir;
+    const mvmnt = physics_movement_vector_from_direction( r, phi, base_phi);
+    if(player.inputs.length) {
+        //we can now clear the array since these have been processed
+
+        player.last_input_time = player.inputs[ic-1].time;
+        player.last_input_seq = player.inputs[ic-1].seq;
+    }
+    //console.log({x: mvmnt.pos.x, y: mvmnt.pos.y, dir: mvmnt.dir, r: r});
+    //give it back
+    return mvmnt;
+}
+
+type Socket = any;
+
+class PlayerServer extends Player implements InputProcessor {
+    last_input_seq: number;
+    last_input_time: number;
+    inputs: Input[] = [];
+    instance: Socket;
+    
+    constructor(state: State, id: string, call_id: string, socket: Socket) {
+        super(state, id, call_id);
+        this.instance = socket;
+    }
+
+    get_input_obj() {
+        return get_input_obj(this.state, this.last_input_seq);
+    }
+
+    process_inputs() : Mvmnt {
+        return process_inputs(this, this.state.dir);
+    }
+}
+
+class PlayerClient extends Player implements MobileProjectable, InputProcessor { //TODO remove impl InputProcessor
+    /*
+
+    //These are used in moving us around later
+    this.cur_state = this.game.cp_state(this.state);//dest_ghost state
+    this.state_time = new Date().getTime();
+
+    //Our local history of inputs
+    this.inputs = [];
+
+    //The world bounds we are confined to
+    this.pos_limits = {
+        x_min: this.hsize,
+        x_max: this.game.world.width - this.hsize,
+        y_min: this.hsize,
+        y_max: this.game.world.height - this.hsize
+    };
+    */
     cur_state: State;
-    video_enabled : boolean;
-    color: string;
+    video_enabled : boolean = true;
+    color: string = rgba(255,255,255,0.5);
+    // audio
+    panner : PannerNode = null;
+
+    constructor(state: State, id: string, call_id: string) {
+        super(state, id, call_id);
+        this.cur_state = this.state.clone();
+        this.inputs = [];
+    }
 
     draw_icon(ctx : Ctx, support : boolean = false) : void {
         // the ctx should be appropriately rotated and translated
@@ -202,9 +344,90 @@ class PlayerClient extends Player implements MobileProjectable {
         ctx.strokeStyle = this.color;
         ctx.stroke();
     }
+
+    facing_vec() {
+        return new vec(Math.cos(this.state.dir), Math.sin(this.state.dir));
+    }
+
+    add_audio_track(stream: MediaStream, audio_ctx : AudioContext) {
+        const gain_node = audio_ctx.createGain();
+        const stereo_panner = new StereoPannerNode(audio_ctx, {pan: 0} /*stereo balance*/);
+        const track = audio_ctx.createMediaStreamSource(stream);
+        const panner_model = 'HRTF';
+        //for now, we don't use cones for simulation of speaking direction. this may be added later on
+        //cf. https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
+        const distance_model = 'linear'; // possible values are: 'linear', 'inverse' & 'exponential'
+        const max_distance = 10000;
+        const ref_distance = 1;
+        const roll_off = 20;
+        this.panner = new PannerNode(audio_ctx, {
+            panningModel: panner_model,
+            distanceModel: distance_model,
+            refDistance: ref_distance,
+            maxDistance: max_distance,
+            rolloffFactor: roll_off
+        });
+        track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(audio_ctx.destination);
+    }
+    // TODO separate PlayerClient & PlayerClientSelf & remove below code in this class
+    last_input_seq: number;
+    last_input_time: number;
+    inputs: Input[];
+
+    get_input_obj() {
+        return get_input_obj(this.state, this.last_input_seq);
+    }
+
+    process_inputs() : Mvmnt {
+        return process_inputs(this, this.state.dir);
+    }
 }
 
-interface World {}
+class PlayerClientSelf extends PlayerClient implements InputProcessor {
+    last_input_seq: number;
+    last_input_time: number;
+    inputs: Input[];
+
+    get_input_obj() {
+        return get_input_obj(this.state, this.last_input_seq);
+    }
+
+    process_inputs() : Mvmnt {
+        return process_inputs(this, this.state.dir);
+    }
+}
+
+interface World {
+    confine(item: Item) : State;
+}
+
+class RectangleWorld implements World {
+    width: number;
+    height: number;
+    
+    constructor(width: number, height: number) {
+        this.width = width;
+        this.height = height;
+    }
+
+    confine(item: Item) : State {
+        console.assert(2*item.rad <= this.width, 'Item too wide for this world!');
+        console.assert(2*item.rad <= this.height, 'Item too tall for this world!');
+        const pos_limit_x_min = item.rad;
+        const pos_limit_y_min = item.rad;
+        const pos_limit_x_max = this.width - item.rad;
+        const pos_limit_y_max = this.height - item.rad;
+
+        const conf_x_min = Math.max(item.state.pos.x, pos_limit_x_min);
+        const conf_x_max = Math.min(conf_x_min, pos_limit_x_max);
+        const conf_x = fixed(conf_x_max);
+        
+        const conf_y_min = Math.max(item.state.pos.y, pos_limit_y_min);
+        const conf_y_max = Math.min(conf_y_min, pos_limit_y_max);
+        const conf_y = fixed(conf_y_max);
+        return new State (new vec(conf_x, conf_y), item.state.dir);
+    }
+}
 
 /* TODO outsource the simulation 
 interface Simulation {
@@ -226,6 +449,15 @@ class GameClient implements Game {
     world: World;
     players: Player[];
     self: Player;
+
+    draw_icon(ctx : Ctx, player : PlayerClient) {
+        ctx.save();
+        ctx.translate(player.state.pos.x, player.state.pos.y);
+        ctx.rotate(player.state.dir); // beware: the coordinate system is mirrored at y-axis
+
+        player.draw_icon(ctx);
+        ctx.restore();
+    }
     
     draw_projection(ctx : Ctx, player : PlayerClient, projector_rad : number, max_projection_rad : number) { // projector_rad = this.game.viewport.width/6
         const pos = player.state.pos.sub(this.self.state.pos);
@@ -247,7 +479,8 @@ class GameClient implements Game {
         player.draw_projection(ctx, rad);
 
         ctx.restore();
-        //FIXME for some reason it glitchy, but only on the screen that does move <-- but this was also the case before re-implementing
+        //FIXME for some reason it is glitchy, but only on the screen that does move <-- but this was also the case before re-implementing
+        // the reason may be: the rotation (of this.self) is not smooth
     }
     // update
 }
@@ -264,10 +497,7 @@ const game_core = function(game_instance) {
     //Store a flag if we are the server
     this.server = this.instance !== undefined;
     //Used in collision etc.
-    this.world = {
-        width : 720,
-        height : 480
-    };
+    this.world = new RectangleWorld(720, 480);
     this.players = [];
 
     //The speed at which the clients move.
@@ -338,17 +568,17 @@ game_core.prototype.get_game_state = function() {
 
 game_core.prototype.push_player = function(player) {
     for (const p of this.players) {
-    if (p.id == player.id) return;//don't add someone who is already there
+        if (p.id == player.id) return;//don't add someone who is already there
     }
     this.players.push(player);
     this.players.sort(function (a,b) {
-    return a.id.localeCompare(b.id);
+        return a.id.localeCompare(b.id);
     });
 };
 
 game_core.prototype.notify = function(listener, msg) {
     for (const p of this.players) {
-    p.instance.emit(listener, msg);
+        p.instance.emit(listener, msg);
     }
 };
 
@@ -363,27 +593,26 @@ game_core.prototype.client_on_rm_player = function(data) {
 
 game_core.prototype.push_client = function(client, r_id) {
     r_id = r_id || 1;
-    const start_state = {pos: new vec( r_id * 40, 50 ), dir: 0};
-    const p = new game_player( this, start_state, client.userid, '' /* call_id */, client);//Beware: id != userid
+    const start_state : State = new State(new vec( r_id * 40, 50 ), 0);
+    const p = new PlayerServer(start_state, client.userid, '' /* call_id */, client);//Beware: id != userid
     this.push_player(p);
     this.notify('on_push_player', {id: client.userid, call_id: '', state: start_state});
 }; // push_client
 
-const format_state = function(state) {
-    return {pos: new vec(state.pos.x, state.pos.y), dir: state.dir};
+function format_state(state) {
+    return new State(new vec(state.pos.x, state.pos.y), state.dir);
 };
 
 game_core.prototype.client_on_push_player = function(data) {
-    const player = new game_player(this, format_state(data.state), data.id, data.call_id, undefined);
+    const player = new PlayerClient(format_state(data.state), data.id, data.call_id);
     this.push_player(player);
 };
 
 game_core.prototype.set_game = function(game_data) {
     for (const p of game_data.players) {
-    //    if (!game_data.players.hasOwnProperty(p_id)) continue;
-    const socket = p.socket || '';//no socket info for the client
-    const player = new game_player(this, format_state(p.state), p.id, p.call_id, socket);
-    this.push_player(player);
+        //    if (!game_data.players.hasOwnProperty(p_id)) continue;
+        const player = new PlayerClient(format_state(p.state), p.id, p.call_id);
+        this.push_player(player);
     }
 }; //set_game
 
@@ -454,12 +683,6 @@ game_core.prototype.cp_state = function(a) {
 };
 //Add a 2d vector with another one and return the resulting vector
 game_core.prototype.v_add = function(a,b) { return { x:fixed(a.x+b.x), y:fixed(a.y+b.y) }; };
-//move the player & update the direction
-game_core.prototype.apply_mvmnt = function (state, mvmnt) {
-    return { pos: state.pos.add(mvmnt.pos),
-         dir: mvmnt.dir
-       }
-};
 //Subtract a 2d vector with another one and return the resulting vector
 game_core.prototype.v_sub = function(a,b) { return { x:fixed(a.x-b.x), y:fixed((a.y-b.y)) }; };
 //Multiply a 2d vector with a scalar value and return the resulting vector
@@ -481,150 +704,6 @@ game_core.prototype.s_lerp = function(s,ts,t) {
   as well as to draw that state when required.
 */
 
-// the game_instance & start_state are required
-const game_player = function( game_instance, start_state, id , call_id, socket) {
-    //store the instance
-    this.instance = socket || '';
-    this.game = game_instance;//FIXME: this is actually a design flaw...
-
-    //Set up initial values for our state information
-    // FIXME: angles should be normalized
-    this.state = this.game.cp_state(start_state);
-    this.size = 32;
-    this.hsize = this.size / 2;
-    this.info = 'no-name';
-    this.color = 'rgba(255,255,255,0.5)';
-    this.info_color = 'rgba(255,255,255,0.1)';
-    this.id = id;
-    this.call_id = call_id || '';
-    this.panner = null;
-
-    //These are used in moving us around later
-    this.cur_state = this.game.cp_state(this.state);//dest_ghost state
-    this.state_time = new Date().getTime();
-
-    //Our local history of inputs
-    this.inputs = [];
-
-    //The world bounds we are confined to
-    this.pos_limits = {
-        x_min: this.hsize,
-        x_max: this.game.world.width - this.hsize,
-        y_min: this.hsize,
-        y_max: this.game.world.height - this.hsize
-    };
-
-}; //game_player.constructor
-
-game_player.prototype.draw_head = function(){ // done
-
-    const pos = this.state.pos.sub(this.game.get_self().state.pos);
-    const abs_val = pos.abs();
-    const dist_c = this.game.viewport.width/6;
-
-    const eps = 1;
-    const max_rad = dist_c;
-    const rad = Math.min(this.hsize * dist_c / Math.max(eps,abs_val - this.hsize), max_rad);
-    const dist = dist_c + rad;
-    const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
-    const center_y = dist * pos.y / abs_val;
-    this.game.ctx.save();
-    this.game.ctx.translate(center_x, center_y);
-    this.game.ctx.rotate(this.game.get_self().state.dir + Math.PI/2); // rewind the rotation from outside
-
-    this.game.ctx.beginPath();
-    this.game.ctx.arc( 0, 0, rad, 0 /*start_angle*/, 2*Math.PI /*arc_angle*/);
-    this.game.ctx.clip();
-    if (this.game.show_video) {
-    const vid = document.getElementById('vid' + this.call_id);
-    if (vid) {
-        const w = vid.offsetWidth;
-        const h = vid.offsetHeight;
-        if (w > h) { //landscape video input
-        const ratio = w / h;
-        const h_scaled = 2 * rad;
-        const w_scaled = ratio * h_scaled;
-        const diff = w_scaled - h_scaled;
-        this.game.ctx.drawImage(vid, - rad - diff / 2, -rad, w_scaled, h_scaled);
-        } else { //portrait video input
-        const ratio = h / w;
-        const w_scaled = 2 * rad;
-        const h_scaled = ratio * w_scaled;
-        const diff = h_scaled - w_scaled;
-        this.game.ctx.drawImage(vid, - rad, - rad - diff / 2, w_scaled, h_scaled);
-        }
-    }
-    } else {
-    this.game.ctx.moveTo(-10,10);
-    this.game.ctx.lineTo(0,0);
-    this.game.ctx.lineTo( 10,10);
-    }
-    this.game.ctx.strokeStyle = this.color;
-    this.game.ctx.stroke();
-    this.game.ctx.restore();
-    //FIXME for some reason it glitchy, but only on the screen that does move
-//    this.game.ctx.rotate(-this.game.get_self().state.dir - Math.PI/2);
-//    this.game.ctx.translate(-center_x,-center_y);
-}
-
-game_player.prototype.draw_self = function(){ // done
-
-    //Set the color for this player
-    this.game.ctx.fillStyle = this.color;
-
-    if (game.show_support) {
-    this.game.ctx.beginPath();
-    this.game.ctx.arc(0,0,this.hsize,0,2*Math.PI);
-    this.game.ctx.strokeStyle = "yellow";
-    this.game.ctx.stroke();
-    }
-    this.game.ctx.beginPath();
-    const rt2 = Math.sqrt(0.5);
-    this.game.ctx.moveTo(                0,                 0);
-    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 *  this.hsize);
-    this.game.ctx.lineTo(       this.hsize,                 0);
-    this.game.ctx.lineTo(rt2 * -this.hsize, rt2 * -this.hsize);
-    this.game.ctx.closePath();
-    this.game.ctx.fill();
-
-    //Draw a status update
-//    this.game.ctx.fillStyle = this.info_color;
-//    this.game.ctx.fillText(this.info, 10, 4);
-
-}; //game_player.draw_self
-
-game_player.prototype.draw = function() { // FIXME
-    this.game.ctx.save();
-    this.game.ctx.translate(this.state.pos.x,this.state.pos.y);
-    this.game.ctx.rotate(this.state.dir); // beware: the coordinate system is mirrored at y-axis
-
-    this.draw_self();
-    this.game.ctx.restore();
-}; //game_player.draw
-
-game_player.prototype.facing_vec = function() { // FIXME
-    return new vec(Math.cos(this.state.dir), Math.sin(this.state.dir));
-}
-game_player.prototype.add_audio_track = function(stream) { // FIXME
-    const gain_node = this.game.audio_ctx.createGain();
-    const stereo_panner = new StereoPannerNode(this.game.audio_ctx, {pan: 0} /*stereo balance*/);
-    const track = this.game.audio_ctx.createMediaStreamSource(stream);
-    const panner_model = 'HRTF';
-    //for now, we don't use cones for simulation of speaking direction. this may be added later on
-    //cf. https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
-    const distance_model = 'linear'; // possible values are: 'linear', 'inverse' & 'exponential'
-    const max_distance = 10000;
-    const ref_distance = 1;
-    const roll_off = 20;
-    this.panner = new PannerNode(this.game.audio_ctx, {
-    panningModel: panner_model,
-    distanceModel: distance_model,
-    refDistance: ref_distance,
-    maxDistance: max_distance,
-    rolloffFactor: roll_off
-    });
-    track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(this.game.audio_ctx.destination);
-};
 
 /*
 
@@ -657,44 +736,8 @@ game_core.prototype.update = function(t) {
 
 }; //game_core.update
 
-
-/*
-  Shared between server and client.
-  In this example, `item` is always of type game_player.
-*/
-game_core.prototype.check_collision = function( item ) {
-
-    //Left wall.
-    if(item.state.pos.x <= item.pos_limits.x_min) {
-        item.state.pos.x = item.pos_limits.x_min;
-    }
-
-    //Right wall
-    if(item.state.pos.x >= item.pos_limits.x_max ) {
-        item.state.pos.x = item.pos_limits.x_max;
-    }
-
-    //Roof wall.
-    if(item.state.pos.y <= item.pos_limits.y_min) {
-        item.state.pos.y = item.pos_limits.y_min;
-    }
-
-    //Floor wall
-    if(item.state.pos.y >= item.pos_limits.y_max ) {
-        item.state.pos.y = item.pos_limits.y_max;
-    }
-
-    //Fixed point helps be more deterministic
-    if (typeof item.state.pos.x == 'number')
-        item.state.pos.x = fixed(item.state.pos.x);
-    if (typeof item.state.pos.y == 'number')
-        item.state.pos.y = fixed(item.state.pos.y);
-
-}; //game_core.check_collision
-
-
 game_core.prototype.process_input = function( player ) {
-
+    console.log('DEPRECATED call to game_core.prototype.process_input');
     //It's possible to have recieved multiple inputs by now,
     //so we process each one
     let r = 0;
@@ -777,21 +820,16 @@ game_core.prototype.update_physics = function() {
 game_core.prototype.server_update_physics = function() {
     for (const p of this.players) {
 
-        const mvmnt = this.process_input(p);
-        p.state = this.apply_mvmnt( p.state, mvmnt );
+        const mvmnt = p.process_inputs();
+        p.state = apply_mvmnt( p.state, mvmnt );
 
         //Keep the physics position in the world
-        this.check_collision( p );
+        p.state = this.world.confine(p);
+        //this.check_collision( p );
         p.inputs = []; //we have cleared the input buffer, so remove this
     }
 }; //game_core.server_update_physics
 
-game_player.prototype.get_input_obj = function() { // FIXME
-    return {
-    state: this.state,
-    lis: this.last_input_seq
-    };
-};
 //Makes sure things run smoothly and notifies clients of changes
 //on the server side
 game_core.prototype.server_update = function(){
@@ -1194,7 +1232,8 @@ game_core.prototype.client_update_local_position = function(){
     this.get_self().state = this.get_self().cur_state;
 
         //We handle collision on client if predicting.
-        this.check_collision( this.get_self() );
+        this.get_self().state = this.world.confine(this.get_self());
+        //this.check_collision( this.get_self() );
 
     }  //if(this.client_predict)
 
@@ -1206,8 +1245,8 @@ game_core.prototype.client_update_physics = function() {
     //and apply it to the state so we can smooth it in the visual state
 
     if(this.get_self() && this.client_predict) {
-        const nd = this.process_input(this.get_self());
-    this.get_self().cur_state = this.apply_mvmnt( this.get_self().cur_state, nd);
+        const nd = this.get_self().process_inputs();
+        this.get_self().cur_state = apply_mvmnt( this.get_self().cur_state, nd);
         this.get_self().state_time = this.local_time;
     }
 
@@ -1242,10 +1281,15 @@ game_core.prototype.client_update = function() {
     for (const p of this.players) {
         if (p.id == this.user_id) {
         //set listener position
-        const listener_pos = this.get_self().state.pos;
-        const listener_facing = this.get_self().facing_vec();
-        this.listener.setPosition(listener_pos.x, 0, listener_pos.y);
-        this.listener.setOrientation(listener_facing.x, 0, listener_facing.y, 0, 1, 0);
+            const listener_pos = this.get_self().state.pos;
+            const listener_facing = this.get_self().facing_vec();
+            if (isFinite(listener_pos.x) && isFinite(listener_pos.y)) {
+                this.listener.setPosition(listener_pos.x, 0, listener_pos.y);
+                this.listener.setOrientation(listener_facing.x, 0, listener_facing.y, 0, 1, 0);
+            } else {
+                console.log('x: ' + console.log(listener_pos.x) + '\n');
+                console.log('y: ' + console.log(listener_pos.y) + '\n');
+            }
         } else if (p.panner) {
         //set emitter position
         p.panner.positionX.value = p.state.pos.x;
@@ -1262,31 +1306,48 @@ game_core.prototype.client_update = function() {
     this.ctx.translate(mid_x, mid_y);
     this.ctx.rotate(-Math.PI/2);
 
-    this.get_self().draw_self();
+    this.get_self().draw_icon(this.ctx, this.show_support);
     this.ctx.rotate(-this.get_self().state.dir);
     if (this.show_support) {
         for (const p of this.players) {
-        this.ctx.beginPath()
-        if (p.id == this.user_id) continue;
-        const other_sub_self = p.state.pos.sub(this.get_self().state.pos);
-        const alpha = Math.asin(this.get_self().hsize / other_sub_self.abs());
-        this.ctx.rotate(alpha);
-        this.ctx.moveTo(0,0);
-        this.ctx.lineTo((other_sub_self.x)*10,
-                (other_sub_self.y)*10);
-        this.ctx.rotate(-alpha);
-        this.ctx.rotate(-alpha);
-        this.ctx.moveTo(0,0);
-        this.ctx.lineTo((other_sub_self.x)*10,
-                (other_sub_self.y)*10);
-        this.ctx.strokeStyle = "yellow";
-        this.ctx.stroke();
-        this.ctx.rotate(alpha);
+            this.ctx.beginPath()
+            if (p.id == this.user_id) continue;
+            const other_sub_self = p.state.pos.sub(this.get_self().state.pos);
+            const alpha = Math.asin(this.get_self().rad / other_sub_self.abs());
+            this.ctx.rotate(alpha);
+            this.ctx.moveTo(0,0);
+            this.ctx.lineTo((other_sub_self.x)*10,
+                    (other_sub_self.y)*10);
+            this.ctx.rotate(-alpha);
+            this.ctx.rotate(-alpha);
+            this.ctx.moveTo(0,0);
+            this.ctx.lineTo((other_sub_self.x)*10,
+                    (other_sub_self.y)*10);
+            this.ctx.strokeStyle = "yellow";
+            this.ctx.stroke();
+            this.ctx.rotate(alpha);
         }
     }
     for (const p of this.players) {
         if (p.id == this.user_id) continue;
-        p.draw_head();
+
+        const pos = p.state.pos.sub(this.get_self().state.pos);
+        const abs_val = pos.abs();
+        const dist_c = this.viewport.width/6;
+
+        const eps = 1;
+        const max_rad = dist_c;
+        const rad = Math.min(p.rad * dist_c / Math.max(eps,abs_val - p.rad), max_rad);
+        const dist = dist_c + rad;
+        const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
+        const center_y = dist * pos.y / abs_val;
+        this.ctx.save();
+        this.ctx.translate(center_x, center_y);
+        this.ctx.rotate(this.get_self().state.dir + Math.PI/2); // rewind the rotation from outside
+
+        p.draw_projection(game.ctx, rad);
+
+        this.ctx.restore();
     }
     //draw circle
     this.ctx.beginPath();
@@ -1306,7 +1367,12 @@ game_core.prototype.client_update = function() {
     this.ctx.strokeRect(0,0,this.world.width,this.world.height);
     for (const p of this.players) {
         if (p.id == this.user_id) continue;
-        p.draw();
+        this.ctx.save();
+        this.ctx.translate(p.state.pos.x,p.state.pos.y);
+        this.ctx.rotate(p.state.dir); // beware: the coordinate system is mirrored at y-axis
+    
+        p.draw_icon(this.ctx, this.show_support);
+        this.ctx.restore();
     }
 
     //    this.ctx.translate(this.get_self().state.pos.x, this.get_self().state.pos.y);
