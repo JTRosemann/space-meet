@@ -5,6 +5,24 @@
 */
 
 
+import {
+    Game, 
+    PlayerClient,
+    Ctx,
+    THREExKeyboard,
+    JitsiConnection,
+    AllInputObj,
+    apply_mvmnt,
+    format_state,
+    GameJoinData,
+    InputObj,
+    physics_movement_vector_from_direction,
+    State,
+    s_lerp,
+    vec,
+    fixed,
+} from './game.core';
+
 //The main update loop runs on requestAnimationFrame,
 //Which falls back to a setTimeout loop on the server
 //Code below is from Three.js, and sourced from links below
@@ -15,10 +33,13 @@
 // requestAnimationFrame polyfill by Erik Möller
 // fixes from Paul Irish and Tino Zijdel
 
-import * as THREEx from '../lib/keyboard';
 
-import dat = require('../lib/dat.gui.min');
-import JitsiMeetJS = require('../libs/lib-jitsi-meet.min.js');
+// BEWARE: these imports result in 'lib' & 'libs' being transpiled into 'built'
+//         breaking my directory structure
+//import * as THREEx from '../lib/keyboard';
+
+//import dat = require('../lib/dat.gui.min');
+//import JitsiMeetJS = require('../libs/lib-jitsi-meet.min.js');
 
 let frame_time = 60/1000; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 22hz
@@ -48,24 +69,6 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 
 }() );
 
-import {
-    Game, 
-    PlayerClient,
-    PlayerClientSelf,
-    Ctx,
-    THREExKeyboard,
-    JitsiConnection,
-    AllInputObj,
-    apply_mvmnt,
-    format_state,
-    GameJoinData,
-    InputObj,
-    physics_movement_vector_from_direction,
-    State,
-    s_lerp,
-    vec,
-    fixed,
-} from './game.core';
 
 //A window global for our game root variable.
 var game : GameClient;
@@ -1122,8 +1125,9 @@ class GameClient extends Game {
 }
 //When loading, we store references to our
 //drawing canvases, and initiate a game instance.
+console.log('before onload');
 window.onload = function(){
-
+    console.log('onload');
     //Create our game client instance.
     game = new GameClient();
 

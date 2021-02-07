@@ -2,7 +2,9 @@
     "compilerOptions": {
         "outDir": "./built",
         "allowJs": true,
-        "target": "es5"
+        "target": "es5",
+        "module": "UMD", // this removes the 'exports' not defined error
+        "esModuleInterop": true
     },
     "include": ["./src/**/*"]
 }
