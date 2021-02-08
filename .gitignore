@@ -3,4 +3,7 @@ package-lock.json
 *~
 \#*\#
 .\#*
-built/
+*/built/
+*/dist/
+*/yarn-error.log
+*/yarn.lock

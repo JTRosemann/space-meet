@@ -14,7 +14,7 @@ export class Server {
     log () {
         if(verbose) console.log.apply(this,arguments);
     };
-    
+
     fake_latency = 0;
     local_time = 0;
     _dt = new Date().getTime();
@@ -25,31 +25,31 @@ export class Server {
 
     onMessage(client,message: string) {
         console.log('Use of DEPRECATED MESSAGE FORMAT');
-    
+
         if(this.fake_latency && message.split('.')[0].substr(0,1) == 'i') {
-    
+
             //store all input message
             this.messages.push({client:client, message:message});
-    
+
             setTimeout(function(){
                 if(this.messages.length) {
                     this._onMessage( this.messages[0].client, this.messages[0].message );
                     this.messages.splice(0,1);
                 }
             }.bind(this), this.fake_latency);
-    
+
         } else {
             this._onMessage(client, message);
         }
     };
-    
+
     _onMessage(client,message: string) {
     /*
         //Cut the message up into sub components
         const message_parts = message.split('.');
         //The first is always the type of message
         const message_type = message_parts[0];
-    
+
         if(message_type == 'i') {
             //Input handler will forward this
             this.onInput(client, message_parts);
@@ -67,7 +67,7 @@ export class Server {
             this.fake_latency = parseFloat(message_parts[1]);
         }*/
     }; //onMessage
-    
+
     onInput(client, parts) {
         //The input commands come in like u-l,
         //so we split them up into separate commands,
@@ -75,15 +75,15 @@ export class Server {
         var input_commands = parts[1].split('-');
         var input_time = parts[2].replace('-','.');
         var input_seq = parts[3];
-    
+
         //the client should be in a game, so
         //we can tell that game to handle the input
         if(client && client.game && client.game.gamecore) {
             client.game.gamecore.handle_server_input(client, input_commands, input_time, input_seq);
         }
-    
+
     }; //onInput
-    
+
     //we are requesting to kill a game in progress.
     disconnect(gameid, userid) {
         if(this.game) {
@@ -92,8 +92,8 @@ export class Server {
             console.log('that game was not found!');
         }
     }; //disconnect
-    
-    
+
+
     findGame(client: Client) {
         console.log('looking for a game.');
         if (!this.game.gamecore) {
@@ -110,7 +110,7 @@ export class Server {
         client.game = this.game;
         this.game.active = true;    //set this flag, so that the update loop can run it.
     }; //findGame
-    
+
 }
 
 //const game_server = module.exports = Server;
@@ -126,7 +126,7 @@ let running_id    = 0;
 //require('./game.core.js');
 
 import {
-    State, 
+    State,
     Game,
     AllInputObj,
     apply_mvmnt,
@@ -134,7 +134,7 @@ import {
     PlayerServer,
     Socket,
     vec
-} from './game.core';
+} from '../../common/src/game.core';
 
 
 
@@ -178,10 +178,10 @@ class GameServer extends Game {
 
     //Makes sure things run smoothly and notifies clients of changes
     //on the server side
-    do_update() {    
+    do_update() {
         //Update the state of our local clock to match the timer
         this.server_time = this.local_time;
-    
+
         //Make a snapshot of the current state, for updating the clients
         const p_s : Record<string,InputObj> = {};
         for (const p of this.players) {
@@ -191,7 +191,7 @@ class GameServer extends Game {
             players: p_s,
             t: this.server_time                      // our current local time on the server
         };
-    
+
         //Send the snapshot to the 'host' player
         for (const p of this.players) {
             p.instance.emit( 'onserverupdate', this.laststate );
@@ -201,17 +201,17 @@ class GameServer extends Game {
     //Updated at 15ms , simulates the world state
     update_physics() {
         for (const p of this.players) {
-    
+
             const mvmnt = p.process_inputs();
             p.state = apply_mvmnt( p.state, mvmnt );
-    
+
             //Keep the physics position in the world
             p.state = this.world.confine(p);
             //this.check_collision( p );
             p.inputs = []; //we have cleared the input buffer, so remove this
         }
     }; //game_core.server_update_physics
-    
+
     handle_server_input(client: Socket, input: string[], input_time: number, input_seq: number) {
         for (const p of this.players) {
             if (client.userid == p.id) {
@@ -221,7 +221,7 @@ class GameServer extends Game {
             }
         }
     }; //game_core.handle_server_input
-    
+
 }
 
 /*

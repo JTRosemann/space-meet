@@ -10,11 +10,11 @@ const dir = '/home/jt/projects/space-meet'; // de-hardcode this!
 
 const gameport        = process.env.PORT || '4004';
 
-import io             = require('../node_modules/socket.io');
-import express        = require('../node_modules/express');
-import UUID           = require('../node_modules/node-uuid');
+import io             = require('socket.io');
+import express        = require('express');
+import UUID           = require('node-uuid');
 
-const  verbose        = false;
+const  verbose        = true;
 import http           = require('http');
 const app             = express();
 const server          = http.createServer(app);
@@ -31,22 +31,26 @@ const server          = http.createServer(app);
 console.log('\t :: Express :: Listening on port ' + gameport );
 
 //By default, we forward the / path to index.html automatically.
-app.get( '/', function( _req:any, res:any ){
+/*app.get( '/', function( _req:any, res:any ){
     const path = 'index.html';
     console.log('trying to load %s', path);
     res.sendfile( path , { root:dir });
-});
+});*/
 
 //This handler will listen for requests on /*, any file from the root of our server.
 //See expressjs documentation for more info on routing.
-app.get( '/*' , function( req:{params: string}, res:any, _next:any ) {
+/*app.get( '/*' , function( req:{params: string}, res:any, _next:any ) {
     //This is the current file they have requested
     const file = req.params[0];
     //For debugging, we can track what files are requested.
     if(verbose) console.log('\t :: Express :: file requested : ' + file);
     //Send the requesting client the file.
     res.sendfile( dir + '/' + file );
-}); //app.get *
+    }); //app.get **/
+
+
+app.use(express.static('./client/dist'));
+
 
 //Tell the server to listen for incoming connections
 server.listen(gameport)
@@ -81,20 +85,21 @@ sio.configure(function (){
 //Enter the game server code. The game server handles
 //client connections looking for a game, creating games,
 //leaving games, joining games and ending games when they leave.
-import game_server = require('./game.server');
+import { Server } from './game.server';
 
 //Socket.io will call this function when a client connects,
 //So we can send that client looking for a game to play,
 //as well as give that client a unique ID to use so we can
 //maintain the list of players.
 type client_type = {
-    userid:string, 
+    userid:string,
     emit: (x:string,y:any) => unknown,
     on: (x:string, y: (m:any) => unknown) => unknown,
     game: any,
     game_id: string
 }
 
+const game_server = new Server();
 // .sockets selects every client
 sio.sockets.on('connection', function (client : client_type) {
     //Generate a new UUID, looks something like

@@ -6,7 +6,7 @@
 
 
 import {
-    Game, 
+    Game,
     PlayerClient,
     Ctx,
     THREExKeyboard,
@@ -21,7 +21,11 @@ import {
     s_lerp,
     vec,
     fixed,
-} from './game.core';
+} from '../../common/src/game.core';
+
+import { dat } from '../lib/dat.gui.min.js';
+import { THREEx } from '../lib/keyboard.js';
+import io = require('socket.io-client');
 
 //The main update loop runs on requestAnimationFrame,
 //Which falls back to a setTimeout loop on the server
@@ -132,11 +136,11 @@ class GameClient extends Game {
         player.draw_icon(ctx);
         ctx.restore();
     }
-    
+
     draw_projection(ctx : Ctx, player : PlayerClient, projector_rad : number, max_projection_rad : number) { // projector_rad = this.game.viewport.width/6
         const pos = player.state.pos.sub(this.self.state.pos);
         const abs_val = pos.abs();
-    
+
         const eps = 1;
         // use intercept theorem: (projector_rad + rad) / (abs_val) = (rad / player.rad) and solve it
         // prevent non-positive values in the divisor using Math.max(eps, ..)
@@ -149,7 +153,7 @@ class GameClient extends Game {
         ctx.save();
         ctx.translate(center_x, center_y);
         ctx.rotate(this.self.state.dir + Math.PI/2); // rewind the rotation from outside
-        
+
         player.draw_projection(ctx, rad);
 
         ctx.restore();
@@ -201,7 +205,7 @@ class GameClient extends Game {
     onConnectionFailed = function() {
         console.warn('onConnectionFailed');
     }
-    
+
     unpack_server_data(data: AllInputObj) : AllInputObj {
         let p_s : Record<string,InputObj> = {};
         for (const pid in data.players) {
@@ -696,7 +700,7 @@ class GameClient extends Game {
                 this.ctx.save();
                 this.ctx.translate(p.state.pos.x,p.state.pos.y);
                 this.ctx.rotate(p.state.dir); // beware: the coordinate system is mirrored at y-axis
-            
+
                 p.draw_icon(this.ctx, this.show_support);
                 this.ctx.restore();
             }

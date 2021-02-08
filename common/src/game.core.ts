@@ -12,7 +12,7 @@
 
 // fixed(4.22208334636) will return fixed point value to n places, default n = 3
 export function fixed(x) {
-    const n = 3; 
+    const n = 3;
     //return parseFloat(x.toFixed(n)); // FIXME
     return x;
 }
@@ -44,19 +44,19 @@ export class vec {
     sub(other:vec) {
         return new vec(this.x - other.x, this.y - other.y);
     }
-    
+
     abs() {
         return Math.sqrt(this.x*this.x + this.y*this.y);
     };
-    
+
     angle() {
         return Math.atan2(this.y,this.x);
     };
-    
+
     polar() : {r: number, phi: number} {
         return {r: this.abs(), phi: this.angle()};
     };
-    
+
     clone() {
         return new vec(this.x, this.y);
     };
@@ -65,7 +65,7 @@ export class vec {
     v_lerp(tv: vec,t: number) {
         return new vec(lerp(this.x, tv.x, t),
                lerp(this.y, tv.y, t));
-    };    
+    };
 }
 
 function rgba(r:number, g:number, b:number, a:number) : string {
@@ -102,7 +102,7 @@ export interface MobileProjectable extends Projectable {
 }
 
 export class Player implements Item {
-    static mv_speed : number = 120; 
+    static mv_speed : number = 120;
     static trn_speed : number = 3;
     state: State;// possibly abstract?
     rad: number = 16;
@@ -211,7 +211,7 @@ export class PlayerServer extends Player implements InputProcessor {
     last_input_time: number;
     inputs: Input[] = [];
     instance: Socket;
-    
+
     constructor(state: State, id: string, call_id: string, socket: Socket) {
         super(state, id, call_id);
         this.instance = socket;
@@ -338,6 +338,7 @@ export class PlayerClient extends Player implements MobileProjectable, InputProc
     last_input_seq: number;
     last_input_time: number;
     inputs: Input[];
+    state_time: number;
 
     get_input_obj() {
         return get_input_obj(this.state, this.last_input_seq);
@@ -372,7 +373,7 @@ export interface World {
 export class RectangleWorld implements World {
     width: number;
     height: number;
-    
+
     constructor(width: number, height: number) {
         this.width = width;
         this.height = height;
@@ -389,7 +390,7 @@ export class RectangleWorld implements World {
         const conf_x_min = Math.max(item.state.pos.x, pos_limit_x_min);
         const conf_x_max = Math.min(conf_x_min, pos_limit_x_max);
         const conf_x = fixed(conf_x_max);
-        
+
         const conf_y_min = Math.max(item.state.pos.y, pos_limit_y_min);
         const conf_y_max = Math.min(conf_y_min, pos_limit_y_max);
         const conf_y = fixed(conf_y_max);
@@ -397,9 +398,9 @@ export class RectangleWorld implements World {
     }
 }
 
-/* TODO outsource the simulation 
+/* TODO outsource the simulation
 interface Simulation {
-    
+
 }
 */
 
@@ -484,22 +485,22 @@ export abstract class Game {
         //console.log('update');
         //Work out the delta time
         this.dt = this.lastframetime ? (fixed((t - this.lastframetime)/1000.0)) : 0.016;
-    
+
         //Store the last frame time
         this.lastframetime = t;
-    
+
         //Update the game specifics
         this.do_update();
-    
+
         //schedule the next update
         this.updateid = window.requestAnimationFrame( this.update.bind(this));//, this.viewport );
-    
+
     }; //game_core.update
 
     abstract do_update() : void;
 
     abstract update_physics() : void;
-    
+
 }
 
 export type THREExKeyboard = any;
