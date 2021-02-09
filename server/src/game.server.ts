@@ -44,7 +44,7 @@ export class Server {
     };
 
     _onMessage(client,message: string) {
-    /*
+    
         //Cut the message up into sub components
         const message_parts = message.split('.');
         //The first is always the type of message
@@ -65,7 +65,7 @@ export class Server {
             }
         } else if(message_type == 'l') {    //A client is asking for lag simulation
             this.fake_latency = parseFloat(message_parts[1]);
-        }*/
+        }
     }; //onMessage
 
     onInput(client, parts) {

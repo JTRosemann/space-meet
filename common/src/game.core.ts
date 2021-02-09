@@ -492,8 +492,6 @@ export abstract class Game {
         //Update the game specifics
         this.do_update();
 
-        //schedule the next update
-        this.updateid = window.requestAnimationFrame( this.update.bind(this));//, this.viewport );
 
     }; //game_core.update
 

@@ -10,7 +10,7 @@ const dir = '/home/jt/projects/space-meet'; // de-hardcode this!
 
 const gameport        = process.env.PORT || '4004';
 
-import io             = require('socket.io');
+import * as io from 'socket.io';
 import express        = require('express');
 import UUID           = require('node-uuid');
 
@@ -68,19 +68,18 @@ const ngrok = require('ngrok');
 //This way, when the client requests '/socket.io/' files, socket.io determines what the client needs.
 
 //Create a socket.io instance using our express server
-const sio = io.listen(server);
+const sio = new io.Server(server);
 
 //Configure the socket.io connection settings.
 //See http://socket.io/
-sio.configure(function (){
+sio.use
 
-    sio.set('log level', 0);
-
-    sio.set('authorization', function (_handshakeData:any, callback:any) {
-        callback(null, true); // error first callback style
-    });
-
+sio.use(function(socket, next) {
+    const handshakeData = socket.request;
+    next();
 });
+
+//sio.set('log level', 0); <-- by executing DEBUG=socket.io:* node ...
 
 //Enter the game server code. The game server handles
 //client connections looking for a game, creating games,

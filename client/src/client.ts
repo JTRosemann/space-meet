@@ -79,7 +79,7 @@ var game : GameClient;
 
 
 class GameClient extends Game {
-    players: PlayerClient[];
+    players: PlayerClient[] = [];
     self: PlayerClient;
     //Create a keyboard handler
     // import THREEx = require('../lib/keyboard'); // <- this solution doesn't work, solution: decoupling client&server code
@@ -714,6 +714,10 @@ class GameClient extends Game {
         }
         //Work out the fps average
         this.client_refresh_fps();
+
+
+        //schedule the next update
+        this.updateid = window.requestAnimationFrame( this.update.bind(this));//, this.viewport );
 
     }; //game_core.update_client
 
