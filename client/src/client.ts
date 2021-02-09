@@ -23,9 +23,9 @@ import {
     fixed,
 } from '../../common/src/game.core';
 
-import { dat } from '../lib/dat.gui.min.js';
+import * as dat from 'dat.gui';
 import { THREEx } from '../lib/keyboard.js';
-import io = require('socket.io-client');
+import * as sio from 'socket.io-client';
 
 //The main update loop runs on requestAnimationFrame,
 //Which falls back to a setTimeout loop on the server
@@ -1021,7 +1021,7 @@ class GameClient extends Game {
     client_connect_to_server() {
 
         //Store a local reference to our connection to the server
-        this.socket = io.connect();
+        this.socket = sio.connect();
 
         //When we connect, we are not 'connected' until we have a server id
         //and are placed in a game by the server. The server sends us a message for that.
