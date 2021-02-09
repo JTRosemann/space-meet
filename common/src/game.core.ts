@@ -482,7 +482,6 @@ export abstract class Game {
     }
 
     update(t: number) {
-        //console.log('update');
         //Work out the delta time
         this.dt = this.lastframetime ? (fixed((t - this.lastframetime)/1000.0)) : 0.016;
 
@@ -520,23 +519,34 @@ export interface GameJoinData {
     time: number;
 }
 
+/*
+ * client connects via socket.io
+ *      server_on_client_connect: sends ID to client 
+ * client_onconnected
+ *      server_put_in_game: sends game data to client
+ * client_onjoingame
+ * 
+ */
+
 type DisconnectData = any;
 type ServerUpdateData = any;
 type ConnectedData = any;
 type RmPlayerData = any;
 type PushPlayerData = any;
 type UpdateCidData = any;
+
 interface MsgClient {
-    client_ondisconnect(data: DisconnectData) : void;
-    client_onserver_update_recieved(data: ServerUpdateData) : void;
     client_onconnected(data: ConnectedData) : void;
     client_onjoingame(data: GameJoinData) : void;
+    client_onserver_update_recieved(data: ServerUpdateData) : void;
     client_on_rm_player(data: RmPlayerData) : void;
     client_on_push_player(data: PushPlayerData) : void;
     client_on_update_cid(data: UpdateCidData) : void;
+    client_ondisconnect(data: DisconnectData) : void;
 }
 
 interface MsgServer {
+    on_client_connect() : void;
 
 }
 
