@@ -849,10 +849,10 @@ class GameClient extends Game {
     }; //client_onping
 
     client_onnetmessage(data: string) {//FIXME: replace every send with emit & remove this
-        console.log('DEPRECATED MESSAGE FORMAT RECEIVED!');
         const commands = data.split('.');
         const command = commands[0];
         const subcommand = commands[1] || null;
+        console.log('DEPRECATED MESSAGE FORMAT RECEIVED!' + subcommand);
         const commanddata = commands[2] || null;
 
         switch(command) {

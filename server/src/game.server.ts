@@ -139,9 +139,15 @@ import {
 
 
 class GameServer extends Game {
+    static update_loop = 45;//ms
     players: PlayerServer[] = [];
     server_time = 0;
     laststate: AllInputObj;
+
+    constructor() {
+        super();
+        this.create_update_loop();
+    }
 
     notify(listener, msg) {
         for (const p of this.players) {
@@ -175,6 +181,14 @@ class GameServer extends Game {
             }
         }
     }
+
+    create_update_loop() {
+
+        setInterval(function(){
+            this.do_update();
+        }.bind(this), GameServer.update_loop);
+
+    } //game_core.client_create_physics_simulation
 
     //Makes sure things run smoothly and notifies clients of changes
     //on the server side
