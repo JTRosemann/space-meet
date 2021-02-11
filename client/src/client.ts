@@ -14,7 +14,6 @@ import {
     AllInputObj,
     apply_mvmnt,
     format_state,
-    GameJoinData,
     InputObj,
     physics_movement_vector_from_direction,
     State,
@@ -22,6 +21,8 @@ import {
     vec,
     fixed,
 } from '../../common/src/game.core';
+
+import { ConnectedData, GameJoinData, ResponderClient, PingData, ServerUpdateData, CarrierClient} from '../../common/src/protocol';
 
 import * as dat from 'dat.gui';
 import { THREEx } from '../lib/keyboard.js';
@@ -78,7 +79,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 var game : GameClient;
 
 
-class GameClient extends Game {
+class GameClient extends Game implements ResponderClient {
     players: PlayerClient[] = [];
     self: PlayerClient;
     //Create a keyboard handler
@@ -90,7 +91,7 @@ class GameClient extends Game {
     jitsi_connect: JitsiConnection;
     user_id: string;
     input_seq: number;
-    socket: any;
+    carrier: CarrierClient;
     server_updates: AllInputObj[];
     client_time: any;
     target_time: number;
@@ -206,14 +207,14 @@ class GameClient extends Game {
         console.warn('onConnectionFailed');
     }
 
-    unpack_server_data(data: AllInputObj) : AllInputObj {
+    unpack_server_data(data: ServerUpdateData) : AllInputObj {
         let p_s : Record<string,InputObj> = {};
         for (const pid in data.players) {
             if (!data.players.hasOwnProperty(pid)) continue;
             const p = data.players[pid];
             p_s[pid] = {
-                state: new State(new vec(p.state.pos.x, p.state.pos.y), p.state.dir),
-                lis: p.lis
+                state: new State(new vec(p.x, p.y), p.d),
+                lis: p.l
             };
         }
         return {
@@ -288,7 +289,7 @@ class GameClient extends Game {
             server_packet += this.input_seq;
 
             //Go
-            this.socket.send(server_packet);
+            this.carrier.emit_input(server_packet);
 
             //Return the direction if needed
             return physics_movement_vector_from_direction( r, phi , base_phi );
@@ -308,9 +309,7 @@ class GameClient extends Game {
         if(!this.server_updates.length) return;
 
         //The most recent server update
-        const lsd_raw = this.server_updates[this.server_updates.length-1];
-        const latest_server_data = this.unpack_server_data(lsd_raw);
-
+        const latest_server_data = this.server_updates[this.server_updates.length-1];
         //Our latest server position
         const my_data = latest_server_data.players[this.user_id];
         const my_server_state = my_data.state;
@@ -395,10 +394,8 @@ class GameClient extends Game {
         //samples. Usually this iterates very little before breaking out with a target.
         for(let i = 0; i < count; ++i) {
 
-            const point_raw = this.server_updates[i];
-            let point = this.unpack_server_data(point_raw);
-            const next_point_raw = this.server_updates[i+1];
-            let next_point = this.unpack_server_data(next_point_raw);
+            const point = this.server_updates[i];
+            const next_point = this.server_updates[i+1];
 
             //Compare our point in time with the server times we have
             if(current_time > point.t && current_time < next_point.t) {
@@ -411,8 +408,7 @@ class GameClient extends Game {
         //With no target we store the last known
         //server position and move to that instead
         if(!target) {
-        const lsd_raw = this.server_updates[0];
-        const lsd = this.unpack_server_data(lsd_raw);
+        const lsd = this.server_updates[0];
             target = lsd;
             previous = lsd;
         }
@@ -438,8 +434,7 @@ class GameClient extends Game {
             if(time_point == Infinity) time_point = 0;
 
             //The most recent server update
-            const lsd_raw = this.server_updates[ this.server_updates.length-1 ];
-            const latest_server_data = this.unpack_server_data(lsd_raw);
+            const latest_server_data = this.server_updates[ this.server_updates.length-1 ];
 
             //These are the exact server positions from this tick, but only for the ghost
 
@@ -503,7 +498,7 @@ class GameClient extends Game {
 
     }; //game_core.client_process_net_updates
 
-    client_onserverupdate_recieved(raw_data : AllInputObj) {
+    client_onserverupdate_recieved(raw_data : ServerUpdateData) {
 
         const data = this.unpack_server_data(raw_data);
         //Lets clarify the information we have locally. One of the players is 'hosting' and
@@ -554,6 +549,10 @@ class GameClient extends Game {
         } //non naive
 
     }; //game_core.client_onserverupdate_recieved
+
+    client_on_ping(data: PingData) {
+
+    }
 
     client_update_local_position(){
 
@@ -950,7 +949,7 @@ class GameClient extends Game {
         this.update( new Date().getTime() );
     }; //client_onjoingame
 
-    client_onconnected(data) {
+    client_onconnected(data: ConnectedData) {
         console.log('onconnected');
         //The server responded that we are now in a game,
         //this lets us store our id
@@ -1009,7 +1008,7 @@ class GameClient extends Game {
         this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
         this.jitsi_conf.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
         this.get_self().call_id = this.jitsi_conf.myUserId();
-        this.socket.emit('on_update_cid', this.get_self().call_id);
+        this.carrier.emit_call_id(this.get_self().call_id);
 
         this.jitsi_conf.join();
     }; // game_core.onConnectionSuccess
@@ -1025,32 +1024,9 @@ class GameClient extends Game {
     client_connect_to_server() {
 
         //Store a local reference to our connection to the server
-        this.socket = sio.connect();
+        this.carrier = new CarrierClient(sio.connect(), this);
 
-        //When we connect, we are not 'connected' until we have a server id
-        //and are placed in a game by the server. The server sends us a message for that.
-    //    this.socket.on('connect', function(){
-    //        this.get_self().info = 'connecting';
-    //    }.bind(this));
 
-        //Sent when we are disconnected (network, server down, etc)
-        this.socket.on('disconnect', this.client_ondisconnect.bind(this));
-        //Sent each tick of the server simulation. This is our authoritive update
-        this.socket.on('onserverupdate', this.client_onserverupdate_recieved.bind(this));
-        //Handle when we connect to the server, showing state and storing id's.
-        this.socket.on('onconnected', this.client_onconnected.bind(this));
-        //On error we just show that we are not connected for now. Can print the data.
-        this.socket.on('error', this.client_ondisconnect.bind(this));
-        //On message from the server, we parse the commands and send it to the handlers
-        this.socket.on('message', this.client_onnetmessage.bind(this));
-
-        this.socket.on('onjoingame', this.client_onjoingame.bind(this));
-
-        this.socket.on('on_rm_player', this.client_on_rm_player.bind(this));
-
-        this.socket.on('on_push_player', this.client_on_push_player.bind(this));
-
-        this.socket.on('on_update_cid', this.client_on_update_cid.bind(this));
 
     }; //game_core.client_connect_to_server
 

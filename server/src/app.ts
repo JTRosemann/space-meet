@@ -84,19 +84,12 @@ sio.use(function(socket, next) {
 //Enter the game server code. The game server handles
 //client connections looking for a game, creating games,
 //leaving games, joining games and ending games when they leave.
-import { Server } from './game.server';
+import { Server, client_type } from './game.server';
 
 //Socket.io will call this function when a client connects,
 //So we can send that client looking for a game to play,
 //as well as give that client a unique ID to use so we can
 //maintain the list of players.
-type client_type = {
-    userid:string,
-    emit: (x:string,y:any) => unknown,
-    on: (x:string, y: (m:any) => unknown) => unknown,
-    game: any,
-    game_id: string
-}
 
 const game_server = new Server();
 // .sockets selects every client
@@ -144,7 +137,7 @@ sio.sockets.on('connection', function (client : client_type) {
 
     }); //client.on disconnect
 
-    client.on('on_update_cid', (client.game.gamecore.server_on_update_cid(client.userid)).bind(client.game.gamecore));
+    //client.on('on_update_cid', (client.game.on_update_cid(client.userid)).bind(client.game));
     //    client.on('on_update_cid', function (data) { console.log('cid_called' + client.userid)});
 
 }); //sio.sockets.on connection

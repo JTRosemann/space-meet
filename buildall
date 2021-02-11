@@ -1,0 +1,2 @@
+#!/bin/sh
+yarn --cwd client run buildforce && tsc -p server

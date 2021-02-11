@@ -7,6 +7,13 @@ type Client = any;
 
 import * as UUID from 'uuid';
 
+export type client_type = {
+    userid:string,
+    on: (x:string, y: (m:any) => unknown) => unknown,
+    game: GameServer,
+    game_id: string
+}
+
 export class Server {
     game = {gamecore: null, id: UUID.v4, clients: [], active: false};
     //A simple wrapper for logging so we can toggle it,
@@ -23,7 +30,7 @@ export class Server {
     messages = [];
     running_id: number;
 
-    onMessage(client,message: string) {
+    onMessage(client:client_type ,message: string) {
         console.log('Use of DEPRECATED MESSAGE FORMAT');
 
         if(this.fake_latency && message.split('.')[0].substr(0,1) == 'i') {
@@ -43,7 +50,7 @@ export class Server {
         }
     };
 
-    _onMessage(client,message: string) {
+    _onMessage(client: client_type ,message: string) {
     
         //Cut the message up into sub components
         const message_parts = message.split('.');
@@ -56,11 +63,11 @@ export class Server {
         } else if(message_type == 'p') {
             client.send('s.p.' + message_parts[1]);
         } else if(message_type == 'c') {    //Client changed their color!
-            for (let other_c in client.game.players) {
+            for (let other_c of client.game.players) {
                 // JS bs
-                if (!client.game.players.hasOwnProperty(other_c)) continue;
+                //if (!client.game.players.hasOwnProperty(other_c)) continue;
                 if (other_c.id != client.userid) {
-                other_c.send('s.c.' + client.userid + '.' + message_parts[1]);
+                    other_c.instance.emit_message('s.c.' + client.userid + '.' + message_parts[1]);
                 }
             }
         } else if(message_type == 'l') {    //A client is asking for lag simulation
@@ -106,7 +113,7 @@ export class Server {
         game: this.game.gamecore.get_game_state(),
         time: this.game.gamecore.local_time
         };
-        client.emit('onjoingame', data);
+        client.emit('onjoingame',data);
         client.game = this.game;
         this.game.active = true;    //set this flag, so that the update loop can run it.
     }; //findGame
@@ -131,14 +138,39 @@ import {
     AllInputObj,
     apply_mvmnt,
     InputObj,
-    PlayerServer,
+    Player,
     Socket,
-    vec
+    vec,
+    get_input_obj,
+    Input,
+    InputProcessor,
+    process_inputs,
+    Mvmnt
 } from '../../common/src/game.core';
+import { CarrierServer, PushPlayerData, ResponderServer, RmPlayerData } from '../../common/src/protocol';
 
 
+export class PlayerServer extends Player implements InputProcessor {
+    last_input_seq: number;
+    last_input_time: number;
+    inputs: Input[] = [];
+    instance: CarrierServer;
 
-class GameServer extends Game {
+    constructor(state: State, id: string, call_id: string, socket: Socket) {
+        super(state, id, call_id);
+        this.instance = new CarrierServer(socket);
+    }
+
+    get_input_obj() {
+        return get_input_obj(this.state, this.last_input_seq);
+    }
+
+    process_inputs() : Mvmnt {
+        return process_inputs(this, this.state.dir);
+    }
+}
+
+class GameServer extends Game  {
     static update_loop = 45;//ms
     players: PlayerServer[] = [];
     server_time = 0;
@@ -149,9 +181,17 @@ class GameServer extends Game {
         this.create_update_loop();
     }
 
-    notify(listener, msg) {
+    notify(listener: 'on_rm_player' | 'on_push_player',
+            msg: RmPlayerData | PushPlayerData) {
         for (const p of this.players) {
-            p.instance.emit(listener, msg);
+            switch (listener) {
+                case 'on_rm_player':
+                    p.instance.emit_rmplayer(msg);
+                    break;
+                case 'on_push_player':
+                    p.instance.emit_pushplayer(msg);
+                    break;
+            }
         }
     }
 
@@ -168,7 +208,7 @@ class GameServer extends Game {
         this.notify('on_push_player', {id: client.userid, call_id: '', state: start_state});//FIXME I shouldn't send the class state
     } // push_client
 
-    server_on_update_cid(u_id) {
+    on_update_cid(u_id) {
         return function(data) {
             console.log('update cid');
             for (const p of this.players) {
@@ -176,7 +216,7 @@ class GameServer extends Game {
                     p.call_id = data;
                 } else {
                     const msg = {id: u_id, call_id: data};
-                    p.instance.emit('on_update_cid', msg);
+                    p.instance.emit_updatecid(msg);
                 }
             }
         }
@@ -208,7 +248,7 @@ class GameServer extends Game {
 
         //Send the snapshot to the 'host' player
         for (const p of this.players) {
-            p.instance.emit( 'onserverupdate', this.laststate );
+            p.instance.emit_update(this.laststate );
         }
     } //game_core.server_update
 

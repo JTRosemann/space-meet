@@ -142,7 +142,7 @@ export function get_input_obj(state: State, last_input_seq: number) : InputObj {
     };
 }
 
-type Mvmnt = State;
+export type Mvmnt = State;
 
 //move the player & update the direction
 export function apply_mvmnt(state: State, mvmnt: Mvmnt) : State {
@@ -206,24 +206,9 @@ export function process_inputs(player : InputProcessor, player_dir: number) : Mv
 
 export type Socket = any;
 
-export class PlayerServer extends Player implements InputProcessor {
-    last_input_seq: number;
-    last_input_time: number;
-    inputs: Input[] = [];
-    instance: Socket;
-
-    constructor(state: State, id: string, call_id: string, socket: Socket) {
-        super(state, id, call_id);
-        this.instance = socket;
-    }
-
-    get_input_obj() {
-        return get_input_obj(this.state, this.last_input_seq);
-    }
-
-    process_inputs() : Mvmnt {
-        return process_inputs(this, this.state.dir);
-    }
+export interface AllInputObj {
+    players: Record<string,InputObj>;
+    t: number;
 }
 
 export class PlayerClient extends Player implements MobileProjectable, InputProcessor { //TODO remove impl InputProcessor
@@ -503,51 +488,9 @@ export abstract class Game {
 export type THREExKeyboard = any;
 export type JitsiConnection = any;
 
-
-export interface AllInputObj {
-    players: Record<string,InputObj>;
-    t: number;
-}
-
 //lerp for states
 export function s_lerp(s: State, ts: State, t: number) : State {
     return new State(s.pos.v_lerp(ts.pos, t), lerp(s.dir, ts.dir, t));
-}
-
-export interface GameJoinData {
-    game;
-    time: number;
-}
-
-/*
- * client connects via socket.io
- *      server_on_client_connect: sends ID to client 
- * client_onconnected
- *      server_put_in_game: sends game data to client
- * client_onjoingame
- * 
- */
-
-type DisconnectData = any;
-type ServerUpdateData = any;
-type ConnectedData = any;
-type RmPlayerData = any;
-type PushPlayerData = any;
-type UpdateCidData = any;
-
-interface MsgClient {
-    client_onconnected(data: ConnectedData) : void;
-    client_onjoingame(data: GameJoinData) : void;
-    client_onserver_update_recieved(data: ServerUpdateData) : void;
-    client_on_rm_player(data: RmPlayerData) : void;
-    client_on_push_player(data: PushPlayerData) : void;
-    client_on_update_cid(data: UpdateCidData) : void;
-    client_ondisconnect(data: DisconnectData) : void;
-}
-
-interface MsgServer {
-    on_client_connect() : void;
-
 }
 
 export function format_state(state) {
