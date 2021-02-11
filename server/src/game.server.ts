@@ -14,7 +14,9 @@ import {
     RmPlayerData,
     ServerUpdateData,
     UpdateCidData,
-    DisconnectData
+    DisconnectData,
+    SingleUpdateCidData,
+    InputData
 } from '../../common/src/protocol';
 
 export class LobbyServer implements ResponderServer {
@@ -56,11 +58,15 @@ export class LobbyServer implements ResponderServer {
         this.gamecore.active = true;    //set this flag, so that the update loop can run it.
     }
 
-    on_update_cid(client: sio.Socket, data: UpdateCidData) {
+    on_update_cid(client: sio.Socket, data: SingleUpdateCidData) {
         this.gamecore.on_update_cid(client, data);
     }
 
-    on_input(client: sio.Socket, data: ServerUpdateData) {
+    on_ping(client: sio.Socket, data: number) {
+        this.carrier.emit_pong(client, data);
+    }
+
+    on_input(client: sio.Socket, data: InputData) {
         this.gamecore.on_input(client, data);
     }
 
@@ -70,7 +76,7 @@ export class LobbyServer implements ResponderServer {
     
     onMessage(client: sio.Socket, message: string) {
         console.log('Use of DEPRECATED MESSAGE FORMAT');
-        //TODO fix debugging code
+        //TODO fix debugging code & REMOVE method
         if(this.fake_latency && message.split('.')[0].substr(0,1) == 'i') {
 
             //store all input message
@@ -83,8 +89,6 @@ export class LobbyServer implements ResponderServer {
                 }
             }.bind(this), this.fake_latency);
 
-        } else {
-            this.gamecore.onMessage(client, message);
         }
     }
 
@@ -139,7 +143,7 @@ class GameServer extends Game  {
     static update_loop = 45;//ms
     players: PlayerServer[] = [];
     server_time = 0;
-    laststate: AllInputObj;
+    laststate: ServerUpdateData;
     carrier: CarrierServer;
     active = false;
 
@@ -148,45 +152,6 @@ class GameServer extends Game  {
         this.carrier = carrier;
         this.create_update_loop();
     }
-
-    onMessage(client: sio.Socket, message: string) {
-        //Cut the message up into sub components
-        const message_parts = message.split('.');
-        //The first is always the type of message
-        const message_type = message_parts[0];
-
-        if(message_type == 'i') {
-            //Input handler will forward this
-            this.onInput(client, message_parts);
-        } else if(message_type == 'p') {
-            this.carrier.emit_message(client, 's.p.' + message_parts[1]);
-        } else if(message_type == 'c') {    //Client changed their color!
-            for (let other_c of this.players) {
-                // JS bs
-                //if (!client.game.players.hasOwnProperty(other_c)) continue;
-                if (other_c.id != client.id) {
-                    this.carrier.emit_message(other_c.instance, 's.c.' + client.id + '.' + message_parts[1]);
-                }
-            }
-        } 
-    }
-
-    onInput(client: sio.Socket, parts: string[]) {
-        //TODO: remove
-        //The input commands come in like u-l,
-        //so we split them up into separate commands,
-        //and then update the players
-        var input_commands = parts[1].split('-');
-        var input_time = Number(parts[2].replace('-','.'));
-        var input_seq = Number(parts[3]);
-
-        //the client should be in a game, so
-        //we can tell that game to handle the input
-        if(client && this) {
-            this.handle_server_input(client, input_commands, input_time, input_seq);
-        }
-
-    }; //onInput
 
     on_disconnect(client: sio.Socket, data: DisconnectData) {
         //Useful to know when soomeone disconnects
@@ -197,37 +162,35 @@ class GameServer extends Game  {
         this.rm_player(client.id);
     }
 
-    on_input(client: sio.Socket, data: ServerUpdateData) {
-        throw new Error('Method not implemented.');
+    on_input(client: sio.Socket, data: InputData) {
+        this.handle_server_input(client, data.keys, data.time, data.seq);
     }    
 
-    notify(listener: 'on_rm_player' | 'on_push_player',
-            msg: RmPlayerData | PushPlayerData) {
+    notify_push(msg: PushPlayerData) {
         for (const p of this.players) {
-            switch (listener) {
-                case 'on_rm_player':
-                    this.carrier.emit_rmplayer(p.instance, msg);
-                    break;
-                case 'on_push_player':
-                    this.carrier.emit_pushplayer(p.instance, msg);
-                    break;
-            }
+            this.carrier.emit_pushplayer(p.instance, msg);
+        }
+    }
+
+    notify_rm(msg: RmPlayerData) {
+        for (const p of this.players) {
+            this.carrier.emit_rmplayer(p.instance, msg);
         }
     }
 
     rm_player(id: string) {
         this.players = this.players.filter(p => p.id !== id);
-        this.notify('on_rm_player', id);
+        this.notify_rm(id);
     }
 
     push_client(client: sio.Socket, r_id: number = 1) {
         const start_state : State = new State(new vec( r_id * 40, 50 ), 0);
         const p = new PlayerServer(start_state, client.id, '' /* call_id */, client);//Beware: id != userid
         this.push_player(p);
-        this.notify('on_push_player', {id: client.id, call_id: '', state: start_state});//FIXME I shouldn't send the class state
+        this.notify_push({id: client.id, call_id: '', state: start_state.downsize()});//FIXME I shouldn't send the class state
     } // push_client
 
-    on_update_cid(client: sio.Socket, data: UpdateCidData) {
+    on_update_cid(client: sio.Socket, data: SingleUpdateCidData) {
         console.log('update cid');
         for (const p of this.players) {
             if (p.id == client.id) {
@@ -259,13 +222,13 @@ class GameServer extends Game  {
             p_s[p.id] = p.get_input_obj();
         }
         this.laststate = {
-            players: p_s,
-            t: this.server_time                      // our current local time on the server
+            players: p_s, 
+            t: this.server_time// our current local time on the server
         };
 
         //Send the snapshot to the 'host' player
         for (const p of this.players) {
-            this.carrier.emit_update(p.instance, this.laststate );
+            this.carrier.emit_update(p.instance, this.laststate);
         }
     } //game_core.server_update
 

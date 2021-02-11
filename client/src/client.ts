@@ -4,6 +4,7 @@
     MIT Licensed.
 */
 
+const DEBUG = true;
 
 import {
     Game,
@@ -13,7 +14,6 @@ import {
     JitsiConnection,
     AllInputObj,
     apply_mvmnt,
-    format_state,
     InputObj,
     physics_movement_vector_from_direction,
     State,
@@ -22,11 +22,23 @@ import {
     fixed,
 } from '../../common/src/game.core';
 
-import { ConnectedData, GameJoinData, ResponderClient, PingData, ServerUpdateData, CarrierClient} from '../../common/src/protocol';
+import { ConnectedData, GameJoinData, ResponderClient, PingData, ServerUpdateData, CarrierClient, PushPlayerData, RmPlayerData, GameState} from '../../common/src/protocol';
 
 import * as dat from 'dat.gui';
 import { THREEx } from '../lib/keyboard.js';
 import * as sio from 'socket.io-client';
+
+function cloneIO(io: InputObj) : InputObj {
+    return {state: io.state, lis: io.lis};
+}
+
+function cloneAIO(o: AllInputObj) : AllInputObj {
+    const x : Record<string,InputObj> = {};
+    for (const key in o.players) {
+        x[key] = cloneIO(o.players[key]);
+    }
+    return {players: x, t: o.t};
+}
 
 //The main update loop runs on requestAnimationFrame,
 //Which falls back to a setTimeout loop on the server
@@ -164,19 +176,19 @@ class GameClient extends Game implements ResponderClient {
     // update
 
     //FIXME: should I also remove other data?
-    client_on_rm_player(data) {
+    client_on_rm_player(data: RmPlayerData) {
         this.players = this.players.filter(p => p.id !== data);
     }
 
-    client_on_push_player(data) {
-        const player = new PlayerClient(format_state(data.state), data.id, data.call_id);
+    client_on_push_player(data: PushPlayerData) {
+        const player = new PlayerClient(State.establish(data.state), data.id, data.call_id);
         this.push_player(player);
     }
 
-    set_game(game_data) {
-        for (const p of game_data.players) {
+    set_game(game_data: GameState) {
+        for (const p of game_data) {
             //    if (!game_data.players.hasOwnProperty(p_id)) continue;
-            const player = new PlayerClient(format_state(p.state), p.id, p.call_id);
+            const player = new PlayerClient(State.establish(p.state), p.id, p.call_id);
             this.push_player(player);
         }
     } //set_game
@@ -213,8 +225,8 @@ class GameClient extends Game implements ResponderClient {
             if (!data.players.hasOwnProperty(pid)) continue;
             const p = data.players[pid];
             p_s[pid] = {
-                state: new State(new vec(p.x, p.y), p.d),
-                lis: p.l
+                state: {x: p.state.x, y: p.state.y, d: p.state.d},
+                lis: p.lis
             };
         }
         return {
@@ -275,20 +287,14 @@ class GameClient extends Game implements ResponderClient {
             this.input_seq += 1;
 
             //Store the input state as a snapshot of what happened.
-            this.get_self().inputs.push({
+            const server_packet = {
                 keys : input,
                 time : fixed(this.local_time),
                 seq : this.input_seq
-            });
+            };
+            this.get_self().inputs.push(server_packet);
 
             //Send the packet of information to the server.
-            //The input packets are labelled with an 'i' in front.
-            let server_packet = 'i.';
-            server_packet += input.join('-') + '.';
-            server_packet += this.local_time.toFixed(3).replace('.','-') + '.';
-            server_packet += this.input_seq;
-
-            //Go
             this.carrier.emit_input(server_packet);
 
             //Return the direction if needed
@@ -312,7 +318,7 @@ class GameClient extends Game implements ResponderClient {
         const latest_server_data = this.server_updates[this.server_updates.length-1];
         //Our latest server position
         const my_data = latest_server_data.players[this.user_id];
-        const my_server_state = my_data.state;
+        const my_server_state = State.establish(my_data.state);
 
         //Update the debug server position block
     //    this.ghosts.server_pos_self.state = this.cp_state(my_server_state);
@@ -456,8 +462,8 @@ class GameClient extends Game implements ResponderClient {
                 const other_server_state = other_data.state;
 
                 //The other players positions in this timeline, behind us and in front of us
-                const other_target_state = target_data.state;
-                const other_past_state = past_data.state;
+                const other_target_state = State.establish(target_data.state);
+                const other_past_state = State.establish(past_data.state);
 
                 //update the dest block, this is a simple lerp
                 //to the target from the previous point in the server_updates buffer
@@ -478,9 +484,9 @@ class GameClient extends Game implements ResponderClient {
                 const my_server_state = my_data.state;
 
                     //The other players positions in this timeline, behind us and in front of us
-                const my_target_state = target.players[this.user_id].state;
+                const my_target_state = State.establish(target.players[this.user_id].state);
 
-                const my_past_state = previous.players[this.user_id].state;
+                const my_past_state = State.establish(previous.players[this.user_id].state);
 
                     //Snap the ghost to the new server position
                 //        this.ghosts.server_pos_self.pos = this.cp_state(my_server_state);
@@ -520,7 +526,7 @@ class GameClient extends Game implements ResponderClient {
             for (const p of this.players) {
                 const p_data = data.players[p.id];
                 if (!p_data) continue;
-                p.state = p_data.state.clone();
+                p.state = State.establish(p_data.state);
             }
         } else {
 
@@ -550,7 +556,7 @@ class GameClient extends Game implements ResponderClient {
 
     }; //game_core.client_onserverupdate_recieved
 
-    client_on_ping(data: PingData) {
+    client_on_pong(data: PingData) {
 
     }
 
@@ -730,7 +736,7 @@ class GameClient extends Game implements ResponderClient {
         setInterval(function(){
 
             this.last_ping_time = new Date().getTime() - this.fake_lag;
-            this.carrier.emit_ping('p.' + (this.last_ping_time) );
+            this.carrier.emit_ping(this.last_ping_time);
 
         }.bind(this), 1000);
 
@@ -847,44 +853,6 @@ class GameClient extends Game implements ResponderClient {
 
     }; //client_onping
 
-    client_onnetmessage(data: string) {//FIXME: replace every send with emit & remove this
-        const commands = data.split('.');
-        const command = commands[0];
-        const subcommand = commands[1] || null;
-        console.log('DEPRECATED MESSAGE FORMAT RECEIVED!' + subcommand);
-        const commanddata = commands[2] || null;
-
-        switch(command) {
-        case 's': //server message
-
-            switch(subcommand) {
-
-            //case 'h' : //host a game requested
-            //    this.client_onhostgame(commanddata); break;
-
-            //case 'j' : //join a game requested
-            //    this.client_onjoingame(commanddata); break;
-
-            //case 'r' : //ready a game requested
-            //    this.client_onreadygame(commanddata); break;
-
-            case 'e' : //end game requested
-                this.client_ondisconnect(commanddata); break;
-
-            case 'p' : //server ping
-                this.client_onping(commanddata); break;
-
-            //case 'c' : //other player changed colors
-            //    this.client_on_otherclientcolorchange(commanddata); break;
-
-            } //subcommand
-
-            break; //'s'
-        } //command
-
-    }; //client_onnetmessage
-
-
     client_refresh_fps() : void {
 
         //We store the fps for 10 frames, by adding it to this accumulator
@@ -939,7 +907,10 @@ class GameClient extends Game implements ResponderClient {
     }; //game_core.client_draw_help
 
     client_onjoingame(data: GameJoinData) {
-        console.log('onjoin');
+        console.log('RECEIVE onjoin');
+        if (DEBUG) {
+            console.log(data);
+        }
         this.local_time = data.time + this.net_latency;
         console.log('server time is about ' + this.local_time);
         this.set_game(data.game);

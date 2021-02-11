@@ -4,6 +4,8 @@
     MIT Licensed.
 */
 
+import { GameState } from "./protocol";
+
 //Now the main game class. This gets created on
 //both server and client. Server creates one for
 //each game that is hosted, and client creates one
@@ -11,7 +13,7 @@
 
 
 // fixed(4.22208334636) will return fixed point value to n places, default n = 3
-export function fixed(x) {
+export function fixed(x:number) : number {
     const n = 3;
     //return parseFloat(x.toFixed(n)); // FIXME
     return x;
@@ -73,11 +75,23 @@ function rgba(r:number, g:number, b:number, a:number) : string {
 }
 
 export class State {
+    public static clone(raw: { x: number; y: number; d: number; })
+            : {x: number, y: number, d: number} {
+        return  {x: raw.x, y: raw.y, d: raw.d};
+    }
+    public static establish(state: { x: number; y: number; d: number; }): State {
+        return new this(new vec(state.x,state.y),state.d);
+    }
     pos : vec;
     dir : number;
+
     constructor(pos: vec, dir: number) {
         this.pos = pos;
         this.dir = dir;
+    }
+    
+    downsize(): { x: number; y: number; d: number; } {
+        return {x: this.pos.x, y: this.pos.y, d: this.dir};
     }
 
     clone() {
@@ -126,20 +140,37 @@ export interface InputProcessor {
     last_input_seq: number;
     last_input_time: number;
     inputs: Input[];
-    get_input_obj() : {state: State, lis: number};
+    get_input_obj() : InputObj;
     process_inputs() : Mvmnt;
 }
 
 export interface InputObj {
-    state: State; // <--- FIX this, this shan't be a class
+    state: {x: number, y: number, d: number};
     lis: number;
+}
+/*
+export class InputObj {
+    state: State;
+    lis: number;
+    downsize() {
+        return {state: this.state.downsize(), lis: this.lis};
+    }
+    static establish(raw: InputObjRaw) {
+        return new this(State.establish(raw.state), raw.lis);
+    }
+    constructor(state: State, lis: number) {
+        this.state = state;
+        this.lis = lis;
+    }
+}
+*/
+export interface AllInputObj {
+    players: Record<string,InputObj>;
+    t: number;
 }
 
 export function get_input_obj(state: State, last_input_seq: number) : InputObj {
-    return {
-        state: state,
-        lis: last_input_seq
-    };
+    return {state: state.downsize(), lis: last_input_seq};
 }
 
 export type Mvmnt = State;
@@ -202,13 +233,6 @@ export function process_inputs(player : InputProcessor, player_dir: number) : Mv
     //console.log({x: mvmnt.pos.x, y: mvmnt.pos.y, dir: mvmnt.dir, r: r});
     //give it back
     return mvmnt;
-}
-
-type Socket = any;
-
-export interface AllInputObj {
-    players: Record<string,InputObj>;
-    t: number;
 }
 
 export class PlayerClient extends Player implements MobileProjectable, InputProcessor { //TODO remove impl InputProcessor
@@ -445,7 +469,7 @@ export abstract class Game {
         return res;
     }
 
-    get_game_state() {
+    get_game_state() : GameState {
         let p_s = [];
         for (const p of this.players) {
             p_s.push({
@@ -454,7 +478,7 @@ export abstract class Game {
                 state: p.state
             });
         };
-        return {players: p_s};
+        return p_s;
     }
 
     push_player(player: Player) {
@@ -493,11 +517,6 @@ export type JitsiConnection = any;
 export function s_lerp(s: State, ts: State, t: number) : State {
     return new State(s.pos.v_lerp(ts.pos, t), lerp(s.dir, ts.dir, t));
 }
-
-export function format_state(state) {
-    return new State(new vec(state.pos.x, state.pos.y), state.dir);
-};
-
 //export {Game, State};
 //server side we set the 'game_core' class to a global type, so that it can use it anywhere.
 //if( 'undefined' != typeof global ) {

@@ -25,30 +25,55 @@ import { runInThisContext } from "vm";
  * client_on_rm_player: remove player from game
  */
 
+export type GameState = {
+    id: string,
+    call_id: string,
+    state: {x: number, y: number, d: number}
+}[];
+
 export interface GameJoinData {
-    game;
+    game: GameState;
     time: number;
 }
-export type DisconnectData = any;
+export type DisconnectData = string;//"reason" see Socket.IO doc
 
-interface InputObj {
-    x: number,
-    y: number,
-    d: number,
-    l: number
-}
+export interface InputData {
+    keys: string[];
+    time: number;
+    seq: number;
+};
+
+type InputObj =
+    {
+        state: {
+            x: number,
+            y: number,
+            d: number
+        },
+        lis: number
+    };
 
 export interface ServerUpdateData {
-    players: Record<string,InputObj>;
+    players: Record<string,InputObj>;//TODO remove Record
     t: number;
 }
 
 export type ConnectedData = {id: string};
-export type RmPlayerData = any;
-export type PushPlayerData = any;
-export type UpdateCidData = any;
-export type PingData = any;
-export type GameStateData = any;
+export type RmPlayerData = string;
+export type PushPlayerData = {
+    id: string,
+    call_id: string,
+    state: {x: number, y: number, d: number}
+};
+export type SingleUpdateCidData = string;
+export type UpdateCidData = {id: string, call_id: string};
+export type PingData = number;
+
+
+export interface GameStateData {
+    game: GameState;
+    time: number;
+}
 
 export interface ResponderClient {
     client_onconnected(data: ConnectedData) : void;
@@ -58,12 +83,9 @@ export interface ResponderClient {
     client_on_push_player(data: PushPlayerData) : void;
     client_on_update_cid(data: UpdateCidData) : void;
     client_ondisconnect(data: DisconnectData) : void;
-    client_on_ping(data: PingData) : void;
-    client_onnetmessage(data: string);
+    client_on_pong(data: PingData) : void;
 }
 
-export type CallIdData = any;
-export type MvmntData = any;
 export class CarrierClient {
     socket: any; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient) {
@@ -86,27 +108,33 @@ export class CarrierClient {
         this.socket.on('on_push_player', msgC.client_on_push_player.bind(msgC));
 
         this.socket.on('on_update_cid', msgC.client_on_update_cid.bind(msgC));
-        //TODO: remove
-        this.socket.on('message', msgC.client_onnetmessage.bind(msgC))
+        
+        this.socket.on('pong', msgC.client_on_pong.bind(msgC));
     }
-    emit_call_id(data: CallIdData) {
-        this.socket.emit('on_update_cid', data);
+    emit_call_id(data: SingleUpdateCidData) {
+        this.emit('on_update_cid', data);
     }
-    emit_input(data: MvmntData){
-        this.socket.send(data);
+    emit_input(data: InputData){
+        this.emit('input', data, false);
     }
     emit_ping(data: PingData){
-        this.socket.send(data);
+        this.emit('ping', data, false);
+    }
+    private emit(key: string, data: any, log = true) {
+        if (log) {
+            console.log('SEND ' + key);
+            console.log(data);
+        }
+        this.socket.emit(key, data);
     }
 }
 
 export interface ResponderServer {
     on_connection(client: any);// missing in CarrierServer by design
-    on_update_cid(client: any, data: UpdateCidData);
-    on_input(client: any, data: ServerUpdateData);
+    on_update_cid(client: any, data: SingleUpdateCidData);
+    on_input(client: any, data: InputData);
     on_disconnect(client: any, data: DisconnectData);
-    //TODO remove
-    onMessage(client: any, data: any);
+    on_ping(client: any, data: PingData);
 }
 
 function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
@@ -117,36 +145,44 @@ export class CarrierServer {
     
     init_socket(socket, msgS: ResponderServer) {
         socket.on('on_update_cid', curry(msgS.on_update_cid.bind(msgS),socket));
-        socket.on('message', curry(msgS.onMessage.bind(msgS),socket));
         socket.on('input', curry(msgS.on_input.bind(msgS),socket));
         socket.on('disconnect', curry(msgS.on_disconnect.bind(msgS),socket));
+        socket.on('ping', curry(msgS.on_ping.bind(msgS), socket));
+    }
+
+    emit_pong(client: any, data: number) {
+        this.emit(client, 'pong', data, false);
     }
 
     emit_connected(socket, data: ConnectedData) {
-
+        this.emit(socket, 'onconnected', data);
     }
     
     emit_joingame(socket, data: GameJoinData) {
-        socket.emit('onjoingame', data);
+        this.emit(socket, 'onjoingame', data);
     }
 
     emit_pushplayer(socket, data: PushPlayerData) {
-        socket.emit('on_push_player', data);
+        this.emit(socket, 'on_push_player', data);
     }
 
     emit_updatecid(socket, data: UpdateCidData) {
-        socket.emit('on_update_cid', data);
+        this.emit(socket, 'on_update_cid', data);
     }
 
-    emit_update(socket, data: GameStateData) {
-        socket.emit( 'onserverupdate', data);
+    emit_update(socket, data: ServerUpdateData) {
+        this.emit(socket, 'onserverupdate', data, false);
     }
 
     emit_rmplayer(socket, data: RmPlayerData) {
-        socket.emit('on_rm_player', data);
+        this.emit(socket, 'on_rm_player', data);
     }
 
-    emit_message(socket, data: string) {
-        socket.send(data);
+    private emit(socket, key: string, data: any, log = true) {
+        if (log) {
+            console.log('SEND ' + key);
+            console.log(data);
+        }
+        socket.emit(key, data);
     }
 }
