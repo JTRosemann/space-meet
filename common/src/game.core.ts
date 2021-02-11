@@ -475,7 +475,7 @@ export abstract class Game {
             p_s.push({
                 id: p.id,
                 call_id: p.call_id,
-                state: p.state
+                state: p.state.downsize()
             });
         };
         return p_s;
