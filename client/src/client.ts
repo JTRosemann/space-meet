@@ -730,7 +730,7 @@ class GameClient extends Game implements ResponderClient {
         setInterval(function(){
 
             this.last_ping_time = new Date().getTime() - this.fake_lag;
-            this.socket.send('p.' + (this.last_ping_time) );
+            this.carrier.emit_ping('p.' + (this.last_ping_time) );
 
         }.bind(this), 1000);
 
@@ -950,7 +950,7 @@ class GameClient extends Game implements ResponderClient {
     }; //client_onjoingame
 
     client_onconnected(data: ConnectedData) {
-        console.log('onconnected');
+        console.log('onconnected with id ' + data.id);
         //The server responded that we are now in a game,
         //this lets us store our id
         this.user_id = data.id;
@@ -1024,9 +1024,9 @@ class GameClient extends Game implements ResponderClient {
     client_connect_to_server() {
 
         //Store a local reference to our connection to the server
-        this.carrier = new CarrierClient(sio.connect(), this);
-
-
+        const socket = sio.connect();
+        console.log('Connect to server with id ' + socket.id)
+        this.carrier = new CarrierClient(socket, this);
 
     }; //game_core.client_connect_to_server
 
@@ -1113,7 +1113,7 @@ console.log('before onload');
 window.onload = function(){
     console.log('onload');
     //Create our game client instance.
-    game = new GameClient();
+    game = new GameClient('FIXME-dummy-id');
 
     game.init_ui();
 

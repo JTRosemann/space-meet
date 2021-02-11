@@ -204,7 +204,7 @@ export function process_inputs(player : InputProcessor, player_dir: number) : Mv
     return mvmnt;
 }
 
-export type Socket = any;
+type Socket = any;
 
 export interface AllInputObj {
     players: Record<string,InputObj>;
@@ -409,7 +409,8 @@ export abstract class Game {
     lastframetime: number;
     updateid: number;
 
-    constructor() {
+    constructor(id: string) {
+        this.id = id;
         //Start a physics loop, this is separate to the rendering
         //as this happens at a fixed frequency
         this.create_physics_simulation();

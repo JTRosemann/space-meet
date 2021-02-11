@@ -3,36 +3,74 @@
 
     MIT Licensed.
 */
-type Client = any;
 
 import * as UUID from 'uuid';
+import * as sio from 'socket.io';
 
-export type client_type = {
-    userid:string,
-    on: (x:string, y: (m:any) => unknown) => unknown,
-    game: GameServer,
-    game_id: string
-}
+import {
+    CarrierServer, 
+    PushPlayerData,
+    ResponderServer,
+    RmPlayerData,
+    ServerUpdateData,
+    UpdateCidData,
+    DisconnectData
+} from '../../common/src/protocol';
 
-export class Server {
-    game = {gamecore: null, id: UUID.v4, clients: [], active: false};
-    //A simple wrapper for logging so we can toggle it,
-    //and augment it for clarity.
-    log () {
-        if(verbose) console.log.apply(this,arguments);
-    };
+export class LobbyServer implements ResponderServer {
+    gamecore : GameServer;
+    id = UUID.v4();
+    carrier: CarrierServer = new CarrierServer();
+    running_id: number = 0;
 
+    constructor() {
+        this.carrier = new CarrierServer();
+        this.gamecore = new GameServer(this.carrier);
+        console.log('start game ' + this.gamecore.id);
+        this.gamecore.update( new Date().getTime() );// starts the update loop
+    }
+
+    //TODO fix debugging stuff
     fake_latency = 0;
     local_time = 0;
     _dt = new Date().getTime();
     _dte = new Date().getTime();
     //a local queue of messages we delay if faking latency
-    messages = [];
-    running_id: number;
+    messages : {client: sio.Socket, message:string}[] = [];
 
-    onMessage(client:client_type ,message: string) {
+    on_connection(client: sio.Socket) {
+        //Useful to know when someone connects
+        console.log('\t socket.io:: player ' + client.id + ' connected');
+        this.gamecore.push_client(client, this.running_id);
+        this.running_id++;
+
+        //tell the player they connected, giving them their id
+        this.carrier.init_socket(client, this);
+        this.carrier.emit_connected(client, { id: client.id } );//TODO remove this id probably
+        console.log('looking for a game.');
+        const data = {
+            game: this.gamecore.get_game_state(),
+            time: this.gamecore.local_time
+        };
+        this.carrier.emit_joingame(client, data);
+        this.gamecore.active = true;    //set this flag, so that the update loop can run it.
+    }
+
+    on_update_cid(client: sio.Socket, data: UpdateCidData) {
+        this.gamecore.on_update_cid(client, data);
+    }
+
+    on_input(client: sio.Socket, data: ServerUpdateData) {
+        this.gamecore.on_input(client, data);
+    }
+
+    on_disconnect(client: sio.Socket, data: DisconnectData) {
+        this.gamecore.on_disconnect(client, data); 
+    }
+    
+    onMessage(client: sio.Socket, message: string) {
         console.log('Use of DEPRECATED MESSAGE FORMAT');
-
+        //TODO fix debugging code
         if(this.fake_latency && message.split('.')[0].substr(0,1) == 'i') {
 
             //store all input message
@@ -40,91 +78,20 @@ export class Server {
 
             setTimeout(function(){
                 if(this.messages.length) {
-                    this._onMessage( this.messages[0].client, this.messages[0].message );
+                    this.gamecore.onMessage( this.messages[0].client, this.messages[0].message );
                     this.messages.splice(0,1);
                 }
             }.bind(this), this.fake_latency);
 
         } else {
-            this._onMessage(client, message);
+            this.gamecore.onMessage(client, message);
         }
-    };
-
-    _onMessage(client: client_type ,message: string) {
-    
-        //Cut the message up into sub components
-        const message_parts = message.split('.');
-        //The first is always the type of message
-        const message_type = message_parts[0];
-
-        if(message_type == 'i') {
-            //Input handler will forward this
-            this.onInput(client, message_parts);
-        } else if(message_type == 'p') {
-            client.send('s.p.' + message_parts[1]);
-        } else if(message_type == 'c') {    //Client changed their color!
-            for (let other_c of client.game.players) {
-                // JS bs
-                //if (!client.game.players.hasOwnProperty(other_c)) continue;
-                if (other_c.id != client.userid) {
-                    other_c.instance.emit_message('s.c.' + client.userid + '.' + message_parts[1]);
-                }
-            }
-        } else if(message_type == 'l') {    //A client is asking for lag simulation
-            this.fake_latency = parseFloat(message_parts[1]);
-        }
-    }; //onMessage
-
-    onInput(client, parts) {
-        //The input commands come in like u-l,
-        //so we split them up into separate commands,
-        //and then update the players
-        var input_commands = parts[1].split('-');
-        var input_time = parts[2].replace('-','.');
-        var input_seq = parts[3];
-
-        //the client should be in a game, so
-        //we can tell that game to handle the input
-        if(client && client.game && client.game.gamecore) {
-            client.game.gamecore.handle_server_input(client, input_commands, input_time, input_seq);
-        }
-
-    }; //onInput
-
-    //we are requesting to kill a game in progress.
-    disconnect(gameid, userid) {
-        if(this.game) {
-            this.game.gamecore.rm_player(userid);
-        } else {
-            console.log('that game was not found!');
-        }
-    }; //disconnect
-
-
-    findGame(client: Client) {
-        console.log('looking for a game.');
-        if (!this.game.gamecore) {
-            this.game.gamecore = new GameServer();
-            this.game.gamecore.update( new Date().getTime() );// starts the update loop
-        }
-        this.running_id++;
-        this.game.gamecore.push_client(client, running_id); //clients are pushed to the client list
-        const data = {
-        game: this.game.gamecore.get_game_state(),
-        time: this.game.gamecore.local_time
-        };
-        client.emit('onjoingame',data);
-        client.game = this.game;
-        this.game.active = true;    //set this flag, so that the update loop can run it.
-    }; //findGame
+    }
 
 }
 
 //const game_server = module.exports = Server;
 //const UUID        = require('node-uuid');
-const verbose     = true;
-let running_id    = 0;
-
 //Since we are sharing code with the browser, we
 //are going to include some values to handle that.
 //global.window = global.document = global;
@@ -139,7 +106,6 @@ import {
     apply_mvmnt,
     InputObj,
     Player,
-    Socket,
     vec,
     get_input_obj,
     Input,
@@ -147,18 +113,17 @@ import {
     process_inputs,
     Mvmnt
 } from '../../common/src/game.core';
-import { CarrierServer, PushPlayerData, ResponderServer, RmPlayerData } from '../../common/src/protocol';
 
 
 export class PlayerServer extends Player implements InputProcessor {
     last_input_seq: number;
     last_input_time: number;
     inputs: Input[] = [];
-    instance: CarrierServer;
+    instance: sio.Socket;
 
-    constructor(state: State, id: string, call_id: string, socket: Socket) {
+    constructor(state: State, id: string, call_id: string, socket: sio.Socket) {
         super(state, id, call_id);
-        this.instance = new CarrierServer(socket);
+        this.instance = socket;
     }
 
     get_input_obj() {
@@ -175,49 +140,101 @@ class GameServer extends Game  {
     players: PlayerServer[] = [];
     server_time = 0;
     laststate: AllInputObj;
+    carrier: CarrierServer;
+    active = false;
 
-    constructor() {
-        super();
+    constructor(carrier: CarrierServer) {
+        super(UUID.v4());
+        this.carrier = carrier;
         this.create_update_loop();
     }
+
+    onMessage(client: sio.Socket, message: string) {
+        //Cut the message up into sub components
+        const message_parts = message.split('.');
+        //The first is always the type of message
+        const message_type = message_parts[0];
+
+        if(message_type == 'i') {
+            //Input handler will forward this
+            this.onInput(client, message_parts);
+        } else if(message_type == 'p') {
+            this.carrier.emit_message(client, 's.p.' + message_parts[1]);
+        } else if(message_type == 'c') {    //Client changed their color!
+            for (let other_c of this.players) {
+                // JS bs
+                //if (!client.game.players.hasOwnProperty(other_c)) continue;
+                if (other_c.id != client.id) {
+                    this.carrier.emit_message(other_c.instance, 's.c.' + client.id + '.' + message_parts[1]);
+                }
+            }
+        } 
+    }
+
+    onInput(client: sio.Socket, parts: string[]) {
+        //TODO: remove
+        //The input commands come in like u-l,
+        //so we split them up into separate commands,
+        //and then update the players
+        var input_commands = parts[1].split('-');
+        var input_time = Number(parts[2].replace('-','.'));
+        var input_seq = Number(parts[3]);
+
+        //the client should be in a game, so
+        //we can tell that game to handle the input
+        if(client && this) {
+            this.handle_server_input(client, input_commands, input_time, input_seq);
+        }
+
+    }; //onInput
+
+    on_disconnect(client: sio.Socket, data: DisconnectData) {
+        //Useful to know when soomeone disconnects
+        console.log('\t socket.io:: client disconnected ' + client.id + ' ' + this.id);
+        //When this client disconnects, we want to tell the game server
+        //about that as well, so it can remove them from the game they are
+        //in, and make sure the other player knows that they left and so on.
+        this.rm_player(client.id);
+    }
+
+    on_input(client: sio.Socket, data: ServerUpdateData) {
+        throw new Error('Method not implemented.');
+    }    
 
     notify(listener: 'on_rm_player' | 'on_push_player',
             msg: RmPlayerData | PushPlayerData) {
         for (const p of this.players) {
             switch (listener) {
                 case 'on_rm_player':
-                    p.instance.emit_rmplayer(msg);
+                    this.carrier.emit_rmplayer(p.instance, msg);
                     break;
                 case 'on_push_player':
-                    p.instance.emit_pushplayer(msg);
+                    this.carrier.emit_pushplayer(p.instance, msg);
                     break;
             }
         }
     }
 
-    rm_player(id) {
+    rm_player(id: string) {
         this.players = this.players.filter(p => p.id !== id);
         this.notify('on_rm_player', id);
     }
 
-    push_client(client: Socket, r_id: number) {
-        r_id = r_id || 1;
+    push_client(client: sio.Socket, r_id: number = 1) {
         const start_state : State = new State(new vec( r_id * 40, 50 ), 0);
-        const p = new PlayerServer(start_state, client.userid, '' /* call_id */, client);//Beware: id != userid
+        const p = new PlayerServer(start_state, client.id, '' /* call_id */, client);//Beware: id != userid
         this.push_player(p);
-        this.notify('on_push_player', {id: client.userid, call_id: '', state: start_state});//FIXME I shouldn't send the class state
+        this.notify('on_push_player', {id: client.id, call_id: '', state: start_state});//FIXME I shouldn't send the class state
     } // push_client
 
-    on_update_cid(u_id) {
-        return function(data) {
-            console.log('update cid');
-            for (const p of this.players) {
-                if (p.id == u_id) {
-                    p.call_id = data;
-                } else {
-                    const msg = {id: u_id, call_id: data};
-                    p.instance.emit_updatecid(msg);
-                }
+    on_update_cid(client: sio.Socket, data: UpdateCidData) {
+        console.log('update cid');
+        for (const p of this.players) {
+            if (p.id == client.id) {
+                p.call_id = data;
+            } else {
+                const msg = {id: client.id, call_id: data};
+                this.carrier.emit_updatecid(p.instance, msg);
             }
         }
     }
@@ -248,7 +265,7 @@ class GameServer extends Game  {
 
         //Send the snapshot to the 'host' player
         for (const p of this.players) {
-            p.instance.emit_update(this.laststate );
+            this.carrier.emit_update(p.instance, this.laststate );
         }
     } //game_core.server_update
 
@@ -266,9 +283,9 @@ class GameServer extends Game  {
         }
     }; //game_core.server_update_physics
 
-    handle_server_input(client: Socket, input: string[], input_time: number, input_seq: number) {
+    handle_server_input(client: sio.Socket, input: string[], input_time: number, input_seq: number) {
         for (const p of this.players) {
-            if (client.userid == p.id) {
+            if (client.id == p.id) {
                 //Store the input on the player instance for processing in the physics loop
                 p.inputs.push({keys:input, time:input_time, seq:input_seq});
                 return;

@@ -95,6 +95,9 @@ export class CarrierClient {
     emit_input(data: MvmntData){
         this.socket.send(data);
     }
+    emit_ping(data: PingData){
+        this.socket.send(data);
+    }
 }
 
 export interface ResponderServer {
@@ -106,49 +109,44 @@ export interface ResponderServer {
     onMessage(client: any, data: any);
 }
 
-function add_arg<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
+function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
     return function (z: B) { return f(arg, z);};
 }
 
 export class CarrierServer {
-    socket: any;//SocketIO
-    constructor(socket) {
-        this.socket = socket;
+    
+    init_socket(socket, msgS: ResponderServer) {
+        socket.on('on_update_cid', curry(msgS.on_update_cid.bind(msgS),socket));
+        socket.on('message', curry(msgS.onMessage.bind(msgS),socket));
+        socket.on('input', curry(msgS.on_input.bind(msgS),socket));
+        socket.on('disconnect', curry(msgS.on_disconnect.bind(msgS),socket));
     }
 
-    /*constructor(socket, msgS: ResponderServer) {
-        this.socket = socket;
-        this.socket.on('on_update_cid', add_arg(msgS.on_update_cid.bind(msgS),socket));
-        this.socket.on('message', add_arg(msgS.onMessage.bind(msgS),socket));
-        this.socket.on('input', add_arg(msgS.on_input.bind(msgS),socket));
-        this.socket.on('disconnect', add_arg(msgS.on_disconnect.bind(msgS),socket));
-    }*/
-
-    emit_connected(data: ConnectedData) {
+    emit_connected(socket, data: ConnectedData) {
 
     }
     
-    emit_joingame(data: GameJoinData) {
-        this.socket.emit('onjoingame', data);
+    emit_joingame(socket, data: GameJoinData) {
+        socket.emit('onjoingame', data);
     }
 
-    emit_pushplayer(data: PushPlayerData) {
-        this.socket.emit('on_push_player', data);
+    emit_pushplayer(socket, data: PushPlayerData) {
+        socket.emit('on_push_player', data);
     }
 
-    emit_updatecid(data: UpdateCidData) {
-        this.socket.emit('on_update_cid', data);
+    emit_updatecid(socket, data: UpdateCidData) {
+        socket.emit('on_update_cid', data);
     }
 
-    emit_update(data: GameStateData) {
-        this.socket.emit( 'onserverupdate', data);
+    emit_update(socket, data: GameStateData) {
+        socket.emit( 'onserverupdate', data);
     }
 
-    emit_rmplayer(data: RmPlayerData) {
-        this.socket.emit('on_rm_player', data);
+    emit_rmplayer(socket, data: RmPlayerData) {
+        socket.emit('on_rm_player', data);
     }
 
-    emit_message(data: string) {
-        this.socket.send(data);
+    emit_message(socket, data: string) {
+        socket.send(data);
     }
 }
