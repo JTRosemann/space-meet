@@ -6,6 +6,9 @@
 
 const DEBUG = true;
 
+//https://github.com/jitsi/lib-jitsi-meet/issues/484
+//import JitsiMeetJS from '../lib/lib-jitsi-meet.min.js';
+
 import {
     Game,
     PlayerClient,
@@ -914,7 +917,7 @@ class GameClient extends Game implements ResponderClient {
         this.local_time = data.time + this.net_latency;
         console.log('server time is about ' + this.local_time);
         this.set_game(data.game);
-        //this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
+        this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
         this.init_audio();
         //Finally, start the loop
         this.update( new Date().getTime() );
@@ -1042,7 +1045,7 @@ class GameClient extends Game implements ResponderClient {
 
     init_audio() {
         // Set up audio
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const AudioContext = window.AudioContext;// || window.webkitAudioContext;
         this.audio_ctx = new AudioContext();
         this.listener = this.audio_ctx.listener; // keep the standard values for position, facing & up
         this.listener.setPosition(this.get_self().state.pos.x, 0, this.get_self().state.pos.y);
