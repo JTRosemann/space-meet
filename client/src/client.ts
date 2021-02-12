@@ -512,6 +512,20 @@ class GameClient extends Game implements ResponderClient {
     client_onserverupdate_recieved(raw_data : ServerUpdateData) {
 
         const data = this.unpack_server_data(raw_data);
+        if (DEBUG) {
+            for (const p of this.players) {
+                console.log(p.id + 'in this order: server_data, state, cur_state, sd-s');
+                const sd = data.players[p.id].state;
+                const s = p.state.downsize();
+                const sc = p.cur_state.downsize();
+                console.log(sd);
+                console.log(s);
+                console.log(sc);
+                console.log({x: sd.x - s.x, y: sd.y - s.y, d: sd.d - s.d});
+                
+            }
+            //console.log(data.players[0].state);
+        }
         //Lets clarify the information we have locally. One of the players is 'hosting' and
         //the other is a joined in client, so we name these host and client for making sure
         //the positions we get from the server are mapped onto the correct local sprites
@@ -919,7 +933,7 @@ class GameClient extends Game implements ResponderClient {
         this.local_time = data.time + this.net_latency;
         console.log('server time is about ' + this.local_time);
         this.set_game(data.game);
-        this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
+        //this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
         this.init_audio();
         //Finally, start the loop
         this.update( new Date().getTime() );

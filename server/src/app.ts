@@ -12,8 +12,6 @@ const gameport        = 4004;
 
 import * as io from 'socket.io';
 import express        = require('express');
-import UUID           = require('node-uuid');
-
 const  verbose        = true;
 import https          = require('https');
 import fs             = require('fs');

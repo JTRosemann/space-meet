@@ -1,6 +1,7 @@
 //import * as SocketIOClient from 'socket.io-client';
 
-const JSONIFY = false;
+const JSONIFY = false; // this is exactly what is done anyway: 
+//https://stackoverflow.com/questions/37512304/send-object-in-socket-io
 
 import { timeStamp } from "console";
 import { runInThisContext } from "vm";
