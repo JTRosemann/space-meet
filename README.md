@@ -23,6 +23,12 @@ This is work in progress, it's only a proof of concept yet.
 * Visit http://127.0.0.1:4004/?debug
 * you should now see yourself and hear yourself differently as you walk through the room
 
+## Running
+* `./buildall`
+* `./run`
+* `ngrok http https://localhost:4004` (only works with (free but signed-up) authtoken from ngrok)
+* go localhost:4040 and use the link given there
+
 ## Roadmap
 
 * Switch to TypeScript

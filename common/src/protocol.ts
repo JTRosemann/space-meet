@@ -1,6 +1,6 @@
 //import * as SocketIOClient from 'socket.io-client';
 
-const JSONIFY = true;
+const JSONIFY = false;
 
 import { timeStamp } from "console";
 import { runInThisContext } from "vm";

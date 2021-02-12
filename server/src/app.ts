@@ -8,16 +8,19 @@
 
 const dir = '/home/jt/projects/space-meet'; // de-hardcode this!
 
-const gameport        = process.env.PORT || '4004';
+const gameport        = 4004;
 
 import * as io from 'socket.io';
 import express        = require('express');
 import UUID           = require('node-uuid');
 
 const  verbose        = true;
-import http           = require('http');
+import https          = require('https');
+import fs             = require('fs');
+const privateKey      = fs.readFileSync('/home/jt/projects/space-meet/key.pem', 'utf8');
+const certificate     = fs.readFileSync('/home/jt/projects/space-meet/cert.pem', 'utf8');
 const app             = express();
-const server          = http.createServer(app);
+const sserver         = https.createServer({key:privateKey, cert: certificate}, app);
 
 //FIXME: CORS request error (in Chrome), maybe this way: https://daveceddia.com/access-control-allow-origin-cors-errors-in-react-express/
 /* Express server set up. */
@@ -49,16 +52,16 @@ console.log('\t :: Express :: Listening on port ' + gameport );
     }); //app.get **/
 
 
-app.use(express.static('./client/dist'));
+app.use(express.static('/home/jt/projects/space-meet/client/dist'));
 
 
 //Tell the server to listen for incoming connections
-server.listen(gameport)
+sserver.listen(gameport);
 
-/* This mirrors it on an accessible server
-const ngrok = require('ngrok');
+ // This mirrors it on an accessible server
+/*import ngrok = require('ngrok');
 (async function () {
-    const url = await ngrok.connect(4004);
+    const url = await ngrok.connect(gameport);
 })();
 */
 
@@ -68,11 +71,10 @@ const ngrok = require('ngrok');
 //This way, when the client requests '/socket.io/' files, socket.io determines what the client needs.
 
 //Create a socket.io instance using our express server
-const sio = new io.Server(server);
+const sio = new io.Server(sserver);
 
 //Configure the socket.io connection settings.
 //See http://socket.io/
-sio.use
 
 sio.use(function(socket, next) {
     const handshakeData = socket.request;

@@ -6,8 +6,10 @@
 
 const DEBUG = true;
 
+import * as strophe from 'strophe';
 //https://github.com/jitsi/lib-jitsi-meet/issues/484
 //import JitsiMeetJS from '../lib/lib-jitsi-meet.min.js';
+declare const JitsiMeetJS : any;
 
 import {
     Game,
@@ -204,7 +206,7 @@ class GameClient extends Game implements ResponderClient {
                     return this.self
                 }
             }
-            console.warn('Cannot find myself');
+            console.log('Cannot find myself');
         }
         return this.self;
     }
