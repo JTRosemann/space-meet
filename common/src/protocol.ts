@@ -1,5 +1,7 @@
 //import * as SocketIOClient from 'socket.io-client';
 
+const JSONIFY = true;
+
 import { timeStamp } from "console";
 import { runInThisContext } from "vm";
 
@@ -86,30 +88,40 @@ export interface ResponderClient {
     client_on_pong(data: PingData) : void;
 }
 
+function unpack<A,B>(f: (data: A) => B) : (x:string | A) => B {
+    return JSONIFY ? function(raw_data: string) {
+        return f(JSON.parse(raw_data));
+    } : f;
+}
+
+function pack(data: any) {
+    return JSONIFY ? JSON.stringify(data) : data;
+}
+
 export class CarrierClient {
     socket: any; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient) {
         this.socket = socket;
         //Sent when we are disconnected (network, server down, etc)
-        this.socket.on('disconnect', msgC.client_ondisconnect.bind(msgC));
+        this.socket.on('disconnect', unpack(msgC.client_ondisconnect.bind(msgC)));
         //Sent each tick of the server simulation. This is our authoritive update
-        this.socket.on('onserverupdate', msgC.client_onserverupdate_recieved.bind(msgC));
+        this.socket.on('onserverupdate', unpack(msgC.client_onserverupdate_recieved.bind(msgC)));
         //When we connect, we are not 'connected' until we have a server id
         //and are placed in a game by the server. The server sends us a message for that.
         //Handle when we connect to the server, showing state and storing id's.
-        this.socket.on('onconnected', msgC.client_onconnected.bind(msgC));
+        this.socket.on('onconnected', unpack(msgC.client_onconnected.bind(msgC)));
         //On error we just show that we are not connected for now. Can print the data.
-        this.socket.on('error', msgC.client_ondisconnect.bind(msgC));
+        this.socket.on('error', unpack(msgC.client_ondisconnect.bind(msgC)));
 
-        this.socket.on('onjoingame', msgC.client_onjoingame.bind(msgC));
+        this.socket.on('onjoingame', unpack(msgC.client_onjoingame.bind(msgC)));
 
-        this.socket.on('on_rm_player', msgC.client_on_rm_player.bind(msgC));
+        this.socket.on('on_rm_player', unpack(msgC.client_on_rm_player.bind(msgC)));
 
-        this.socket.on('on_push_player', msgC.client_on_push_player.bind(msgC));
+        this.socket.on('on_push_player', unpack(msgC.client_on_push_player.bind(msgC)));
 
-        this.socket.on('on_update_cid', msgC.client_on_update_cid.bind(msgC));
+        this.socket.on('on_update_cid', unpack(msgC.client_on_update_cid.bind(msgC)));
         
-        this.socket.on('pong', msgC.client_on_pong.bind(msgC));
+        this.socket.on('pong', unpack(msgC.client_on_pong.bind(msgC)));
     }
     emit_call_id(data: SingleUpdateCidData) {
         this.emit('on_update_cid', data);
@@ -125,7 +137,7 @@ export class CarrierClient {
             console.log('SEND ' + key);
             console.log(data);
         }
-        this.socket.emit(key, data);
+        this.socket.emit(key, pack(data));
     }
 }
 
@@ -144,10 +156,10 @@ function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
 export class CarrierServer {
     
     init_socket(socket, msgS: ResponderServer) {
-        socket.on('on_update_cid', curry(msgS.on_update_cid.bind(msgS),socket));
-        socket.on('input', curry(msgS.on_input.bind(msgS),socket));
-        socket.on('disconnect', curry(msgS.on_disconnect.bind(msgS),socket));
-        socket.on('ping', curry(msgS.on_ping.bind(msgS), socket));
+        socket.on('on_update_cid', unpack(curry(msgS.on_update_cid.bind(msgS),socket)));
+        socket.on('input', unpack(curry(msgS.on_input.bind(msgS),socket)));
+        socket.on('disconnect', unpack(curry(msgS.on_disconnect.bind(msgS),socket)));
+        socket.on('ping', unpack(curry(msgS.on_ping.bind(msgS), socket)));
     }
 
     emit_pong(client: any, data: number) {
@@ -183,6 +195,6 @@ export class CarrierServer {
             console.log('SEND ' + key);
             console.log(data);
         }
-        socket.emit(key, data);
+        socket.emit(key, pack(data));
     }
 }
