@@ -12,8 +12,6 @@ import * as strophe from 'strophe';
 declare const JitsiMeetJS : any;
 
 import {
-    Game,
-    PlayerClient,
     Ctx,
     THREExKeyboard,
     JitsiConnection,
@@ -23,9 +21,11 @@ import {
     physics_movement_vector_from_direction,
     State,
     s_lerp,
-    vec,
     fixed,
 } from '../../common/src/game.core';
+import { Simulator } from "../../common/src/Simulator";
+import { PlayerClient } from "./PlayerClient";
+import { vec } from "../../common/src/vec";
 
 import { ConnectedData, GameJoinData, ResponderClient, PingData, ServerUpdateData, CarrierClient, PushPlayerData, RmPlayerData, GameState} from '../../common/src/protocol';
 
@@ -96,7 +96,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 var game : GameClient;
 
 
-class GameClient extends Game implements ResponderClient {
+class GameClient extends Simulator implements ResponderClient {
     players: PlayerClient[] = [];
     self: PlayerClient;
     //Create a keyboard handler

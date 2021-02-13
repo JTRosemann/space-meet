@@ -10,89 +10,12 @@ import * as sio from 'socket.io';
 import {
     CarrierServer, 
     PushPlayerData,
-    ResponderServer,
     RmPlayerData,
     ServerUpdateData,
-    UpdateCidData,
     DisconnectData,
     SingleUpdateCidData,
     InputData
 } from '../../common/src/protocol';
-
-export class LobbyServer implements ResponderServer {
-    gamecore : GameServer;
-    id = UUID.v4();
-    carrier: CarrierServer = new CarrierServer();
-    running_id: number = 0;
-
-    constructor() {
-        this.carrier = new CarrierServer();
-        this.gamecore = new GameServer(this.carrier);
-        console.log('start game ' + this.gamecore.id);
-        this.gamecore.update( new Date().getTime() );// starts the update loop
-    }
-
-    //TODO fix debugging stuff
-    fake_latency = 0;
-    local_time = 0;
-    _dt = new Date().getTime();
-    _dte = new Date().getTime();
-    //a local queue of messages we delay if faking latency
-    messages : {client: sio.Socket, message:string}[] = [];
-
-    on_connection(client: sio.Socket) {
-        //Useful to know when someone connects
-        console.log('\t socket.io:: player ' + client.id + ' connected');
-        this.gamecore.push_client(client, this.running_id);
-        this.running_id++;
-
-        //tell the player they connected, giving them their id
-        this.carrier.init_socket(client, this);
-        this.carrier.emit_connected(client, { id: client.id } );//TODO remove this id probably
-        console.log('looking for a game.');
-        const data = {
-            game: this.gamecore.get_game_state(),
-            time: this.gamecore.local_time
-        };
-        this.carrier.emit_joingame(client, data);
-        this.gamecore.active = true;    //set this flag, so that the update loop can run it.
-    }
-
-    on_update_cid(client: sio.Socket, data: SingleUpdateCidData) {
-        this.gamecore.on_update_cid(client, data);
-    }
-
-    on_ping(client: sio.Socket, data: number) {
-        this.carrier.emit_pong(client, data);
-    }
-
-    on_input(client: sio.Socket, data: InputData) {
-        this.gamecore.on_input(client, data);
-    }
-
-    on_disconnect(client: sio.Socket, data: DisconnectData) {
-        this.gamecore.on_disconnect(client, data); 
-    }
-    
-    onMessage(client: sio.Socket, message: string) {
-        console.log('Use of DEPRECATED MESSAGE FORMAT');
-        //TODO fix debugging code & REMOVE method
-        if(this.fake_latency && message.split('.')[0].substr(0,1) == 'i') {
-
-            //store all input message
-            this.messages.push({client:client, message:message});
-
-            setTimeout(function(){
-                if(this.messages.length) {
-                    this.gamecore.onMessage( this.messages[0].client, this.messages[0].message );
-                    this.messages.splice(0,1);
-                }
-            }.bind(this), this.fake_latency);
-
-        }
-    }
-
-}
 
 //const game_server = module.exports = Server;
 //const UUID        = require('node-uuid');
@@ -105,41 +28,16 @@ export class LobbyServer implements ResponderServer {
 
 import {
     State,
-    Game,
-    AllInputObj,
     apply_mvmnt,
-    InputObj,
-    Player,
-    vec,
-    get_input_obj,
-    Input,
-    InputProcessor,
-    process_inputs,
-    Mvmnt
+    InputObj
 } from '../../common/src/game.core';
+import { PlayerServer } from './PlayerServer';
+import { Simulator } from '../../common/src/Simulator';
+import { vec } from '../../common/src/vec';
+import { Game } from '../../common/src/Game';
 
 
-export class PlayerServer extends Player implements InputProcessor {
-    last_input_seq: number;
-    last_input_time: number;
-    inputs: Input[] = [];
-    instance: sio.Socket;
-
-    constructor(state: State, id: string, call_id: string, socket: sio.Socket) {
-        super(state, id, call_id);
-        this.instance = socket;
-    }
-
-    get_input_obj() {
-        return get_input_obj(this.state, this.last_input_seq);
-    }
-
-    process_inputs() : Mvmnt {
-        return process_inputs(this, this.state.dir);
-    }
-}
-
-class GameServer extends Game  {
+export class SimulatorServer extends Simulator  {
     static update_loop = 45;//ms
     players: PlayerServer[] = [];
     server_time = 0;
@@ -147,8 +45,8 @@ class GameServer extends Game  {
     carrier: CarrierServer;
     active = false;
 
-    constructor(carrier: CarrierServer) {
-        super(UUID.v4());
+    constructor(game: Game, carrier: CarrierServer) {
+        super(game);
         this.carrier = carrier;
         this.create_update_loop();
     }
@@ -206,7 +104,7 @@ class GameServer extends Game  {
 
         setInterval(function(){
             this.do_update();
-        }.bind(this), GameServer.update_loop);
+        }.bind(this), SimulatorServer.update_loop);
 
     } //game_core.client_create_physics_simulation
 
