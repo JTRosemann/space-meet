@@ -1,7 +1,8 @@
 import { GameState } from "./protocol";
-import { Player, fixed, InputProcessor } from "./game.core";
+import { fixed, InputProcessor } from "./game.core";
 import { Controller } from "./Controller";
 import { Game } from "./Game";
+import { Player } from "./Player";
 
 /**
  * The Simulator runs on both client and server:
@@ -13,8 +14,8 @@ export class Simulator {
     static physics_loop = 15;//ms
     static timer_loop = 4;//ms
     game: Game;
-    controllers: Controller[] = [];
-    input_procs: Record<string,InputProcessor> = {};
+    bots: Controller[];
+    players: Record<string,Player> = {};
     //Set up some physics integration values
     physics_delta: number = Simulator.physics_loop;//The physics update delta time in ms
     physics_prev: number = new Date().getTime(); //The physics update last delta time;
@@ -33,6 +34,37 @@ export class Simulator {
 
         //Start a fast paced timer for measuring time easier
         this.create_timer();
+    }
+    
+    /**
+     * Adds a player for updating.
+     * @param player the player to push
+     */
+    put_player(player: Player) {
+        this.players[player.id] = player;
+    }
+
+    /**
+     * Adds a controller for updating.
+     * @param controller the controller to add
+     */
+    push_bot(controller: Controller) {
+        this.bots.push(controller);
+    }
+
+    /**
+     * Remove a player by its id.
+     * @param id the id of the player to remove
+     */
+    rm_player(id:string) {
+        delete this.players[id];
+    }
+    
+    /**
+     * Return all players as an array.
+     */
+    get_players() {
+        return Object.values(this.players);
     }
 
     /**
@@ -61,9 +93,9 @@ export class Simulator {
      * then the Game has the final say to guarantee everything stays in bounds.
      */
     update_physics() {
-        for (const c of this.controllers) {
+        //TODO add support for bots
+        for (const c of Object.values(this.players)) {
             c.update(this.physics_delta, this.local_time);//controller updates its controllee
-            this.game.world.confine(c.controllee);//make sure we stay in bounds
         }
     }
 

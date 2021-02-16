@@ -91,6 +91,6 @@ import { LobbyServer } from "./LobbyServer";
 //as well as give that client a unique ID to use so we can
 //maintain the list of players.
 
-const game_server = new LobbyServer();
+const game_server = new LobbyServer(sio);
 // .sockets selects every client
 sio.sockets.on('connection', game_server.on_connection.bind(game_server));

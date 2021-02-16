@@ -4,6 +4,7 @@
     MIT Licensed.
 */
 
+import { InputData } from "./protocol";
 import { Simulator } from "./Simulator";
 import { vec } from "./vec";
 import { World } from "./World";
@@ -58,6 +59,10 @@ export class State {
 }
 
 export interface Item {
+    /**
+     * used to map to matching video & sound in the client
+     */
+    id: string;
     state : State;
     rad : number;
 }
@@ -80,6 +85,7 @@ export class Player implements Item {
     rad: number = 16;
     id: string;
     call_id: string;// TODO: move to some VideoEnv or something
+    inputs: InputData[];
 
     constructor(state: State, id: string, call_id: string) {
         this.state = state.clone();
@@ -139,6 +145,7 @@ export function apply_mvmnt(state: State, mvmnt: Mvmnt) : State {
 }
 
 // TODO move at a fitting point
+// TODO this should incorporate the *actual* time passed (instead of Sim.physics_loop)
 export function physics_movement_vector_from_direction(r: number, phi: number, base_phi: number) : Mvmnt {
     //Must be fixed step, at physics sync speed.
     const r_s   =   r * (Player.mv_speed  * (Simulator.physics_loop / 1000));

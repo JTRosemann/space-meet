@@ -5,6 +5,10 @@ const JSONIFY = false; // this is exactly what is done anyway:
 
 import { timeStamp } from "console";
 import { runInThisContext } from "vm";
+import * as io from 'socket.io';
+import { Game } from "./Game";
+import { Conference } from "./Conference";
+import { Item } from "./game.core";
 
 /*
  * client connects via socket.io
@@ -35,7 +39,8 @@ export type GameState = {
 }[];
 
 export interface GameJoinData {
-    game: GameState;
+    game: Game;
+    conf: Conference;
     time: number;
 }
 export type DisconnectData = string;//"reason" see Socket.IO doc
@@ -46,7 +51,7 @@ export interface InputData {
     seq: number;
 };
 
-type InputObj =
+export type PlayerState =
     {
         state: {
             x: number,
@@ -57,8 +62,8 @@ type InputObj =
     };
 
 export interface ServerUpdateData {
-    players: Record<string,InputObj>;//TODO remove Record
-    t: number;
+    game: Item[];
+    time: number;
 }
 
 export type ConnectedData = {id: string};
@@ -143,7 +148,7 @@ export class CarrierClient {
 }
 
 export interface ResponderServer {
-    on_connection(client: any);// missing in CarrierServer by design
+    on_connection(client: io.Socket);// missing in CarrierServer by design
     on_update_cid(client: any, data: SingleUpdateCidData);
     on_input(client: any, data: InputData);
     on_disconnect(client: any, data: DisconnectData);
@@ -156,42 +161,42 @@ function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
 
 export class CarrierServer {
     
-    init_socket(socket, msgS: ResponderServer) {
+    init_socket(socket: io.Socket, msgS: ResponderServer) {
         socket.on('on_update_cid', unpack(curry(msgS.on_update_cid.bind(msgS),socket)));
         socket.on('input', unpack(curry(msgS.on_input.bind(msgS),socket)));
         socket.on('disconnect', unpack(curry(msgS.on_disconnect.bind(msgS),socket)));
         socket.on('ping', unpack(curry(msgS.on_ping.bind(msgS), socket)));
     }
 
-    emit_pong(client: any, data: number) {
+    emit_pong(client: io.Socket, data: number) {
         this.emit(client, 'pong', data, false);
     }
 
-    emit_connected(socket, data: ConnectedData) {
+    emit_connected(socket: io.Socket, data: ConnectedData) {
         this.emit(socket, 'onconnected', data);
     }
     
-    emit_joingame(socket, data: GameJoinData) {
+    emit_joingame(socket: io.Socket, data: GameJoinData) {
         this.emit(socket, 'onjoingame', data);
     }
 
-    emit_pushplayer(socket, data: PushPlayerData) {
+    emit_pushplayer(socket: io.Socket | io.Server, data: PushPlayerData) {
         this.emit(socket, 'on_push_player', data);
     }
 
-    emit_updatecid(socket, data: UpdateCidData) {
+    emit_updatecid(socket: io.Socket | io.Server, data: UpdateCidData) {
         this.emit(socket, 'on_update_cid', data);
     }
 
-    emit_update(socket, data: ServerUpdateData) {
+    emit_update(socket: io.Socket | io.Server, data: ServerUpdateData) {
         this.emit(socket, 'onserverupdate', data, false);
     }
 
-    emit_rmplayer(socket, data: RmPlayerData) {
+    emit_rmplayer(socket: io.Socket | io.Server, data: RmPlayerData) {
         this.emit(socket, 'on_rm_player', data);
     }
 
-    private emit(socket, key: string, data: any, log = true) {
+    private emit(socket: io.Socket | io.Server, key: string, data: any, log = true) {
         if (log) {
             console.log('SEND ' + key);
             console.log(data);

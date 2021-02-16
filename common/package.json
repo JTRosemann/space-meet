@@ -1,0 +1,15 @@
+{
+  "name": "space-meet",
+  "author": "Julian Rosemann",
+  "description": "Space Meet is a meeting space, where you can walk & talk. This is work in progress, it's only a proof of concept yet.",
+  "license": "MIT",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/node": "^8.0.53",
+    "typescript": "^3.5.1"
+  },
+  "dependencies": {
+    "@types/socket.io": "^2.1.13",
+    "socket.io": "^3.1.1"
+  }
+}
