@@ -11,6 +11,9 @@ export interface World {
 }
 
 export class RectangleWorld implements World {
+    static establish(world: RectangleWorld): RectangleWorld {
+        return new this(world.width, world.height);
+    }
     width: number;
     height: number;
 

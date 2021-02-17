@@ -23,14 +23,13 @@ export class InputPlayer implements IdController {
      * @param now_time time passed in total since starting the update loop in ms
      */
     update(delta_time: number, now_time: number): void {
-        const mvmnt = this.process_inputs(delta_time);
-        const controllee = this.game.get_item_state(this.id);
-        this.game.set_item_state(this.id, InputPlayer.apply_mvmnt(controllee, mvmnt));
+        this.process_inputs(delta_time);
     }
 
     constructor(id: string, game: Game) {
         this.game = game;
         this.id = id;
+        this.inputs = new Queue();
     }
     
     /**
@@ -75,6 +74,10 @@ export class InputPlayer implements IdController {
      * @param delta_time time to simulate in ms
      */
     private process_inputs(delta_time: number): State {
+        if (this.get_controllee_state() == undefined) {
+            return;
+        }
+        const controllee = this.game.get_item_state(this.id);
         //It's possible to have received multiple inputs by now,
         //so we process each one
         let r = 0;
@@ -109,8 +112,7 @@ export class InputPlayer implements IdController {
         const base_phi = this.get_controllee_state().dir;
         const mvmnt = InputPlayer.physics_movement_vector_from_direction(r, phi, base_phi, delta_time);
         //console.log({x: mvmnt.pos.x, y: mvmnt.pos.y, dir: mvmnt.dir, r: r});
-        //give it back
-        return mvmnt;
+        this.game.set_item_state(this.id, InputPlayer.apply_mvmnt(controllee, mvmnt));
     }
 
 }

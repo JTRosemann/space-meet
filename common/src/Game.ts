@@ -8,13 +8,18 @@ import { RectangleWorld, World } from "./World";
     The game_core class
 */
 export class Game {
+    static establish(game: Game) {
+        return new this(game.id, RectangleWorld.establish(game.world), game.items);
+    }
 
     id: string;
     world: RectangleWorld = new RectangleWorld(720, 480);
     items: Item[] = [];
 
-    constructor(id: string) {
+    constructor(id: string, world = new RectangleWorld(720, 480), items = []) {
         this.id = id;
+        this.world = world;
+        this.items = items;
     }
 
     set_items(items: Item[]) : void {

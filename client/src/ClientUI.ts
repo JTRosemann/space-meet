@@ -4,6 +4,7 @@ import * as sio from 'socket.io-client';
 import { CarrierClient, ConnectedData, GameJoinData, PushPlayerData, ResponderClient, ServerUpdateData, UpdateCidData } from "../../common/src/protocol";
 import { Game } from "../../common/src/Game";
 import { JitsiConf } from "./JitsiConf";
+import { Conference } from "../../common/src/Conference";
 
 //window['DEBUG'] = false;
 export const DEBUG = false;
@@ -61,9 +62,11 @@ export class ClientUI implements ResponderClient {
         if (DEBUG) {
             console.log(data);
         }
+        const game = Game.establish(data.game);
+        const conf = Conference.establish(data.conf);
         if (this.user_id) {
-            this.conf = new JitsiConf(data.conf, this.carrier, this.user_id);
-            this.sim = new SimulatorClient(data.game, data.time, this.carrier, this.user_id,
+            this.conf = new JitsiConf(conf, this.carrier, this.user_id);
+            this.sim = new SimulatorClient(game, data.time, this.carrier, this.user_id,
                  this.ctx, this.viewport.width, this.viewport.height,
                  this.conf.get_listener(), this.conf.get_panners());
             this.conf.init_meeting();
@@ -82,6 +85,7 @@ export class ClientUI implements ResponderClient {
 
     client_on_push_player(data: PushPlayerData): void {
         //TODO is this message even neccessary? player should exist anyway in next server update
+        if (this.conf == undefined) return;
         this.conf.set_cid(data.id, data.call_id);
         this.sim.push_player(data.id, this.conf.get_panners()[data.id]);
     }

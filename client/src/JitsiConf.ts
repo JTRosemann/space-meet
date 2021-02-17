@@ -22,7 +22,8 @@ export class JitsiConf {
         // Set up audio
         const AudioContext = window.AudioContext;
         this.audio_ctx = new AudioContext();
-        this.listener = this.audio_ctx.listener; 
+        this.listener = this.audio_ctx.listener;
+        this.panners = {};
     }
 
     get_listener() {
@@ -50,6 +51,7 @@ export class JitsiConf {
         };
 
         JitsiMeetJS.init(init_opt);
+        JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
         this.jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
         this.jitsi_connect.addEventListener(
             JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,

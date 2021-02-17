@@ -67,7 +67,9 @@ export class SimulatorClient {
         //capture inputs from local player & send them to the server
         this.in_ctrl.update(42, timestamp);
         //draw
-        if (this.ctx) {
+        const self_state = this.sim.game.get_item_state(this.user_id);
+        const self_rad = this.sim.game.get_item_rad(this.user_id);
+        if (this.ctx && self_state != undefined && self_rad != undefined) {
             this.ctx.save();
             const mid_x = this.width/2;
             const mid_y = this.height/2;
@@ -184,6 +186,9 @@ export class SimulatorClient {
     }
 
     push_player(id: string, panner: PannerNode) {
+        if (this.server_data[id] == undefined) {
+            this.server_data[id] = new Queue();
+        }
         const p = new OtherPlayer(id, this.sim.game, this.server_data[id], panner);
         this.sim.put_player(p);
     }
