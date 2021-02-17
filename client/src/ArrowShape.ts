@@ -4,10 +4,12 @@ import { Drawable } from "./Drawable";
 export class ArrowShape implements Drawable {
     item: Item;
     color: string;
+    
     constructor(item: Item) {
         this.item = item;
         this.color = rgba(255, 255, 255, 0.5);
     }
+
     draw_icon(ctx: CanvasRenderingContext2D, support: boolean = false): void {
         // the ctx should be appropriately rotated and translated
         //Set the color for this player

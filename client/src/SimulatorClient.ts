@@ -106,7 +106,10 @@ export class SimulatorClient {
                 const dist_c = this.width/6;
 
                 const eps = 1;
+                // use intercept theorem: (projector_rad + rad) / (abs_val) = (rad / player.rad) and solve it
+                // prevent non-positive values in the divisor using Math.max(eps, ..)
                 const max_rad = dist_c;
+                // bound the maximum size of the radius
                 const rad = Math.min(p.item.rad * dist_c / Math.max(eps,abs_val - p.item.rad), max_rad);
                 const dist = dist_c + rad;
                 const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
