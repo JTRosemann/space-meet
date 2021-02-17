@@ -90,26 +90,6 @@ export class PlayerClient extends Player implements MobileProjectable, InputProc
         return new vec(Math.cos(this.state.dir), Math.sin(this.state.dir));
     }
 
-    add_audio_track(stream: MediaStream, audio_ctx: AudioContext) {
-        const gain_node = audio_ctx.createGain();
-        const stereo_panner = new StereoPannerNode(audio_ctx, { pan: 0 } /*stereo balance*/);
-        const track = audio_ctx.createMediaStreamSource(stream);
-        const panner_model = 'HRTF';
-        //for now, we don't use cones for simulation of speaking direction. this may be added later on
-        //cf. https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
-        const distance_model = 'linear'; // possible values are: 'linear', 'inverse' & 'exponential'
-        const max_distance = 10000;
-        const ref_distance = 1;
-        const roll_off = 20;
-        this.panner = new PannerNode(audio_ctx, {
-            panningModel: panner_model,
-            distanceModel: distance_model,
-            refDistance: ref_distance,
-            maxDistance: max_distance,
-            rolloffFactor: roll_off
-        });
-        track.connect(gain_node).connect(stereo_panner).connect(this.panner).connect(audio_ctx.destination);
-    }
     // TODO separate PlayerClient & PlayerClientSelf & remove below code in this class
     last_input_seq: number;
     last_input_time: number;

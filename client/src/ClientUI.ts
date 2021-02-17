@@ -1,10 +1,18 @@
 import { SimulatorClient } from "./SimulatorClient";
 import * as dat from 'dat.gui';
+import * as sio from 'socket.io-client';
 import { CarrierClient, ConnectedData, GameJoinData, PushPlayerData, ResponderClient, ServerUpdateData, UpdateCidData } from "../../common/src/protocol";
+import { Game } from "../../common/src/Game";
+import { JitsiConf } from "./JitsiConf";
+
+//window['DEBUG'] = false;
+export const DEBUG = false;
 
 export class ClientUI implements ResponderClient {
     sim: SimulatorClient;
     carrier: CarrierClient;
+    user_id: string = '';
+    conf: JitsiConf;
     // ui stuff
     traces: boolean;
     clip: boolean;
@@ -37,37 +45,57 @@ export class ClientUI implements ResponderClient {
     fps_avg_acc: number;
     lit: number;
     llt: number;
-    ctx: any;
+    ctx: CanvasRenderingContext2D;
     viewport: HTMLCanvasElement;
-    gui: any;
-
-    constructor() {
-
-    }
+    gui: dat.GUI;
 
     client_onconnected(data: ConnectedData): void {
-        throw new Error("Method not implemented.");
+        console.log('onconnected with id ' + data.id);
+        //The server responded that we are now in a game,
+        //this lets us store our id
+        this.user_id = data.id;
     }
+
     client_onjoingame(data: GameJoinData): void {
-        throw new Error("Method not implemented.");
+        console.log('RECEIVE onjoin');
+        if (DEBUG) {
+            console.log(data);
+        }
+        if (this.user_id) {
+            this.conf = new JitsiConf(data.conf, this.carrier, this.user_id);
+            this.sim = new SimulatorClient(data.game, data.time, this.carrier, this.user_id,
+                 this.ctx, this.viewport.width, this.viewport.height,
+                 this.conf.get_listener(), this.conf.get_panners());
+            this.conf.init_meeting();
+        }
+        this.sim.start();
     }
+
     client_onserverupdate_recieved(data: ServerUpdateData): void {
-        throw new Error("Method not implemented.");
+        this.sim.incorporate_update(data);
     }
+
     client_on_rm_player(data: string): void {
-        throw new Error("Method not implemented.");
+        this.conf.rm_player(data);
+        this.sim.rm_player(data);
     }
+
     client_on_push_player(data: PushPlayerData): void {
-        throw new Error("Method not implemented.");
+        //TODO is this message even neccessary? player should exist anyway in next server update
+        this.conf.set_cid(data.id, data.call_id);
+        this.sim.push_player(data.id, this.conf.get_panners()[data.id]);
     }
+
     client_on_update_cid(data: UpdateCidData): void {
-        throw new Error("Method not implemented.");
+        this.conf.set_cid(data.id, data.call_id);
     }
+
     client_ondisconnect(data: string): void {
-        throw new Error("Method not implemented.");
+        console.log('Disconnected.');
     }
+
     client_on_pong(data: number): void {
-        throw new Error("Method not implemented.");
+        this.sim.on_pong(data);
     }
 
     init_ui() {

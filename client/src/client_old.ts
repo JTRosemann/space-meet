@@ -4,70 +4,8 @@
     MIT Licensed.
 */
 
-const DEBUG = true;
-
-import * as strophe from 'strophe';
-//https://github.com/jitsi/lib-jitsi-meet/issues/484
-//import JitsiMeetJS from '../lib/lib-jitsi-meet.min.js';
-declare const JitsiMeetJS : any;
-
-import {
-    Ctx,
-    THREExKeyboard,
-    JitsiConnection,
-    AllInputObj,
-    apply_mvmnt,
-    InputObj,
-    physics_movement_vector_from_direction,
-    State,
-    s_lerp,
-    fixed,
-} from '../../common/src/game.core';
-import { Simulator } from "../../common/src/Simulator";
-import { PlayerClient } from "./PlayerClient";
-import { vec } from "../../common/src/vec";
-
-import { ConnectedData, GameJoinData, ResponderClient, PingData, ServerUpdateData, CarrierClient, PushPlayerData, RmPlayerData, GameState} from '../../common/src/protocol';
-
-import * as dat from 'dat.gui';
-import { THREEx } from '../lib/keyboard.js';
-import * as sio from 'socket.io-client';
-
-function cloneIO(io: InputObj) : InputObj {
-    return {state: io.state, lis: io.lis};
-}
-
-function cloneAIO(o: AllInputObj) : AllInputObj {
-    const x : Record<string,InputObj> = {};
-    for (const key in o.players) {
-        x[key] = cloneIO(o.players[key]);
-    }
-    return {players: x, t: o.t};
-}
-
-//The main update loop runs on requestAnimationFrame,
-//Which falls back to a setTimeout loop on the server
-//Code below is from Three.js, and sourced from links below
-
-// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
-// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
-
-// requestAnimationFrame polyfill by Erik Möller
-// fixes from Paul Irish and Tino Zijdel
 
 
-// BEWARE: these imports result in 'lib' & 'libs' being transpiled into 'built'
-//         breaking my directory structure
-//import * as THREEx from '../lib/keyboard';
-
-//import dat = require('../lib/dat.gui.min');
-//import JitsiMeetJS = require('../libs/lib-jitsi-meet.min.js');
-
-
-
-
-//A window global for our game root variable.
-var game : GameClient;
 
 
 class GameClient extends Simulator implements ResponderClient {
@@ -153,50 +91,6 @@ class GameClient extends Simulator implements ResponderClient {
         // the reason may be: the rotation (of this.self) is not smooth
     }
     // update
-
-    //FIXME: should I also remove other data?
-    client_on_rm_player(data: RmPlayerData) {
-        this.players = this.players.filter(p => p.id !== data);
-    }
-
-    client_on_push_player(data: PushPlayerData) {
-        const player = new PlayerClient(State.establish(data.state), data.id, data.call_id);
-        this.push_player(player);
-    }
-
-    set_game(game_data: GameState) {
-        for (const p of game_data) {
-            //    if (!game_data.players.hasOwnProperty(p_id)) continue;
-            const player = new PlayerClient(State.establish(p.state), p.id, p.call_id);
-            this.push_player(player);
-        }
-    } //set_game
-
-    get_self() {
-        if (!this.self) {
-            for (const p of this.players) {
-                if (p.id == this.user_id) {
-                    this.self = p;// FIXME p is not a PlayerClientSelf!
-                    return this.self
-                }
-            }
-            console.log('Cannot find myself');
-        }
-        return this.self;
-    }
-
-    client_on_update_cid = function(data) {
-        console.log('update cid client');
-        for (const p of this.players) {
-            if (p.id == data.id) {
-                p.call_id = data.call_id;
-            }
-        }
-    }
-
-    onConnectionFailed = function() {
-        console.warn('onConnectionFailed');
-    }
 
     unpack_server_data(data: ServerUpdateData) : AllInputObj {
         let p_s : Record<string,InputObj> = {};
@@ -867,92 +761,12 @@ class GameClient extends Simulator implements ResponderClient {
         this.local_time = data.time + this.net_latency;
         console.log('server time is about ' + this.local_time);
         this.set_game(data.game);
-        //this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
+        this.init_meeting(); //TODO enable & fix "Cross-Origin Request Blocked"
         this.init_audio();
         //Finally, start the loop
         this.update( new Date().getTime() );
     }; //client_onjoingame
 
-    client_onconnected(data: ConnectedData) {
-        console.log('onconnected with id ' + data.id);
-        //The server responded that we are now in a game,
-        //this lets us store our id
-        this.user_id = data.id;
-    }; //client_onconnected
-
-    onRemoteTrack(track) {
-        if (track.isLocal()) {
-        return;
-        }
-        for (const p of this.players) {
-        const p_id = track.getParticipantId();
-        if (p.call_id == p_id) {
-            if (track.getType() == 'audio') {
-            // if there is a player with a matching id, add the audio track
-            // FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
-                p.add_audio_track(track.stream, this.audio_ctx);
-                break;
-                } else if (track.getType() == 'video') {
-                    $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' />`);
-            //        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
-                    this.remote_video[`${p_id}`] = track;
-            //        setTimeout(function () { // timeout not needed
-                    const vid = document.getElementById(`vid${p_id}`);
-                    track.attach(vid);
-        //        }, 500);
-                }
-            }
-        }
-    };
-
-    add_all_loc_tracks() {
-        if (this.joined_jitsi) {
-            for (const track of this.loc_tracks) {
-                this.jitsi_conf.addTrack(track);
-            }
-        }
-    };
-
-    onLocalTracks(tracks) {
-        this.loc_tracks = tracks;
-        this.add_all_loc_tracks();
-    };
-
-    onConferenceJoined() {
-        this.joined_jitsi = true;
-        this.add_all_loc_tracks();
-    };
-
-    onConnectionSuccess() {
-        console.log('onConnectionSuccess');
-        const conf_opt = { openBridgeChannel: true };
-        this.jitsi_conf = this.jitsi_connect.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
-
-        this.remote_video = {};
-        this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
-        this.jitsi_conf.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
-        this.get_self().call_id = this.jitsi_conf.myUserId();
-        this.carrier.emit_call_id(this.get_self().call_id);
-
-        this.jitsi_conf.join();
-    }; // game_core.onConnectionSuccess
-
-    client_ondisconnect(data) {
-
-        //When we disconnect, we don't know if the other player is
-        //connected or not, and since we aren't, everything goes to offline
-        //FIXME
-
-    }; //client_ondisconnect
-
-    client_connect_to_server() {
-
-        //Store a local reference to our connection to the server
-        const socket = sio.connect();
-        console.log('Connect to server with id ' + socket.id)
-        this.carrier = new CarrierClient(socket, this);
-
-    }; //game_core.client_connect_to_server
 
     init_ui() {
 
@@ -969,39 +783,11 @@ class GameClient extends Simulator implements ResponderClient {
 
     init_audio() {
         // Set up audio
-        const AudioContext = window.AudioContext;// || window.webkitAudioContext;
+        const AudaioContext = window.AudioContext;// || window.webkitAudioContext;
         this.audio_ctx = new AudioContext();
         this.listener = this.audio_ctx.listener; // keep the standard values for position, facing & up
         this.listener.setPosition(this.get_self().state.pos.x, 0, this.get_self().state.pos.y);
     };
 
-    init_meeting() {
-        const init_opt = {};
-        const connect_opt = {
-        hosts: {
-            domain: 'beta.meet.jit.si',
-            muc: 'conference.beta.meet.jit.si'
-        },
-        serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
-
-        // The name of client node advertised in XEP-0115 'c' stanza
-        clientNode: 'beta.meet.jit.si'
-        };
-
-        JitsiMeetJS.init(init_opt);
-        this.jitsi_connect = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
-        this.jitsi_connect.addEventListener(
-        JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-        this.onConnectionSuccess.bind(this));
-        this.jitsi_connect.addEventListener(
-        JitsiMeetJS.events.connection.CONNECTION_FAILED,
-        this.onConnectionFailed);
-        this.jitsi_connect.connect();
-
-        this.loc_tracks = [];
-        const loc_tracks_opt = {devices: [ 'audio', 'video' ] };
-        //FIXME: uncaught exception: Object -> in chrome it's device not found -- but chrome also fails to open cam & mic on jitsit, so probably unrelated
-        JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)).catch(error => console.log(error)); // 'desktop' for screensharing
-    };
-
+    
 }

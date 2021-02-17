@@ -1,12 +1,14 @@
 import { Item, State } from "./game.core";
 import { GameJoinData, PlayerState, ServerUpdateData } from "./protocol";
 import { Transportable } from "./Transportable";
+import { vec } from "./vec";
 import { RectangleWorld, World } from "./World";
 
 /**
     The game_core class
 */
 export class Game {
+
     id: string;
     world: RectangleWorld = new RectangleWorld(720, 480);
     items: Item[] = [];
@@ -30,14 +32,27 @@ export class Game {
             }
         }
     }
+    
+    get_item_rad(id: string) {
+        for (const it of this.items) {
+            if (it.id == id) {
+                return it.rad;
+            }
+        }        
+    }
+
+    get_item_facing(id: string) {
+        return new vec(Math.cos(this.items[id].dir), Math.sin(this.items[id].dir));
+    }
 
     set_item_state(id: string, state: State) {
         for (const it of this.items) {
             if (it.id == id) {
                 it.state = state;
                 this.world.confine(it);//the world has the last say
-                break;
+                return;
             }
         }
+        console.warn('set_item_state: id ' + id + ' not found.');
     }
 }

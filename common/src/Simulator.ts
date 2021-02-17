@@ -1,8 +1,6 @@
-import { GameState } from "./protocol";
-import { fixed, InputProcessor } from "./game.core";
 import { Controller } from "./Controller";
 import { Game } from "./Game";
-import { Player } from "./Player";
+import { IdController } from "./IdController";
 
 /**
  * The Simulator runs on both client and server:
@@ -14,8 +12,8 @@ export class Simulator {
     static physics_loop = 15;//ms
     static timer_loop = 4;//ms
     game: Game;
-    bots: Controller[];
-    players: Record<string,Player> = {};
+    bots: Controller[] = [];
+    players: Record<string,IdController> = {};
     //Set up some physics integration values
     physics_delta: number = Simulator.physics_loop;//The physics update delta time in ms
     physics_prev: number = new Date().getTime(); //The physics update last delta time;
@@ -40,7 +38,7 @@ export class Simulator {
      * Adds a player for updating.
      * @param player the player to push
      */
-    put_player(player: Player) {
+    put_player(player: IdController) {
         this.players[player.id] = player;
     }
 
@@ -93,7 +91,9 @@ export class Simulator {
      * then the Game has the final say to guarantee everything stays in bounds.
      */
     update_physics() {
-        //TODO add support for bots
+        for (const c of this.bots) {
+            c.update(this.physics_delta, this.local_time);
+        }
         for (const c of Object.values(this.players)) {
             c.update(this.physics_delta, this.local_time);//controller updates its controllee
         }

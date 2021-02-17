@@ -27,4 +27,17 @@ export class Queue<T> {
             return null; // queue is empty
         }
     }
+
+    peek() : T {
+        if (this.inhabited()) {
+            if(this.hd.length == 0) {
+                this.hd = this.tl.reverse();
+                this.tl = [];
+            }
+            return this.hd[this.hd.length - 1];
+        } else {
+            console.warn('Peek on empty queue.');
+            return null; // queueu is empty
+        }
+    }
 }

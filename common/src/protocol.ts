@@ -23,7 +23,7 @@ import { Item } from "./game.core";
  *      server_on_update_cid: save call_id & distribute it to other players
  * client_on_update_cid: save cid from others
  * 
- * client_update_cid: save call_id of other player
+ * client_update_input: send input to server
  *      server_update: sends game update to all players
  * client_on_update_recieved[sic!]: updates positions in cur_state, leverage smooth update of state
  * 
@@ -48,7 +48,6 @@ export type DisconnectData = string;//"reason" see Socket.IO doc
 export interface InputData {
     keys: string[];
     time: number;
-    seq: number;
 };
 
 export type PlayerState =

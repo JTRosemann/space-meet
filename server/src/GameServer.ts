@@ -26,7 +26,7 @@ import { Simulator } from '../../common/src/Simulator';
 import { vec } from '../../common/src/vec';
 import { Game } from '../../common/src/Game';
 import * as io from 'socket.io';
-import { Player } from '../../common/src/Player';
+import { InputPlayer } from '../../common/src/Player';
 import { Conference } from '../../common/src/Conference';
 
 
@@ -56,12 +56,12 @@ export class SimulatorServer {
     }
 
     on_input(client: sio.Socket, data: InputData) {
-        this.handle_server_input(client, data.keys, data.time, data.seq);
+        this.handle_server_input(client, data.keys, data.time);
     }
 
     push_client(client: sio.Socket, r_id: number = 1) {
         const start_state : State = new State(new vec( r_id * 40, 50 ), 0);
-        const p = new Player(client.id, this.sim.game);//Beware: id != userid
+        const p = new InputPlayer(client.id, this.sim.game);//Beware: id != userid
         this.sim.put_player(p);
         this.conf.call_ids[client.id] = '';
         this.carrier.emit_pushplayer(this.server, {id: client.id, call_id: '', state: start_state.downsize()});
@@ -89,11 +89,12 @@ export class SimulatorServer {
         this.carrier.emit_update(this.server, {game: this.sim.game.get_items(), time: server_time});
     } //game_core.server_update
 
-    private handle_server_input(client: sio.Socket, input: string[], input_time: number, input_seq: number) {
+    private handle_server_input(client: sio.Socket, input: string[], input_time: number) {
         for (const p of this.sim.get_players()) {
             if (client.id == p.id) {
                 //Store the input on the player instance for processing in the physics loop
-                p.push_input({keys:input, time:input_time, seq:input_seq});
+                // here we know simulator contains players, still ugly
+                (p as InputPlayer).push_input({keys:input, time:input_time});
                 return;
             }
         }
