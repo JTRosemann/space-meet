@@ -1,5 +1,5 @@
 import { Game } from "../../common/src/Game";
-import { Item } from "../../common/src/game.core";
+import { Item, State } from "../../common/src/game.core";
 import { CarrierClient, ServerUpdateData } from "../../common/src/protocol";
 import { Queue } from "../../common/src/Queue";
 import { Simulator } from "../../common/src/Simulator";
@@ -9,9 +9,15 @@ import { SelfPlayer } from "./SelfPlayer";
 import { OtherPlayer } from "./OtherPlayer";
 import { Projectable } from "./Projectable";
 import { Drawable } from "./Drawable";
+import { ArrowShape } from "./ArrowShape";
+import { JitsiProjectable } from "./JitsiProjectable";
+import { Conference } from "../../common/src/Conference";
+import { vec } from "../../common/src/vec";
+import { InputPlayer } from "../../common/src/InputPlayer";
 
 export class SimulatorClient {
     static update_loop = 45;//ms
+    //static update_loop = 500;//ms DEBUG
     user_id: string;
     sim: Simulator;
     server_data: Record<string,Queue<ServerPlayerData>>;
@@ -24,17 +30,17 @@ export class SimulatorClient {
     in_ctrl: InputController;
     show_support: false;
     traces = false;
-    clip = true;
+    clip = false;
     
     constructor(game: Game, time: number, carrier: CarrierClient, id: string, 
             ctx: CanvasRenderingContext2D, width: number, height: number,
-            listener: AudioListener, panners: Record<string, PannerNode>) {
+            listener: AudioListener, panners: Record<string, PannerNode>, conf: Conference) {
         this.server_data = {};
         this.sim = new Simulator(game);
         this.carrier = carrier;
         this.user_id = id;
         this.push_game_data(game.get_items(), time);
-        this.init_controllers(game, listener, panners);
+        this.init_controllers(listener, panners, conf);
         this.ctx = ctx;
         this.width = width;
         this.height = height;
@@ -42,15 +48,20 @@ export class SimulatorClient {
         this.in_ctrl = new InputController(this.carrier);
     }
 
-    init_controllers(game: Game, listener: AudioListener, panners: Record<string,PannerNode>) {
+    init_controllers(listener: AudioListener, panners: Record<string,PannerNode>, conf: Conference) {
+        const game = this.sim.game;
+        const my_it : Item = {id: this.user_id, state: new State(new vec(50,50), 0), rad: InputPlayer.std_rad};
+        game.push_item(my_it);
         for (const it of game.get_items()) {
+            const its_state = game.get_item_state(it.id);
             if (it.id == this.user_id) {
                 // init self (controls listener)
                 const p = new SelfPlayer(it.id, game, this.server_data[it.id], listener);
-                this.sim.put_player(p);
+                this.sim.put_player(p, its_state);
+                this.drawables.push(new ArrowShape(it));
             } else {
                 // init other players (control pannernodes)
-                this.push_player(it.id, panners[it.id]);
+                this.push_player(it.id, its_state, panners[it.id], conf);
             }
         }
     }
@@ -59,7 +70,7 @@ export class SimulatorClient {
         window.requestAnimationFrame(this.do_update.bind(this));
     }
 
-    do_update(timestamp) {
+    do_update(timestamp: number) {
         //Clear the screen area
         if (this.ctx && !this.traces) { // && !this.traces
             this.ctx.clearRect(0, 0, this.width, this.height);
@@ -78,12 +89,14 @@ export class SimulatorClient {
 
             const self_state = this.sim.game.get_item_state(this.user_id);
             const self_rad = this.sim.game.get_item_rad(this.user_id);
+            
 
             this.ctx.rotate(-self_state.dir);
             if (this.show_support) {
                 for (const p of this.drawables) {
                     this.ctx.beginPath();
                     if (p.item.id == this.user_id) continue;
+                    console.log(p.item);
                     const other_sub_self = p.item.state.pos.sub(self_state.pos);
                     const alpha = Math.asin(self_rad / other_sub_self.abs());
                     this.ctx.rotate(alpha);
@@ -141,7 +154,7 @@ export class SimulatorClient {
             this.ctx.strokeStyle = "red";
             this.ctx.strokeRect(0,0,this.sim.game.world.width,this.sim.game.world.height);
             for (const p of this.drawables) {
-                if (p.item.id == this.user_id) continue;
+                //if (p.item.id == this.user_id) continue;
                 this.ctx.save();
                 this.ctx.translate(p.item.state.pos.x,p.item.state.pos.y);
                 this.ctx.rotate(p.item.state.dir); // beware: the coordinate system is mirrored at y-axis
@@ -185,11 +198,14 @@ export class SimulatorClient {
         this.sim.rm_player(id);
     }
 
-    push_player(id: string, panner: PannerNode) {
+    push_player(id: string, state: State, panner: PannerNode, conf: Conference) {
         if (this.server_data[id] == undefined) {
             this.server_data[id] = new Queue();
         }
         const p = new OtherPlayer(id, this.sim.game, this.server_data[id], panner);
-        this.sim.put_player(p);
+        this.sim.put_player(p, state);
+        const it = this.sim.game.get_item(id);
+        this.drawables.push(new ArrowShape(it));
+        this.projectables.push(new JitsiProjectable(it, conf));
     }
 }

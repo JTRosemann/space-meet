@@ -10,7 +10,7 @@ import { IdController } from "./IdController";
  */
 export class InputPlayer implements IdController {
     static mv_speed: number = 120;
-    static trn_speed: number = 3;
+    static trn_speed: number = 1;
     static std_rad: number = 16;
     id: string;
     game: Game;
@@ -82,29 +82,25 @@ export class InputPlayer implements IdController {
         //so we process each one
         let r = 0;
         let phi = 0;
-        while (true) {
+        while (this.inputs.inhabited()) {
             let input = this.inputs.dequeue();
-            if (input == undefined) {
-                break;
-            } else {
-                this.last_input_time = input.time;
-                let c = input.keys.length;
-                for (let i = 0; i < c; i++) {
-                    let key = input.keys[i];
-                    switch (key) {
-                        case 'l':
-                            phi -= 1;
-                            break;
-                        case 'r':
-                            phi += 1;
-                            break;
-                        case 'd':
-                            r -= 1;
-                            break;
-                        case 'u':
-                            r += 1;
-                            break;
-                    }
+            this.last_input_time = input.time;
+            let c = input.keys.length;
+            for (let i = 0; i < c; i++) {
+                let key = input.keys[i];
+                switch (key) {
+                    case 'l':
+                        phi -= 1;
+                        break;
+                    case 'r':
+                        phi += 1;
+                        break;
+                    case 'd':
+                        r -= 1;
+                        break;
+                    case 'u':
+                        r += 1;
+                        break;
                 }
             }
         }

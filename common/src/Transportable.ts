@@ -3,5 +3,5 @@
  */
 export interface Transportable<T> {
     transport(): T;
-    incorporate(T) : void;
+    incorporate(t: T) : void;
 }

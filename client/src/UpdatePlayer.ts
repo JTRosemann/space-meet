@@ -1,5 +1,3 @@
-import { data } from "jquery";
-import { Controller } from "../../common/src/Controller";
 import { Game } from "../../common/src/Game";
 import { IdController } from "../../common/src/IdController";
 import { Queue } from "../../common/src/Queue";
@@ -17,8 +15,10 @@ export class UpdatePlayer implements IdController {
     }
 
     update(delta_time: number, now_time: number): void {
-        const data = this.datastream.peek();
-        this.game.set_item_state(this.id, data.state);
+        const data = this.datastream.latest();
+        if (data != null) {
+            this.game.set_item_state(this.id, data.state);
+        }
     }
 
 }

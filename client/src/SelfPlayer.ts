@@ -16,7 +16,12 @@ export class SelfPlayer extends UpdatePlayer {
     update(delta_time: number, now_time: number): void {
         super.update(delta_time, now_time);
 
-        const listener_pos = this.game.get_item_state(this.id).pos;
+        const my_state = this.game.get_item_state(this.id);
+        if (my_state == null) {
+            console.warn('my state not found');
+            return;
+        }
+        const listener_pos = my_state.pos;
         this.listener.setPosition(listener_pos.x, 0, listener_pos.y);
 
         const listener_facing = this.game.get_item_facing(this.id);

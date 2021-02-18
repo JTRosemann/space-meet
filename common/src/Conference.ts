@@ -20,4 +20,12 @@ export class Conference {
         }
         return undefined;
     }
+
+    init_panners(audio_ctx: AudioContext) : Record<string,PannerNode> {
+        const ret : Record<string,PannerNode> = {};
+        for (const k of Object.keys(this.call_ids)) {
+            ret[k] = new PannerNode(audio_ctx);
+        }
+        return ret;
+    }
 }

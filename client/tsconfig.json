@@ -5,7 +5,8 @@
     "outDir": "./build-tsc", /* Redirect output structure to the directory. */
     "rootDir": "../",      /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
     "allowJs": true,
-    "checkJs": false
+    "checkJs": false,
+    "noImplicitAny": true
   },
   "include": ["../common/src", "./src", "./lib"]
 }

@@ -2,9 +2,10 @@ import { SimulatorClient } from "./SimulatorClient";
 import * as dat from 'dat.gui';
 import * as sio from 'socket.io-client';
 import { CarrierClient, ConnectedData, GameJoinData, PushPlayerData, ResponderClient, ServerUpdateData, UpdateCidData } from "../../common/src/protocol";
-import { Game } from "../../common/src/Game";
+import { establish_item, Game } from "../../common/src/Game";
 import { JitsiConf } from "./JitsiConf";
 import { Conference } from "../../common/src/Conference";
+import { Item, State } from "../../common/src/game.core";
 
 //window['DEBUG'] = false;
 export const DEBUG = false;
@@ -49,6 +50,7 @@ export class ClientUI implements ResponderClient {
     ctx: CanvasRenderingContext2D;
     viewport: HTMLCanvasElement;
     gui: dat.GUI;
+    audio_ctx: AudioContext;
 
     client_onconnected(data: ConnectedData): void {
         console.log('onconnected with id ' + data.id);
@@ -65,17 +67,23 @@ export class ClientUI implements ResponderClient {
         const game = Game.establish(data.game);
         const conf = Conference.establish(data.conf);
         if (this.user_id) {
-            this.conf = new JitsiConf(conf, this.carrier, this.user_id);
+            this.audio_ctx = new AudioContext();
+            this.conf = new JitsiConf(conf, this.carrier, this.user_id, this.audio_ctx);
             this.sim = new SimulatorClient(game, data.time, this.carrier, this.user_id,
                  this.ctx, this.viewport.width, this.viewport.height,
-                 this.conf.get_listener(), this.conf.get_panners());
+                 this.conf.get_listener(), this.conf.get_panners(), conf);
             this.conf.init_meeting();
         }
         this.sim.start();
     }
 
+
     client_onserverupdate_recieved(data: ServerUpdateData): void {
-        this.sim.incorporate_update(data);
+        const remat = {
+            game: data.game.map(establish_item),
+            time: data.time
+        }
+        this.sim.incorporate_update(remat);
     }
 
     client_on_rm_player(data: string): void {
@@ -87,7 +95,7 @@ export class ClientUI implements ResponderClient {
         //TODO is this message even neccessary? player should exist anyway in next server update
         if (this.conf == undefined) return;
         this.conf.set_cid(data.id, data.call_id);
-        this.sim.push_player(data.id, this.conf.get_panners()[data.id]);
+        this.sim.push_player(data.id, State.establish(data.state), new PannerNode(this.audio_ctx), this.conf.conf);
     }
 
     client_on_update_cid(data: UpdateCidData): void {
@@ -181,7 +189,7 @@ export class ClientUI implements ResponderClient {
 
         //When adding fake lag, we need to tell the server about it.
         const lag_control = _consettings.add(this, 'fake_lag').step(0.001).listen();
-        lag_control.onChange(function(value){
+        lag_control.onChange(function(value: number){
             this.socket.send('l.' + value);
         }.bind(this));
 

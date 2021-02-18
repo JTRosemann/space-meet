@@ -5,7 +5,8 @@
         "target": "es5",
         "module": "UMD", // this removes the 'exports' not defined error
         "esModuleInterop": true,
-	"moduleResolution": "node"
+	"moduleResolution": "node",
+	"noImplicitAny": true
     },
     "include": ["../common/src", "./src"]
 }

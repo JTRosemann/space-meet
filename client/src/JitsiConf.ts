@@ -3,6 +3,7 @@ import { CarrierClient } from "../../common/src/protocol";
 
 declare const JitsiMeetJS : any;
 
+type Track = { isLocal: () => any; getParticipantId: () => any; getType: () => string; stream: MediaStream; attach: (arg0: HTMLElement) => void; };
 export class JitsiConf {
     user_id: string;
     conf: Conference;
@@ -15,15 +16,15 @@ export class JitsiConf {
     audio_ctx: AudioContext;
     listener: AudioListener;
 
-    constructor(conf: Conference, carrier: CarrierClient, user_id: string) {
+    constructor(conf: Conference, carrier: CarrierClient, user_id: string, audio_ctx: AudioContext) {
         this.conf = conf;
         this.carrier = carrier;
         this.user_id = user_id;
         // Set up audio
         const AudioContext = window.AudioContext;
-        this.audio_ctx = new AudioContext();
+        this.audio_ctx = audio_ctx;
         this.listener = this.audio_ctx.listener;
-        this.panners = {};
+        this.panners = this.conf.init_panners(this.audio_ctx);
     }
 
     get_listener() {
@@ -63,7 +64,7 @@ export class JitsiConf {
 
         this.loc_tracks = [];
         const loc_tracks_opt = {devices: [ 'audio', 'video' ] };
-        JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)).catch(error => console.log(error)); // 'desktop' for screensharing
+        JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)).catch((error: Error) => console.log(error)); // 'desktop' for screensharing
     }
 
     set_cid(id: string, cid: string) {
@@ -75,7 +76,7 @@ export class JitsiConf {
         delete this.panners[data];
     }
 
-    onRemoteTrack(track) {
+    onRemoteTrack(track: Track) {
         if (track.isLocal()) {
             return;
         }
@@ -104,7 +105,7 @@ export class JitsiConf {
         }
     };
 
-    onLocalTracks(tracks) {
+    onLocalTracks(tracks: Track[]) {
         this.loc_tracks = tracks;
         this.add_all_loc_tracks();
     };

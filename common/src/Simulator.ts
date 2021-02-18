@@ -1,6 +1,8 @@
 import { Controller } from "./Controller";
 import { Game } from "./Game";
+import { State } from "./game.core";
 import { IdController } from "./IdController";
+import { InputPlayer } from "./InputPlayer";
 
 /**
  * The Simulator runs on both client and server:
@@ -10,6 +12,7 @@ import { IdController } from "./IdController";
 export class Simulator {
     // the length of the physics loop
     static physics_loop = 15;//ms
+    //static physics_loop = 150;//ms DEBUG
     static timer_loop = 4;//ms
     game: Game;
     bots: Controller[] = [];
@@ -38,8 +41,9 @@ export class Simulator {
      * Adds a player for updating.
      * @param player the player to push
      */
-    put_player(player: IdController) {
+    put_player(player: IdController, start_state: State) {
         this.players[player.id] = player;
+        this.game.push_item({id: player.id, state: start_state, rad: InputPlayer.std_rad});
     }
 
     /**
@@ -56,6 +60,7 @@ export class Simulator {
      */
     rm_player(id:string) {
         delete this.players[id];
+        this.game.rm_item(id);
     }
     
     /**

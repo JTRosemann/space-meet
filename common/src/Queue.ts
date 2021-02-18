@@ -1,10 +1,12 @@
 
 export class Queue<T> {
-    hd: T[] = [];
-    tl: T[] = [];
+    private hd: T[] = [];
+    private tl: T[] = [];
+    private last: T = null;
 
     enqueue(elem: T): void {
         this.tl.push(elem);
+        this.last = elem;
     }
 
     inhabited(): boolean {
@@ -23,8 +25,7 @@ export class Queue<T> {
             }
             return this.hd.pop();
         } else {
-            console.warn('Dequeue on empty queue.');
-            return null; // queue is empty
+            throw Error('Dequeue on empty queque')
         }
     }
 
@@ -36,8 +37,11 @@ export class Queue<T> {
             }
             return this.hd[this.hd.length - 1];
         } else {
-            console.warn('Peek on empty queue.');
-            return null; // queueu is empty
+            throw Error('Peek on empty queue');
         }
+    }
+
+    latest() : T {
+        return this.last;
     }
 }

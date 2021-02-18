@@ -147,11 +147,11 @@ export class CarrierClient {
 }
 
 export interface ResponderServer {
-    on_connection(client: io.Socket);// missing in CarrierServer by design
-    on_update_cid(client: any, data: SingleUpdateCidData);
-    on_input(client: any, data: InputData);
-    on_disconnect(client: any, data: DisconnectData);
-    on_ping(client: any, data: PingData);
+    on_connection(client: io.Socket) : void;// missing in CarrierServer by design
+    on_update_cid(client: any, data: SingleUpdateCidData) : void;
+    on_input(client: any, data: InputData) : void;
+    on_disconnect(client: any, data: DisconnectData) : void;
+    on_ping(client: any, data: PingData) : void;
 }
 
 function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
