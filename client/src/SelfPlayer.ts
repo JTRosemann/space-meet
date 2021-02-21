@@ -6,7 +6,7 @@ import { ServerPlayerData } from "./ServerPlayerData";
 
 export class SelfPlayer extends UpdatePlayer {
     id: string;
-    listener: any;
+    listener: AudioListener;
 
     constructor(id: string, game: Game, data_stream: Queue<ServerPlayerData>, listener: AudioListener) {
         super(id, game, data_stream);

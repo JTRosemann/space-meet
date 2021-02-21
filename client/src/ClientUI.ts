@@ -95,7 +95,7 @@ export class ClientUI implements ResponderClient {
         //TODO is this message even neccessary? player should exist anyway in next server update
         if (this.conf == undefined) return;
         this.conf.set_cid(data.id, data.call_id);
-        this.sim.push_player(data.id, State.establish(data.state), new PannerNode(this.audio_ctx), this.conf.conf);
+        this.sim.push_player(data.id, State.establish(data.state), this.conf.get_Panner(data.id), this.conf.conf);
     }
 
     client_on_update_cid(data: UpdateCidData): void {

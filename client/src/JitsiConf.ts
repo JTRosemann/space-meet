@@ -134,10 +134,16 @@ export class JitsiConf {
         console.warn('onConnectionFailed');
     }
 
-    add_audio_track(stream: MediaStream, audio_ctx: AudioContext, id: string) {
-        const gain_node = audio_ctx.createGain();
-        const stereo_panner = new StereoPannerNode(audio_ctx, { pan: 0 } /*stereo balance*/);
-        const track = audio_ctx.createMediaStreamSource(stream);
+    get_Panner(id: string) {
+        if (this.panners[id]) {
+            return this.panners[id];
+        } else {
+            this.panners[id] = this.create_Panner(id);
+            return this.panners[id];
+        }
+    }
+
+    create_Panner(id: string) {
         const panner_model = 'HRTF';
         //for now, we don't use cones for simulation of speaking direction. this may be added later on
         //cf. https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
@@ -145,13 +151,21 @@ export class JitsiConf {
         const max_distance = 10000;
         const ref_distance = 1;
         const roll_off = 20;
-        const panner =  new PannerNode(audio_ctx, {
+        const panner =  new PannerNode(this.audio_ctx, {
             panningModel: panner_model,
             distanceModel: distance_model,
             refDistance: ref_distance,
             maxDistance: max_distance,
             rolloffFactor: roll_off
         });
+        return panner;
+    }
+
+    add_audio_track(stream: MediaStream, audio_ctx: AudioContext, id: string) {
+        const gain_node = audio_ctx.createGain();
+        const stereo_panner = new StereoPannerNode(audio_ctx, { pan: 0 } /*stereo balance*/);
+        const track = audio_ctx.createMediaStreamSource(stream);
+        const panner = this.get_Panner(id);
         track.connect(gain_node)
             .connect(stereo_panner)
             .connect(panner)

@@ -1,9 +1,7 @@
-import { Item, Player, State } from "./game.core";
+import { Item, State } from "./game.core";
 import { InputPlayer } from "./InputPlayer";
-import { GameJoinData, PlayerState, ServerUpdateData } from "./protocol";
-import { Transportable } from "./Transportable";
 import { vec } from "./vec";
-import { RectangleWorld, World } from "./World";
+import { RectangleWorld } from "./World";
 
 
 export function establish_item(it: Item) {
@@ -18,17 +16,31 @@ export function establish_item(it: Item) {
 */
 export class Game {
     static establish(game: Game) {
-        return new this(game.id, RectangleWorld.establish(game.world), game.items.map(establish_item));
+        return new this(game.id, 
+            RectangleWorld.establish(game.world), 
+            game.items.map(establish_item),
+            game.podiums.map(establish_item));
     }
 
     id: string;
-    world: RectangleWorld = new RectangleWorld(720, 480);
-    items: Item[] = [];
+    world: RectangleWorld;
+    items: Item[];
+    podiums: Item[];
 
-    constructor(id: string, world = new RectangleWorld(720, 480), items: Item[] = []) {
+    constructor(id: string, world = new RectangleWorld(720, 480), items: Item[] = [], podiums: Item[] = []) {
         this.id = id;
         this.world = world;
         this.items = items;
+        this.podiums = podiums;
+    }
+
+    on_podium(pos: vec) {
+        for (const pod of this.podiums) {
+            if (pod.state.pos.sub(pos).abs() < pod.rad) {
+                return true;
+            }
+        }
+        return false;
     }
 
     get_item(id: string) {

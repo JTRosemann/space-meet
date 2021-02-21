@@ -15,6 +15,30 @@ import { Conference } from "../../common/src/Conference";
 import { vec } from "../../common/src/vec";
 import { InputPlayer } from "../../common/src/InputPlayer";
 
+export class TripleCircle implements Drawable {
+    item: Item;
+
+    constructor(it: Item) {
+        this.item = it;
+    }
+
+    draw_icon(ctx: CanvasRenderingContext2D, show_support: boolean = false): void {
+        ctx.strokeStyle = 'yellow';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.item.rad, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, this.item.rad - 4, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, this.item.rad - 8, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+    }
+}
+
 export class SimulatorClient {
     static update_loop = 45;//ms
     //static update_loop = 500;//ms DEBUG
@@ -61,8 +85,13 @@ export class SimulatorClient {
                 this.drawables.push(new ArrowShape(it));
             } else {
                 // init other players (control pannernodes)
-                this.push_player(it.id, its_state, panners[it.id], conf);
+                if (panners[it.id]) {
+                    this.push_player(it.id, its_state, panners[it.id], conf);
+                }
             }
+        }
+        for (const pod of game.podiums) {
+            this.drawables.push(new TripleCircle(pod));
         }
     }
 
@@ -125,7 +154,8 @@ export class SimulatorClient {
                 // prevent non-positive values in the divisor using Math.max(eps, ..)
                 const max_rad = dist_c;
                 // bound the maximum size of the radius
-                const rad = Math.min(p.item.rad * dist_c / Math.max(eps,abs_val - p.item.rad), max_rad);
+                const lin_rad = Math.min(p.item.rad * dist_c / Math.max(eps,abs_val - p.item.rad), max_rad);
+                const rad =  (this.sim.game.on_podium(p.item.state.pos)) ? max_rad : lin_rad;
                 const dist = dist_c + rad;
                 const center_x = dist * pos.x / abs_val;//FIXME: divide by zero
                 const center_y = dist * pos.y / abs_val;
@@ -202,7 +232,7 @@ export class SimulatorClient {
         if (this.server_data[id] == undefined) {
             this.server_data[id] = new Queue();
         }
-        const p = new OtherPlayer(id, this.sim.game, this.server_data[id], panner);
+        const p = new OtherPlayer(id, this.sim.game, this.server_data[id], panner, this.user_id);
         this.sim.put_player(p, state);
         const it = this.sim.game.get_item(id);
         this.drawables.push(new ArrowShape(it));

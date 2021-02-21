@@ -10,7 +10,15 @@ import {
 
 import { SimulatorServer } from './GameServer';
 import { Game } from '../../common/src/Game';
+import { State } from '../../common/src/game.core';
+import { vec } from '../../common/src/vec';
+import { RectangleWorld } from '../../common/src/World';
 
+function create_podium_game() : Game {
+    const p = {state: new State(new vec(500,240), 0), rad: 64, id: 'podium'};
+    const g = new Game(UUID.v4(), new RectangleWorld(720, 480), [], [p]);
+    return g;
+}
 
 export class LobbyServer implements ResponderServer {
     simS: SimulatorServer;
@@ -20,7 +28,7 @@ export class LobbyServer implements ResponderServer {
 
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
-        const game = new Game(UUID.v4());
+        const game = create_podium_game();
         this.simS = new SimulatorServer(game, this.carrier, sio);
         console.log('start game ' + game.id);
     }
