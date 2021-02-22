@@ -14,6 +14,7 @@ import { JitsiProjectable } from "./JitsiProjectable";
 import { Conference } from "../../common/src/Conference";
 import { vec } from "../../common/src/vec";
 import { InputPlayer } from "../../common/src/InputPlayer";
+import { Controller } from "../../common/src/Controller";
 
 export class TripleCircle implements Drawable {
     item: Item;
@@ -39,6 +40,43 @@ export class TripleCircle implements Drawable {
     }
 }
 
+export class Viewport {
+    drawables: Record<string,Drawable> = {};
+    projectables: Projectable[] = [];
+
+    push_drawable(d: Drawable) {
+        console.log('PUSH drawable');
+        console.log(this.drawables)
+        this.drawables[d.item.id] = d;
+        console.log(this.drawables);
+    }
+
+    rm_drawable(id: string) {
+        //delete this.drawables[id];
+    }
+
+    get_drawables() : Drawable[] {
+        return Object.values(this.drawables);
+    }
+}
+
+export class PingController implements Controller {
+    carrier: CarrierClient;
+
+    constructor(carrier: CarrierClient) {
+        this.carrier = carrier;
+    }
+
+    update(delta_time: number, now_time: number): void {
+        this.carrier.emit_ping(now_time);
+    }
+    
+}
+
+/**
+ * This class hosts the update loop (requestAnimationFrame).
+ * It is responsible for updating the canvas.
+ */
 export class SimulatorClient {
     static update_loop = 45;//ms
     //static update_loop = 500;//ms DEBUG
@@ -46,7 +84,7 @@ export class SimulatorClient {
     sim: Simulator;
     server_data: Record<string,Queue<ServerPlayerData>>;
     carrier: CarrierClient;
-    drawables: Drawable[] = [];
+    viewport: Viewport = new Viewport();
     projectables: Projectable[] =[];
     ctx: CanvasRenderingContext2D;
     width: number;
@@ -73,6 +111,8 @@ export class SimulatorClient {
     }
 
     init_controllers(listener: AudioListener, panners: Record<string,PannerNode>, conf: Conference) {
+        const ping_ctrl = new PingController(this.carrier);
+        this.sim.bots.push(ping_ctrl);
         const game = this.sim.game;
         const my_it : Item = {id: this.user_id, state: new State(new vec(50,50), 0), rad: InputPlayer.std_rad};
         game.push_item(my_it);
@@ -82,7 +122,7 @@ export class SimulatorClient {
                 // init self (controls listener)
                 const p = new SelfPlayer(it.id, game, this.server_data[it.id], listener);
                 this.sim.put_player(p, its_state);
-                this.drawables.push(new ArrowShape(it));
+                this.viewport.push_drawable(new ArrowShape(it));
             } else {
                 // init other players (control pannernodes)
                 if (panners[it.id]) {
@@ -91,7 +131,7 @@ export class SimulatorClient {
             }
         }
         for (const pod of game.podiums) {
-            this.drawables.push(new TripleCircle(pod));
+            this.viewport.push_drawable(new TripleCircle(pod));
         }
     }
 
@@ -122,7 +162,7 @@ export class SimulatorClient {
 
             this.ctx.rotate(-self_state.dir);
             if (this.show_support) {
-                for (const p of this.drawables) {
+                for (const p of this.viewport.get_drawables()) {
                     this.ctx.beginPath();
                     if (p.item.id == this.user_id) continue;
                     console.log(p.item);
@@ -175,15 +215,12 @@ export class SimulatorClient {
             if (this.clip) {
                 this.ctx.clip();
             }
-            //    this.ctx.fillStyle = "#FF0000";
-            //    this.ctx.fillRect(-10, -10, 20, 20);// rotation point
-
+            //this or several canvas layers may be used to prevent overwriting videos
+            //this.ctx.globalCompositeOperation = 'destination-over';
             this.ctx.translate(-self_state.pos.x, -self_state.pos.y);
-            //    this.ctx.fillStyle = "#FF8800";
-            //    this.ctx.fillRect(-10, -10, 20, 20);// (0,0)
             this.ctx.strokeStyle = "red";
             this.ctx.strokeRect(0,0,this.sim.game.world.width,this.sim.game.world.height);
-            for (const p of this.drawables) {
+            for (const p of this.viewport.get_drawables()) {
                 //if (p.item.id == this.user_id) continue;
                 this.ctx.save();
                 this.ctx.translate(p.item.state.pos.x,p.item.state.pos.y);
@@ -225,19 +262,34 @@ export class SimulatorClient {
     }
     
     rm_player(id: string) {
+<<<<<<< Updated upstream
         this.drawables = this.drawables.filter((d: Drawable) => d.item.id != id);
         this.projectables = this.projectables.filter((d: Projectable) => d.item.id != id);
+=======
+        this.viewport.rm_drawable(id);
+        this.projectables = this.projectables.filter((p: Projectable) => p.item.id != id);
+>>>>>>> Stashed changes
         this.sim.rm_player(id);
     }
 
     push_player(id: string, state: State, panner: PannerNode, conf: Conference) {
+        console.log('PUSH received');
+        console.log(id);
+        console.log('PROJECTABLES:');
+        console.log(this.projectables);
+        console.log('PLAYERS:');
+        console.log(this.sim.players);
         if (this.server_data[id] == undefined) {
             this.server_data[id] = new Queue();
         }
         const p = new OtherPlayer(id, this.sim.game, this.server_data[id], panner, this.user_id);
         this.sim.put_player(p, state);
         const it = this.sim.game.get_item(id);
-        this.drawables.push(new ArrowShape(it));
+        this.viewport.push_drawable(new ArrowShape(it));
         this.projectables.push(new JitsiProjectable(it, conf));
+        console.log('PROJECTABLES:');
+        console.log(this.projectables);
+        console.log('PLAYERS:');
+        console.log(this.sim.players);
     }
 }

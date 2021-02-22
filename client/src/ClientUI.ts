@@ -10,6 +10,10 @@ import { Item, State } from "../../common/src/game.core";
 //window['DEBUG'] = false;
 export const DEBUG = false;
 
+/**
+ * This class controls the overall user interface of the client.
+ * It's the first responder to all messages from the server and responsible for forwarding them to the affected modules.
+ */
 export class ClientUI implements ResponderClient {
     sim: SimulatorClient;
     carrier: CarrierClient;
