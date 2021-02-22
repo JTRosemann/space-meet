@@ -45,7 +45,7 @@ export class Game {
 
     get_item(id: string) {
         for (const it of this.items) {
-            if (it.id = id) {
+            if (it.id == id) {
                 return it;
             }
         }

@@ -225,6 +225,8 @@ export class SimulatorClient {
     }
     
     rm_player(id: string) {
+        this.drawables = this.drawables.filter((d: Drawable) => d.item.id != id);
+        this.projectables = this.projectables.filter((d: Projectable) => d.item.id != id);
         this.sim.rm_player(id);
     }
 
