@@ -32,4 +32,5 @@ export class OtherPlayer extends UpdatePlayer {
             this.panner.positionZ.value = pos.y;// z is the new y
         }
     }
+
 }
