@@ -47,11 +47,17 @@ export class SimulatorClient {
     }
 
     set_mode_full() {
-
+        document.getElementById('ltop').className = 'none';
+        document.getElementById('lbot').className = 'full';
+        document.getElementById('right').className = 'none';
+        this.mode = 'full';
     }
 
     set_mode_triple() {
-        
+        document.getElementById('ltop').className = 'box';
+        document.getElementById('lbot').className = 'box';
+        document.getElementById('right').className = 'screen';
+        this.mode = 'triple';
     }
 
     init_controllers(listener: AudioListener, panners: Record<string,PannerNode>, conf: Conference) {
