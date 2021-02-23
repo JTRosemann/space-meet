@@ -1,3 +1,4 @@
+import { createSecureContext } from "tls";
 import { Conference } from "../../common/src/Conference";
 import { CarrierClient } from "../../common/src/protocol";
 
@@ -15,6 +16,8 @@ export class JitsiConf {
     panners: Record<string,PannerNode>;
     audio_ctx: AudioContext;
     listener: AudioListener;
+    jitsi_conf_desk: any;
+    jitsi_desk: any;
 
     constructor(conf: Conference, carrier: CarrierClient, user_id: string, audio_ctx: AudioContext) {
         this.conf = conf;
@@ -67,6 +70,31 @@ export class JitsiConf {
         JitsiMeetJS.createLocalTracks(loc_tracks_opt).then(this.onLocalTracks.bind(this)).catch((error: Error) => console.log(error)); // 'desktop' for screensharing
     }
 
+    share_screen () {
+        //Jitsi only allows one video per participant, thus we need a new participant
+        //TODO remove code duplication
+        const connect_opt = {
+        hosts: {
+            domain: 'beta.meet.jit.si',
+            muc: 'conference.beta.meet.jit.si'
+        },//TODO change to game id
+            serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
+            // The name of client node advertised in XEP-0115 'c' stanza
+            clientNode: 'beta.meet.jit.si'
+        };
+
+        this.jitsi_desk = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
+        this.jitsi_desk.addEventListener(
+            JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
+            this.onConnectionSuccessDesk.bind(this));
+        this.jitsi_desk.addEventListener(
+            JitsiMeetJS.events.connection.CONNECTION_FAILED,
+            this.onConnectionFailed);
+        this.jitsi_desk.connect();
+
+        JitsiMeetJS.createLocalTracks({devices: ['desktop']}).then(this.onLocalTracksDesk.bind(this)).catch((error: Error) => console.log(error));
+    }
+
     set_cid(id: string, cid: string) {
         this.conf.call_ids[id] = cid;
     }
@@ -87,12 +115,18 @@ export class JitsiConf {
             // FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
             this.add_audio_track(track.stream, this.audio_ctx, sid);
         } else if (track.getType() == 'video') {
-            $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' />`);
-    //        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
-    //        this.remote_video[`${p_id}`] = track;//do I need this?
-    //        setTimeout(function () { // timeout not needed
-            const vid = document.getElementById(`vid${p_id}`);
-            track.attach(vid);
+            if (sid == undefined) {//TODO this is not a stable solution AT ALL
+                $('#right').append(`<video autoplay='1' id='scr${p_id}' style='width:100%; height:100%;' />`);
+                const scr = document.getElementById(`scr${p_id}`);
+                track.attach(scr);
+            } else {
+                $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden; left:0; right:0; top:0; bottom:0; position: absolute;' />`);
+        //        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
+        //        this.remote_video[`${p_id}`] = track;//do I need this?
+        //        setTimeout(function () { // timeout not needed
+                const vid = document.getElementById(`vid${p_id}`);
+                track.attach(vid);
+            }
 //        }, 500);
         }
     };
@@ -108,6 +142,19 @@ export class JitsiConf {
     onLocalTracks(tracks: Track[]) {
         this.loc_tracks = tracks;
         this.add_all_loc_tracks();
+    };
+
+    add_all_loc_tracksDesk() {
+        if (this.joined_jitsi) {
+            for (const track of this.loc_tracks) {
+                this.jitsi_conf_desk.addTrack(track);
+            }
+        }
+    };
+
+    onLocalTracksDesk(tracks: Track[]) {
+        this.loc_tracks = tracks;
+        this.add_all_loc_tracksDesk();
     };
 
     onConferenceJoined() {
@@ -128,6 +175,14 @@ export class JitsiConf {
         this.carrier.emit_call_id(cid);
 
         this.jitsi_conf.join();
+    }; // game_core.onConnectionSuccess
+
+    onConnectionSuccessDesk() { // TODO fight code duplication
+        console.log('onConnectionSuccess');
+        const conf_opt = { openBridgeChannel: true };
+        this.jitsi_conf_desk = this.jitsi_desk.initJitsiConference('mau8goo6gaenguw7o', conf_opt);
+
+        this.jitsi_conf_desk.join();
     }; // game_core.onConnectionSuccess
 
     onConnectionFailed = function() {

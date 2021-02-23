@@ -56,6 +56,8 @@ export class ClientUI implements ResponderClient {
     gui: dat.GUI;
     audio_ctx: AudioContext;
 
+    screenshare: boolean = false; // just DEMO 
+
     client_onconnected(data: ConnectedData): void {
         console.log('onconnected with id ' + data.id);
         //The server responded that we are now in a game,
@@ -77,10 +79,11 @@ export class ClientUI implements ResponderClient {
                  this.ctx, this.viewport.width, this.viewport.height,
                  this.conf.get_listener(), this.conf.get_panners(), conf);
             this.conf.init_meeting();
+            this.sim.start();
+        } else {
+            window.setInterval(this.client_onjoingame.bind(this), 50, data);
         }
-        this.sim.start();
     }
-
 
     client_onserverupdate_recieved(data: ServerUpdateData): void {
         const remat = {
@@ -163,6 +166,16 @@ export class ClientUI implements ResponderClient {
     */
     //    _playersettings.open();
 
+        const screenshare = this.gui.add(this, 'screenshare');
+        screenshare.onChange(function(value: boolean){
+            if (value) {
+                this.sim.set_mode_triple();
+                this.conf.share_screen();
+            } else {
+                this.sim.set_mode_full();
+            }
+        }.bind(this));
+
         const _drawsettings = this.gui.addFolder('Drawing');
         _drawsettings.add(this, 'traces').listen();
         _drawsettings.add(this, 'clip').listen();
@@ -185,7 +198,7 @@ export class ClientUI implements ResponderClient {
         _debugsettings.add(this, 'fps_avg').listen();
         _debugsettings.add(this, 'show_server_pos').listen();
         _debugsettings.add(this, 'show_dest_pos').listen();
-        _debugsettings.add(this, 'local_time').listen();
+        //_debugsettings.add(this, 'local_time').listen();
 
         const _consettings = this.gui.addFolder('Connection');
         _consettings.add(this, 'net_latency').step(0.001).listen();
