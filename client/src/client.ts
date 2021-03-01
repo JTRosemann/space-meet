@@ -10,6 +10,4 @@ window.onload = function(){
     console.log('onload');
     //Create our game client instance.
     client = new ClientUI();
-    client.init_ui();
-
 }; //window.onload

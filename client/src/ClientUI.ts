@@ -5,7 +5,9 @@ import { CarrierClient, ConnectedData, GameJoinData, PushPlayerData, ResponderCl
 import { establish_item, Game } from "../../common/src/Game";
 import { JitsiConf } from "./JitsiConf";
 import { Conference } from "../../common/src/Conference";
-import { Item, State } from "../../common/src/game.core";
+import { State } from "../../common/src/game.core";
+import { Debugger } from "./Debugger";
+import { assert } from "console";
 
 //window['DEBUG'] = false;
 export const DEBUG = false;
@@ -20,43 +22,39 @@ export class ClientUI implements ResponderClient {
     user_id: string = '';
     conf: JitsiConf;
     // ui stuff
-    traces: boolean;
-    clip: boolean;
-    show_support: boolean;
-    show_video: boolean;
-    show_help: boolean;
-    naive_approach: boolean;
-    show_server_pos: boolean;
-    show_dest_pos: boolean;
-    client_predict: boolean;
-    input_seq: number;
-    client_smoothing: boolean;
-    client_smooth: number;
-    pos_audio: boolean;
-    net_latency: number;
-    net_ping: number;
-    last_ping_time: number;
-    fake_lag: number;
-    fake_lag_time: number;
-    net_offset: number;
-    buffer_size: number;
-    target_time: number;
-    oldest_tick: number;
-    client_time: number;
-    server_time: number;
-    dt: number;
-    fps: number;
-    fps_avg_count: number;
-    fps_avg: number;
-    fps_avg_acc: number;
-    lit: number;
-    llt: number;
     ctx: CanvasRenderingContext2D;
     viewport: HTMLCanvasElement;
     gui: dat.GUI;
     audio_ctx: AudioContext;
-
     screenshare: boolean = false; // just DEMO 
+    debugger: Debugger;
+    gallerymode: boolean = false;
+    triplemode: boolean = false;
+
+    constructor() {
+        //Create the default configuration settings
+        this.client_create_gui();
+        //Connect to the socket.io server!
+        this.client_connect_to_server()
+
+        //Make this only if requested
+        if(String(window.location).indexOf('debug') != -1) {
+            this.debugger = new Debugger(this.gui);
+        }
+
+        //Fetch the viewport
+        this.viewport = document.getElementById('viewport') as HTMLCanvasElement;
+        //Adjust their size
+        this.viewport.width = this.viewport.offsetWidth;
+        this.viewport.height = this.viewport.offsetHeight;
+
+        //Fetch the rendering contexts
+        this.ctx = this.viewport.getContext('2d');
+
+        //Set the draw style for the font
+        this.ctx.font = '11px "Helvetica"';
+        console.log('ui initialised');
+    }
 
     client_onconnected(data: ConnectedData): void {
         console.log('onconnected with id ' + data.id);
@@ -117,31 +115,6 @@ export class ClientUI implements ResponderClient {
         this.sim.on_pong(data);
     }
 
-    init_ui() {
-        //Create the default configuration settings
-        this.client_create_configuration();
-        //Connect to the socket.io server!
-        this.client_connect_to_server()
-
-        //Make this only if requested
-        if(String(window.location).indexOf('debug') != -1) {
-            this.client_create_debug_gui();
-        }
-
-        //Fetch the viewport
-        this.viewport = document.getElementById('viewport') as HTMLCanvasElement;
-        //Adjust their size
-        this.viewport.width = this.viewport.offsetWidth;
-        this.viewport.height = this.viewport.offsetHeight;
-
-        //Fetch the rendering contexts
-        this.ctx = this.viewport.getContext('2d');
-
-        //Set the draw style for the font
-        this.ctx.font = '11px "Helvetica"';
-        console.log('ui initialised');
-    }
-
     client_connect_to_server() {
         //Store a local reference to our connection to the server
         const socket = sio.connect();
@@ -149,116 +122,50 @@ export class ClientUI implements ResponderClient {
         this.carrier = new CarrierClient(socket, this);
     }; //game_core.client_connect_to_server
 
-    client_create_debug_gui() {
-        this.gui = new dat.GUI();// <- see THREEx.keyboard issue
-
-    //    const _playersettings = this.gui.addFolder('Your settings');
-
-    //    this.colorcontrol = _playersettings.addColor(this, 'color');
-
-        //We want to know when we change our color so we can tell
-        //the server to tell the other clients for us
-    /*    this.colorcontrol.onChange(function(value) {
-            this.get_self().color = value;
-            localStorage.setItem('color', value);
-            this.socket.send('c.' + value);
+    client_create_gui() {
+        this.gui = new dat.GUI();
+        // add gallery option
+        const gallerymode = this.gui.add(this, 'gallerymode');
+        gallerymode.onChange(function(value: boolean) {
+            if (value) {
+                (this.sim as SimulatorClient).enable_gallerymode();
+            } else {
+                (this.sim as SimulatorClient).disable_gallerymode();
+            }
         }.bind(this));
-    */
-    //    _playersettings.open();
-
+        // add viewmode option
+        const triplemode = this.gui.add(this, 'triplemode');
+        triplemode.onChange(function(value: boolean) {
+            if (value) {
+                (this as ClientUI).set_mode_triple();
+            } else {
+                (this as ClientUI).set_mode_full();
+            }
+        }.bind(this));
+        // add screenshare option
         const screenshare = this.gui.add(this, 'screenshare');
         screenshare.onChange(function(value: boolean){
             if (value) {
-                this.sim.set_mode_triple();
-                this.conf.share_screen();
+                (this as ClientUI).set_mode_triple();
+                (this.conf as JitsiConf).share_screen();
             } else {
-                this.sim.set_mode_full();
+                (this as ClientUI).set_mode_full();
+                (this.conf as JitsiConf).stop_screenshare();
             }
         }.bind(this));
+    }
 
-        const _drawsettings = this.gui.addFolder('Drawing');
-        _drawsettings.add(this, 'traces').listen();
-        _drawsettings.add(this, 'clip').listen();
-        _drawsettings.add(this, 'show_support').listen();
-        _drawsettings.add(this, 'show_video').listen();
+    set_mode_full() {
+        document.getElementById('ltop').className = 'none';
+        document.getElementById('lbot').className = 'full';
+        document.getElementById('right').className = 'none';
+        this.triplemode = false;
+    }
 
-        _drawsettings.open();
-
-        const _othersettings = this.gui.addFolder('Methods');
-
-        _othersettings.add(this, 'naive_approach').listen();
-        _othersettings.add(this, 'client_smoothing').listen();
-        _othersettings.add(this, 'client_smooth').listen();
-        _othersettings.add(this, 'client_predict').listen();
-        _othersettings.add(this, 'pos_audio').listen();
-
-        const _debugsettings = this.gui.addFolder('Debug view');
-
-        _debugsettings.add(this, 'show_help').listen();
-        _debugsettings.add(this, 'fps_avg').listen();
-        _debugsettings.add(this, 'show_server_pos').listen();
-        _debugsettings.add(this, 'show_dest_pos').listen();
-        //_debugsettings.add(this, 'local_time').listen();
-
-        const _consettings = this.gui.addFolder('Connection');
-        _consettings.add(this, 'net_latency').step(0.001).listen();
-        _consettings.add(this, 'net_ping').step(0.001).listen();
-
-        //When adding fake lag, we need to tell the server about it.
-        const lag_control = _consettings.add(this, 'fake_lag').step(0.001).listen();
-        lag_control.onChange(function(value: number){
-            this.socket.send('l.' + value);
-        }.bind(this));
-
-        const _netsettings = this.gui.addFolder('Networking');
-
-        _netsettings.add(this, 'net_offset').min(0.01).step(0.001).listen();
-        _netsettings.add(this, 'server_time').step(0.001).listen();
-        _netsettings.add(this, 'client_time').step(0.001).listen();
-        //_netsettings.add(this, 'oldest_tick').step(0.001).listen();
-
-    } //game_core.client_create_debug_gui
-
-    client_create_configuration() {
-
-        this.traces = false;                 //whether to show traces of drawn items (i.e. don't clear)
-        this.clip = false;                   //whether to clip everything around the map circle
-        this.show_support = false;          //whether to show support lines
-        this.show_video = true;             //whether to draw the video in the head
-
-        this.show_help = false;             //Whether or not to draw the help text
-        this.naive_approach = false;        //Whether or not to use the naive approach
-        this.show_server_pos = false;       //Whether or not to show the server position
-        this.show_dest_pos = false;         //Whether or not to show the interpolation goal
-        this.client_predict = true;         //Whether or not the client is predicting input
-        this.input_seq = 0;                 //When predicting client inputs, we store the last input as a sequence number
-        this.client_smoothing = true;       //Whether or not the client side prediction tries to smooth things out
-        this.client_smooth = 25;            //amount of smoothing to apply to client update dest
-        this.pos_audio = true;             //whether to enable positional audio
-
-        this.net_latency = 0.001;           //the latency between the client and the server (ping/2)
-        this.net_ping = 0.001;              //The round trip time from here to the server,and back
-        this.last_ping_time = 0.001;        //The time we last sent a ping
-        this.fake_lag = 0;                //If we are simulating lag, this applies only to the input client (not others)
-        this.fake_lag_time = 0;
-
-        this.net_offset = 100;              //100 ms latency between server and client interpolation for other clients
-        this.buffer_size = 2;               //The size of the server history to keep for rewinding/interpolating.
-        this.target_time = 0.01;            //the time where we want to be in the server timeline
-        this.oldest_tick = 0.01;            //the last time tick we have available in the buffer
-
-        this.client_time = 0.01;            //Our local 'clock' based on server time - client interpolation(net_offset).
-        this.server_time = 0.01;            //The time the server reported it was at, last we heard from it
-
-        this.dt = 0.016;                    //The time that the last frame took to run
-        this.fps = 0;                       //The current instantaneous fps (1/this.dt)
-        this.fps_avg_count = 0;             //The number of samples we have taken for fps_avg
-        this.fps_avg = 0;                   //The current average fps displayed in the debug UI
-        this.fps_avg_acc = 0;               //The accumulation of the last avgcount fps samples
-
-        this.lit = 0;
-        this.llt = new Date().getTime();
-
-    };//game_core.client_create_configuration
-
+    set_mode_triple() {
+        document.getElementById('ltop').className = 'box';
+        document.getElementById('lbot').className = 'box';
+        document.getElementById('right').className = 'screen';
+        this.triplemode = true;
+    }
 }

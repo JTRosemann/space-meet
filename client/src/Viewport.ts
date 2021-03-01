@@ -66,7 +66,7 @@ export class Viewport {
             if (this.show_support) {
                 this.draw_rays();
             }
-            this.draw_projections();
+            this.draw_linear_projections();
             //draw circle
             this.ctx.beginPath();
             this.ctx.arc(0, 0, this.width / 6, 0, 2 * Math.PI);
@@ -112,7 +112,11 @@ export class Viewport {
         }
     }
 
-    private draw_projections() {
+    private draw_gallery_projections() {
+        
+    }
+
+    private draw_linear_projections() {
         const self_state = this.get_self_state();
         for (const p of this.projectables) {
             if (p.item.id == this.user_id)

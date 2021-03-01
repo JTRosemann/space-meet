@@ -4,7 +4,15 @@ import { CarrierClient } from "../../common/src/protocol";
 
 declare const JitsiMeetJS : any;
 
-type Track = { isLocal: () => any; getParticipantId: () => any; getType: () => string; stream: MediaStream; attach: (arg0: HTMLElement) => void; };
+type Track = { 
+    isLocal: () => any; 
+    getParticipantId: () => any; 
+    getType: () => string;
+    track: MediaStreamTrack;
+    stream: MediaStream; 
+    attach: (arg0: HTMLElement) => void; 
+    dispose: () => any;
+};
 export class JitsiConf {
     user_id: string;
     conf: Conference;
@@ -18,6 +26,7 @@ export class JitsiConf {
     listener: AudioListener;
     jitsi_conf_desk: any;
     jitsi_desk: any;
+    loc_tracks_desk: Track[];
 
     constructor(conf: Conference, carrier: CarrierClient, user_id: string, audio_ctx: AudioContext) {
         this.conf = conf;
@@ -92,7 +101,15 @@ export class JitsiConf {
             this.onConnectionFailed);
         this.jitsi_desk.connect();
 
+        this.loc_tracks_desk = [];
         JitsiMeetJS.createLocalTracks({devices: ['desktop']}).then(this.onLocalTracksDesk.bind(this)).catch((error: Error) => console.log(error));
+    }
+
+    stop_screenshare() {
+        this.loc_tracks_desk.forEach((track: Track) => track.track.stop());
+        this.jitsi_conf_desk.leave();
+        this.jitsi_desk.disconnect();
+        //this.jitsi_conf_desk.removeTrack(track); // this is needed to enable muting/camera off
     }
 
     set_cid(id: string, cid: string) {
@@ -116,6 +133,7 @@ export class JitsiConf {
             this.add_audio_track(track.stream, this.audio_ctx, sid);
         } else if (track.getType() == 'video') {
             if (sid == undefined) {//TODO this is not a stable solution AT ALL
+                $('#right').children().remove();// remove other screenshares
                 $('#right').append(`<video autoplay='1' id='scr${p_id}' style='width:100%; height:100%;' />`);
                 const scr = document.getElementById(`scr${p_id}`);
                 track.attach(scr);
@@ -130,6 +148,17 @@ export class JitsiConf {
 //        }, 500);
         }
     };
+
+    onUserLeft(id: string) {
+        const left_vid = $(`#vid${id}`);
+        const left_scr = $(`#scr${id}`);
+        if (left_vid) {
+            left_vid.remove();
+        }
+        if (left_scr) {
+            left_scr.remove();
+        }
+    }
 
     add_all_loc_tracks() {
         if (this.joined_jitsi) {
@@ -146,14 +175,14 @@ export class JitsiConf {
 
     add_all_loc_tracksDesk() {
         if (this.joined_jitsi) {
-            for (const track of this.loc_tracks) {
+            for (const track of this.loc_tracks_desk) {
                 this.jitsi_conf_desk.addTrack(track);
             }
         }
     };
 
     onLocalTracksDesk(tracks: Track[]) {
-        this.loc_tracks = tracks;
+        this.loc_tracks_desk = tracks;
         this.add_all_loc_tracksDesk();
     };
 
@@ -170,6 +199,7 @@ export class JitsiConf {
         //this.remote_video = {};//do i neet this?
         this.jitsi_conf.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
         this.jitsi_conf.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
+        this.jitsi_conf.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
         const cid = this.jitsi_conf.myUserId();
         this.conf.call_ids[this.user_id] = cid;
         this.carrier.emit_call_id(cid);

@@ -21,8 +21,12 @@ import { TripleCircle } from "./TripleCircle";
  * It is responsible for updating the canvas.
  */
 export class SimulatorClient {
-    static update_loop = 45;//ms
-    //static update_loop = 500;//ms DEBUG
+    disable_gallerymode() {
+        throw new Error("Method not implemented.");
+    }
+    enable_gallerymode() {
+        throw new Error("Method not implemented.");
+    }
     user_id: string;
     sim: Simulator;
     server_data: Record<string,Queue<ServerPlayerData>>;
@@ -30,7 +34,6 @@ export class SimulatorClient {
     viewport: Viewport;
     in_ctrl: InputController;
     show_support: false;
-    mode: 'full' | 'triple' = 'full';
     
     constructor(game: Game, time: number, carrier: CarrierClient, id: string, 
             ctx: CanvasRenderingContext2D, width: number, height: number,
@@ -44,20 +47,6 @@ export class SimulatorClient {
         this.init_controllers(listener, panners, conf);
         // init input controller
         this.in_ctrl = new InputController(this.carrier);
-    }
-
-    set_mode_full() {
-        document.getElementById('ltop').className = 'none';
-        document.getElementById('lbot').className = 'full';
-        document.getElementById('right').className = 'none';
-        this.mode = 'full';
-    }
-
-    set_mode_triple() {
-        document.getElementById('ltop').className = 'box';
-        document.getElementById('lbot').className = 'box';
-        document.getElementById('right').className = 'screen';
-        this.mode = 'triple';
     }
 
     init_controllers(listener: AudioListener, panners: Record<string,PannerNode>, conf: Conference) {
