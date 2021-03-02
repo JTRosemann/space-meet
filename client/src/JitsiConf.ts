@@ -55,12 +55,12 @@ export class JitsiConf {
         const init_opt = {};
         const connect_opt = {
         hosts: {
-            domain: 'beta.meet.jit.si',
-            muc: 'conference.beta.meet.jit.si'
+            domain: 'meet.jit.si',
+            muc: 'conference.meet.jit.si'
         },//TODO change to game id
-            serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
+            serviceUrl: '//meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
             // The name of client node advertised in XEP-0115 'c' stanza
-            clientNode: 'beta.meet.jit.si'
+            clientNode: 'meet.jit.si'
         };
 
         JitsiMeetJS.init(init_opt);
@@ -84,12 +84,12 @@ export class JitsiConf {
         //TODO remove code duplication
         const connect_opt = {
         hosts: {
-            domain: 'beta.meet.jit.si',
-            muc: 'conference.beta.meet.jit.si'
+            domain: 'meet.jit.si',
+            muc: 'conference.meet.jit.si'
         },//TODO change to game id
-            serviceUrl: '//beta.meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
+            serviceUrl: '//meet.jit.si/http-bind?room=mau8goo6gaenguw7o',
             // The name of client node advertised in XEP-0115 'c' stanza
-            clientNode: 'beta.meet.jit.si'
+            clientNode: 'meet.jit.si'
         };
 
         this.jitsi_desk = new JitsiMeetJS.JitsiConnection(null, null, connect_opt);
