@@ -130,15 +130,25 @@ export class Viewport {
             (a: Projectable, b: Projectable) =>
              this.get_rel_angle(a.item.state.pos) - this.get_rel_angle(b.item.state.pos));
         const dist_c = this.width / 6;
+        // support for a second row if there are more than 9 player
+        const num = sorted.length; // number of players
+        const min_pr = 9; // minimum of number of bubbles such that two rows are possible
+        const per_row = num > min_pr ? Math.max(min_pr, Math.ceil(num/2)) : num;
         // use law of sines to compute the radius:
         // r / sin (α/2) = r + p / sin (π/2) = r + p
         // where α is 2π / n
-        const alpha = 2*Math.PI / sorted.length;
+        const alpha = 2*Math.PI / per_row; // divide the full circle by the number of players per row
         const half_alpha = alpha / 2;
         const r = Math.min(dist_c, dist_c / (1/Math.sin(half_alpha) - 1));
         let n = 0;
         for (const p of sorted) {
-            const pos = vec.from_polar(r + dist_c, n*alpha);
+            let pos: vec;
+            if (n < per_row) {
+                pos = vec.from_polar(r + dist_c, n*alpha);
+            } else if (n >= per_row) {
+                const x = r*Math.tan(Math.PI/3); // <-- FIXME this is imprecise
+                pos = vec.from_polar(r + dist_c + x, n*alpha - half_alpha);
+            }
             this.positional_draw_projection(pos.x, pos.y, r, p);
             n++;
         }
