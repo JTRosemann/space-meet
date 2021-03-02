@@ -1,6 +1,7 @@
 import { Game } from "../../common/src/Game";
 import { Projectable } from "./Projectable";
 import { Drawable } from "./Drawable";
+import { vec } from "../../common/src/vec";
 
 /**
  * This class draws on the viewport.
@@ -46,7 +47,7 @@ export class Viewport {
         return Object.values(this.drawables);
     }
 
-    draw() {
+    draw(gallerymode: boolean = false) {
         //Clear the screen area
         if (this.ctx && !this.traces) { // && !this.traces
             this.ctx.clearRect(0, 0, this.width, this.height);
@@ -66,7 +67,11 @@ export class Viewport {
             if (this.show_support) {
                 this.draw_rays();
             }
-            this.draw_linear_projections();
+            if (gallerymode) {
+                this.draw_gallery_projections();
+            } else {
+                this.draw_linear_projections();
+            }
             //draw circle
             this.ctx.beginPath();
             this.ctx.arc(0, 0, this.width / 6, 0, 2 * Math.PI);
@@ -112,8 +117,39 @@ export class Viewport {
         }
     }
 
+    private get_rel_angle(v: vec) {
+        const self_state = this.get_self_state();
+        const sub = v.sub(self_state.pos);
+        return sub.angle();
+    }
+
     private draw_gallery_projections() {
-        
+        const self_state = this.get_self_state();
+        // sort projectables by their angle relative to the self_player
+        const sorted = this.projectables.sort(
+            (a: Projectable, b: Projectable) =>
+             this.get_rel_angle(a.item.state.pos) - this.get_rel_angle(b.item.state.pos));
+        const dist_c = this.width / 6;
+        // use law of sines to compute the radius:
+        // r / sin (α/2) = r + p / sin (π/2) = r + p
+        // where α is 2π / n
+        const alpha = 2*Math.PI / sorted.length;
+        const half_alpha = alpha / 2;
+        const r = Math.min(dist_c, dist_c / (1/Math.sin(half_alpha) - 1));
+        let n = 0;
+        for (const p of sorted) {
+            const pos = vec.from_polar(r + dist_c, n*alpha);
+            this.positional_draw_projection(pos.x, pos.y, r, p);
+            n++;
+        }
+    }
+
+    private positional_draw_projection(center_x: number, center_y: number, rad: number, p: Projectable) {
+        this.ctx.save();
+        this.ctx.translate(center_x, center_y);
+        this.ctx.rotate(this.get_self_state().dir + Math.PI / 2); // rewind the rotation from outside
+        p.draw_projection(this.ctx, rad);
+        this.ctx.restore();
     }
 
     private draw_linear_projections() {
@@ -136,13 +172,7 @@ export class Viewport {
             const dist = dist_c + rad;
             const center_x = dist * pos.x / abs_val; //FIXME: divide by zero
             const center_y = dist * pos.y / abs_val;
-            this.ctx.save();
-            this.ctx.translate(center_x, center_y);
-            this.ctx.rotate(self_state.dir + Math.PI / 2); // rewind the rotation from outside
-
-            p.draw_projection(this.ctx, rad);
-
-            this.ctx.restore();
+            this.positional_draw_projection(center_x, center_y, rad, p);
         }
     }
 

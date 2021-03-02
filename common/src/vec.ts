@@ -2,6 +2,10 @@ import { lerp } from "./game.core";
 
 
 export class vec {
+    static from_polar(r: number, phi: number) {
+        return new vec(r*Math.cos(phi), r*Math.sin(phi));
+    }
+
     x: number;
     y: number;
     constructor(x: number, y: number) {

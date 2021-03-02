@@ -21,12 +21,6 @@ import { TripleCircle } from "./TripleCircle";
  * It is responsible for updating the canvas.
  */
 export class SimulatorClient {
-    disable_gallerymode() {
-        throw new Error("Method not implemented.");
-    }
-    enable_gallerymode() {
-        throw new Error("Method not implemented.");
-    }
     user_id: string;
     sim: Simulator;
     server_data: Record<string,Queue<ServerPlayerData>>;
@@ -34,6 +28,7 @@ export class SimulatorClient {
     viewport: Viewport;
     in_ctrl: InputController;
     show_support: false;
+    gallerymode: boolean = false;
     
     constructor(game: Game, time: number, carrier: CarrierClient, id: string, 
             ctx: CanvasRenderingContext2D, width: number, height: number,
@@ -78,11 +73,19 @@ export class SimulatorClient {
         window.requestAnimationFrame(this.do_update.bind(this));
     }
 
+    disable_gallerymode() {
+        this.gallerymode = false;
+    }
+
+    enable_gallerymode() {
+        this.gallerymode = true;
+    }
+
     do_update(timestamp: number) {
         //capture inputs from local player & send them to the server
         this.in_ctrl.update(42, timestamp);
         //draw
-        this.viewport.draw();
+        this.viewport.draw(this.gallerymode);
         //Work out the fps average
         //this.client_refresh_fps(); not needed yeeeeet
 
