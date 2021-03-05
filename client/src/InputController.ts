@@ -1,5 +1,5 @@
 import { Controller } from "../../common/src/Controller";
-import { fixed } from "../../common/src/game.core";
+import { fixed } from "../../common/src/util";
 import { CarrierClient } from "../../common/src/protocol";
 import { THREEx } from '../lib/keyboard.js';
 

@@ -1,4 +1,4 @@
-import { State } from "../../common/src/game.core";
+import { State } from "../../common/src/State";
 
 export interface ServerPlayerData {
     state: State;

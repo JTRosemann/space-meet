@@ -1,4 +1,5 @@
-import { Item, State } from "./game.core";
+import { State } from "./State";
+import { Item } from "./Item";
 import { InputPlayer } from "./InputPlayer";
 import { vec } from "./vec";
 import { RectangleWorld } from "./World";

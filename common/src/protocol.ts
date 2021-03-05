@@ -8,7 +8,7 @@ import { runInThisContext } from "vm";
 import * as io from 'socket.io';
 import { Game } from "./Game";
 import { Conference } from "./Conference";
-import { Item } from "./game.core";
+import { Item } from "./Item";
 
 /*
  * client connects via socket.io

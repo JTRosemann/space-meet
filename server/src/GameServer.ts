@@ -21,13 +21,13 @@ import {
 //Import shared game library code.
 //require('./game.core.js');
 
-import { State } from '../../common/src/game.core';
 import { Simulator } from '../../common/src/Simulator';
 import { vec } from '../../common/src/vec';
 import { Game } from '../../common/src/Game';
 import * as io from 'socket.io';
 import { InputPlayer } from '../../common/src/InputPlayer';
 import { Conference } from '../../common/src/Conference';
+import { State } from '../../common/src/State';
 
 export class SimulatorServer {
     static update_loop = 45;//ms

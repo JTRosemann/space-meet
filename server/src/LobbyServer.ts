@@ -10,9 +10,9 @@ import {
 
 import { SimulatorServer } from './GameServer';
 import { Game } from '../../common/src/Game';
-import { State } from '../../common/src/game.core';
 import { vec } from '../../common/src/vec';
 import { RectangleWorld } from '../../common/src/World';
+import { State } from '../../common/src/State';
 
 function create_podium_game() : Game {
     const p = {state: new State(new vec(500,240), 0), rad: 64, id: 'podium'};

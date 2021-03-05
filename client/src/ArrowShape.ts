@@ -1,4 +1,5 @@
-import { Item, rgba } from "../../common/src/game.core";
+import { rgba } from "../../common/src/util";
+import { Item } from "../../common/src/Item";
 import { Drawable } from "./Drawable";
 
 export class ArrowShape implements Drawable {

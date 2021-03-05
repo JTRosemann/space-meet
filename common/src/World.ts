@@ -1,4 +1,6 @@
-import { fixed, Item, State } from "./game.core";
+import { fixed } from "./util";
+import { State } from "./State";
+import { Item } from "./Item";
 import { vec } from "./vec";
 
 /**

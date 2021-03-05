@@ -1,4 +1,4 @@
-import { Item } from "../../common/src/game.core";
+import { Item } from "../../common/src/Item";
 
 export interface Drawable {
     item: Item;

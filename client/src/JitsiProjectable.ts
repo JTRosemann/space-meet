@@ -1,5 +1,6 @@
 import { Conference } from "../../common/src/Conference";
-import { Item, rgba } from "../../common/src/game.core";
+import { rgba } from "../../common/src/util";
+import { Item } from "../../common/src/Item";
 import { Projectable } from "./Projectable";
 
 

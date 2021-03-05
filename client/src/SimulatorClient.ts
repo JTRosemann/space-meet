@@ -1,5 +1,6 @@
 import { Game } from "../../common/src/Game";
-import { Item, State } from "../../common/src/game.core";
+import { State } from "../../common/src/State";
+import { Item } from "../../common/src/Item";
 import { CarrierClient, ServerUpdateData } from "../../common/src/protocol";
 import { Queue } from "../../common/src/Queue";
 import { Simulator } from "../../common/src/Simulator";

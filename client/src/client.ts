@@ -1,6 +1,5 @@
 import { ClientUI } from "./ClientUI";
 
-
 let client;
 
 //When loading, we store references to our

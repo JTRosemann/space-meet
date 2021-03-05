@@ -1,4 +1,4 @@
-import { lerp } from "./game.core";
+import { lerp } from "./util";
 
 
 export class vec {

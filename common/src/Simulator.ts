@@ -1,6 +1,6 @@
 import { Controller } from "./Controller";
 import { Game } from "./Game";
-import { State } from "./game.core";
+import { State } from "./State";
 import { IdController } from "./IdController";
 import { InputPlayer } from "./InputPlayer";
 

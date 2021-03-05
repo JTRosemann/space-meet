@@ -5,9 +5,8 @@ import { CarrierClient, ConnectedData, GameJoinData, PushPlayerData, ResponderCl
 import { establish_item, Game } from "../../common/src/Game";
 import { JitsiConf } from "./JitsiConf";
 import { Conference } from "../../common/src/Conference";
-import { State } from "../../common/src/game.core";
+import { State } from "../../common/src/State";
 import { Debugger } from "./Debugger";
-import { assert } from "console";
 
 //window['DEBUG'] = false;
 export const DEBUG = false;

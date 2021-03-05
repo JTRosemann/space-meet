@@ -1,4 +1,5 @@
-import { fixed, State } from "./game.core";
+import { fixed } from "./util";
+import { State } from "./State";
 import { vec } from "./vec";
 import { InputData } from "./protocol";
 import { Queue } from "./Queue";

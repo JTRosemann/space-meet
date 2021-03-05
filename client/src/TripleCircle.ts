@@ -1,4 +1,4 @@
-import { Item } from "../../common/src/game.core";
+import { Item } from "../../common/src/Item";
 import { Drawable } from "./Drawable";
 
 
