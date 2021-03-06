@@ -17,6 +17,7 @@ import { PingController } from "./PingController";
 import { Viewport } from "./Viewport";
 import { TripleCircle } from "./TripleCircle";
 import { Table } from "./Table";
+import { UpdatePlayer } from "./UpdatePlayer";
 
 /**
  * This class hosts the update loop (requestAnimationFrame).
@@ -32,8 +33,8 @@ export class SimulatorClient {
     show_support: false;
     gallerymode: boolean = false;
     sqrt: boolean = true;
-    
-    constructor(game: Game, time: number, carrier: CarrierClient, id: string, 
+
+    constructor(game: Game, time: number, carrier: CarrierClient, id: string,
             viewport: HTMLCanvasElement,
             listener: AudioListener, panners: Record<string, PannerNode>, conf: Conference) {
         this.server_data = {};
@@ -49,7 +50,7 @@ export class SimulatorClient {
 
     init_controllers(listener: AudioListener, panners: Record<string,PannerNode>, conf: Conference) {
         const ping_ctrl = new PingController(this.carrier);
-        this.sim.bots.push(ping_ctrl);
+        this.sim.push_bot(ping_ctrl);
         const game = this.sim.game;
         for (const it of game.get_items()) {
             const its_state = game.get_item_state(it.id);
@@ -62,6 +63,13 @@ export class SimulatorClient {
                 // init other players (control pannernodes)
                 if (panners[it.id]) {
                     this.push_player(it.id, its_state, panners[it.id], conf);
+                } else {// for bots, polishable
+                    if (this.server_data[it.id] == undefined) {
+                        this.server_data[it.id] = new Queue();
+                    }
+                    const p = new UpdatePlayer(it.id, this.sim.game,this.server_data[it.id]);
+                    this.sim.put_player(p, it.state);
+                    this.viewport.push_drawable(new ArrowShape(it));
                 }
             }
         }
@@ -121,7 +129,7 @@ export class SimulatorClient {
             this.server_data[it.id].enqueue({state: it.state, time: time});
         }
     }
-    
+
     rm_player(id: string) {
         this.viewport.rm_drawable(id);
         this.viewport.rm_projectable(id);

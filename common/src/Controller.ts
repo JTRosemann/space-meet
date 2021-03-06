@@ -7,5 +7,3 @@
 export interface Controller {
     update(delta_time: number, now_time: number): void; //TODO this function will need additional arguments (time etc.)
 }
-
-

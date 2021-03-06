@@ -12,10 +12,15 @@ export function establish_item(it: Item) {
         rad: it.rad
     };
 }
+
 /**
-    The game_core class
-*/
+ * This class provides all geometric information that is synced between server client.
+ * This includes constant information (like the map) and variable information,
+ * that is regularly updated (e.g. the positions of players).
+ */
 export class Game {
+    //MAYDO: separate constant and variable information
+    //MAYDO: abstract over "effectors" like the podium
     static establish(game: Game) {
         return new this(game.id,
             game.std_rad,
@@ -137,4 +142,13 @@ export class Game {
         }
         console.warn('set_item_state: id ' + id + ' not found.');
     }
+
+    set_item_dir(id: string, dir: number) {
+        this.get_item_state(id).dir = dir;
+    }
+    
+    set_item_pos(id: string, pos: vec) {
+        this.get_item_state(id).pos = pos;
+    }
 }
+

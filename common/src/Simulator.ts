@@ -15,8 +15,8 @@ export class Simulator {
     //static physics_loop = 150;//ms DEBUG
     static timer_loop = 4;//ms
     game: Game;
-    bots: Controller[] = [];
-    players: Record<string,IdController> = {};
+    private bots: Controller[] = [];
+    private players: Record<string,IdController> = {};
     //Set up some physics integration values
     physics_delta: number = Simulator.physics_loop;//The physics update delta time in ms
     physics_prev: number = new Date().getTime(); //The physics update last delta time;

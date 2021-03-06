@@ -28,6 +28,8 @@ import * as io from 'socket.io';
 import { InputPlayer } from '../../common/src/InputPlayer';
 import { Conference } from '../../common/src/Conference';
 import { State } from '../../common/src/State';
+import { SquareController } from './SquareController';
+import { ItemController } from '../../common/src/ItemController';
 
 export class SimulatorServer {
     static update_loop = 45;//ms
@@ -44,6 +46,14 @@ export class SimulatorServer {
         this.server = sio;
         this.conf = new Conference(game.id);
         this.create_update_loop();
+        this.push_square(game);
+    }
+
+    private push_square(game: Game) {
+        //TODO too many start states
+        const p = new SquareController(new vec(50,80), 300,
+            new ItemController(game, 'square'));
+        this.sim.put_player(p, new State(new vec(50,80),0));
     }
 
     on_disconnect(client: sio.Socket) {
