@@ -18,8 +18,10 @@ This is work in progress, it's only a proof of concept yet.
 ## Running
 * `./buildall`
 * `./run`
+Now you can access it at https://localhost:4004 (note the "s" in "https"!)
+Optional:
 * `ngrok http https://localhost:4004` (only works with (free but signed-up) authtoken from ngrok)
-* go localhost:4040 and use the link given there
+* go to https://localhost:4040 and use the link given there to access it outside of your network
 
 ## Roadmap
 
