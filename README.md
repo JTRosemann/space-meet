@@ -4,24 +4,16 @@ Space Meet
 Space Meet is a meeting space, where you can walk & talk.
 This is work in progress, it's only a proof of concept yet.
 
-## Getting started (Using npm package.json)
-* Get node.js
-* run `npm install` inside the cloned folder
-* run `node app.js` inside the cloned folder
-* Visit https://beta.meet.jit.si/mau8goo6gaenguw7o and enable microphone & camera
-* Visit http://127.0.0.1:4004/?debug
-* you should now see yourself and hear yourself differently as you walk through the room
-
-## Getting started (Manual install)
-
-* Get node.js
-* Install socket.io `npm install socket.io`
-* Install node-udid `npm install node-uuid`
-* Install express `npm install express`
-* Run `node app.js` inside the cloned folder
-* Visit https://beta.meet.jit.si/mau8goo6gaenguw7o and enable microphone & camera
-* Visit http://127.0.0.1:4004/?debug
-* you should now see yourself and hear yourself differently as you walk through the room
+## Install
+* clone it
+* install `yarn` & `npm`
+* `cd client`
+* `yarn init`
+* `yarn`
+* `cd ../server`
+* `yarn init`
+* `yarn`
+* `cd ..`
 
 ## Running
 * `./buildall`
