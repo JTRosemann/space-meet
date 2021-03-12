@@ -32,13 +32,13 @@ export class SimulatorClient {
     gallerymode: boolean = false;
     
     constructor(game: Game, time: number, carrier: CarrierClient, id: string, 
-            ctx: CanvasRenderingContext2D, width: number, height: number,
+            viewport: HTMLCanvasElement,
             listener: AudioListener, panners: Record<string, PannerNode>, conf: Conference) {
         this.server_data = {};
         this.sim = new Simulator(game);
         this.carrier = carrier;
         this.user_id = id;
-        this.viewport = new Viewport(ctx, width, height, game, id);
+        this.viewport = new Viewport(viewport, game, id);
         this.push_game_data(game.get_items(), time);
         this.init_controllers(listener, panners, conf);
         // init input controller

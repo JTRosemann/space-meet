@@ -73,7 +73,7 @@ export class ClientUI implements ResponderClient {
             this.audio_ctx = new AudioContext();
             this.conf = new JitsiConf(conf, this.carrier, this.user_id, this.audio_ctx);
             this.sim = new SimulatorClient(game, data.time, this.carrier, this.user_id,
-                 this.ctx, this.viewport.width, this.viewport.height,
+                 this.viewport,
                  this.conf.get_listener(), this.conf.get_panners(), conf);
             this.conf.init_meeting();
             this.sim.start();
