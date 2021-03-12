@@ -30,6 +30,7 @@ export class SimulatorClient {
     in_ctrl: InputController;
     show_support: false;
     gallerymode: boolean = false;
+    sqrt: boolean = true;
     
     constructor(game: Game, time: number, carrier: CarrierClient, id: string, 
             viewport: HTMLCanvasElement,
@@ -82,11 +83,19 @@ export class SimulatorClient {
         this.gallerymode = true;
     }
 
+    disable_sqrt() {
+        this.sqrt = false;
+    }
+
+    enable_sqrt() {
+        this.sqrt = true;
+    }
+
     do_update(timestamp: number) {
         //capture inputs from local player & send them to the server
         this.in_ctrl.update(42, timestamp);
         //draw
-        this.viewport.draw(this.gallerymode);
+        this.viewport.draw(this.gallerymode, this.sqrt);
         //Work out the fps average
         //this.client_refresh_fps(); not needed yeeeeet
 

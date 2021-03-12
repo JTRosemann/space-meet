@@ -43,7 +43,7 @@ export class Viewport {
         return Object.values(this.drawables);
     }
 
-    draw(gallerymode: boolean = false) {
+    draw(gallerymode: boolean = false, sqrt: boolean) {
         const ctx = this.viewport.getContext('2d');
         this.viewport.width = this.viewport.offsetWidth;
         this.viewport.height = this.viewport.offsetHeight;
@@ -73,7 +73,7 @@ export class Viewport {
             if (gallerymode) {
                 this.draw_gallery_projections(ctx, width);
             } else {
-                this.draw_linear_projections(ctx, width);
+                this.draw_positional_projections(ctx, width, sqrt);
             }
             //draw circle around self
             ctx.beginPath();
@@ -169,7 +169,7 @@ export class Viewport {
         ctx.restore();
     }
 
-    private draw_linear_projections(ctx: CanvasRenderingContext2D, width: number) {
+    private draw_positional_projections(ctx: CanvasRenderingContext2D, width: number, sqrt: boolean) {
         const self_state = this.get_self_state();
         for (const p of this.projectables) {
             if (p.item.id == this.user_id)
@@ -184,8 +184,10 @@ export class Viewport {
             // prevent non-positive values in the divisor using Math.max(eps, ..)
             const max_rad = dist_c;
             // bound the maximum size of the radius
-            const lin_rad = Math.min(p.item.rad * dist_c / Math.max(eps, abs_val - p.item.rad), max_rad);
-            const rad = (this.game.on_podium(p.item.state.pos)) ? max_rad : lin_rad;
+            const lin_rad = p.item.rad * dist_c / Math.max(eps, abs_val - p.item.rad);
+            const sqrt_rad = Math.sqrt(lin_rad/max_rad) * max_rad;
+            const bounded_rad = Math.min(sqrt ? sqrt_rad : lin_rad, max_rad);
+            const rad = (this.game.on_podium(p.item.state.pos)) ? max_rad : bounded_rad;
             const dist = dist_c + rad;
             const center_x = dist * pos.x / abs_val; //FIXME: divide by zero
             const center_y = dist * pos.y / abs_val;

@@ -29,6 +29,7 @@ export class ClientUI implements ResponderClient {
     debugger: Debugger;
     gallerymode: boolean = false;
     triplemode: boolean = false;
+    sqrt: boolean = true;
 
     constructor() {
         //Create the default configuration settings
@@ -130,6 +131,15 @@ export class ClientUI implements ResponderClient {
                 (this.sim as SimulatorClient).enable_gallerymode();
             } else {
                 (this.sim as SimulatorClient).disable_gallerymode();
+            }
+        }.bind(this));
+        // add sqrt view mode
+        const sqrt = this.gui.add(this, 'sqrt');
+        sqrt.onChange(function(value: boolean) {
+            if (value) {
+                (this.sim as SimulatorClient).enable_sqrt();
+            } else {
+                (this.sim as SimulatorClient).disable_sqrt();
             }
         }.bind(this));
         // add viewmode option
