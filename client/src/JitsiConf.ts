@@ -138,7 +138,7 @@ export class JitsiConf {
                 const scr = document.getElementById(`scr${p_id}`);
                 track.attach(scr);
             } else {
-                $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden; left:0; right:0; top:0; bottom:0; position: absolute;' />`);
+                $('#gallery').append(`<video autoplay='1' id='vid${p_id}' style='width:100%; height:100%;' />`);
         //        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
         //        this.remote_video[`${p_id}`] = track;//do I need this?
         //        setTimeout(function () { // timeout not needed

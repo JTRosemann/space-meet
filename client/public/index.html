@@ -31,8 +31,22 @@
         crossorigin="anonymous"></script>
 
     <script type="text/javascript" src="https://meet.jit.si/libs/lib-jitsi-meet.min.js"></script>
-    <!-- Game code -->
 
+    <script>
+        var openTab = function(tab_id /*: string*/) {
+            const tabcontents = document.getElementsByClassName("tabcontent");
+            // set all tabs invisible
+            for (let i=0; i < tabcontents.length; i++) {
+                tabcontents.item(i).className = "tabcontent hide";
+            }
+            const tablinks = document.getElementsByClassName("tablinks", "active");
+            for (let i=0; i < tablinks.length; i++) {
+                tablinks.item(i).className  = "tablinks";
+            }
+            document.getElementById(tab_id).className = "tabcontent show";
+            document.getElementById(tab_id + "_button").className += " active";
+        }
+    </script>
     <!-- Load the common game code. -->
 <!--    <script type="text/javascript" src="built/game.core.js"></script> -->
     <!-- Finally, Load the game client code. -->
@@ -50,8 +64,17 @@
         </div>
         <!-- TODO maybe make it tabbed https://www.w3schools.com/howto/howto_js_tabs.asp -->
         <div id="right" class="none">
+            <div class="tab">
+                <button class="tablinks" id="gallery_button" onclick="openTab('gallery')">Gallery</button>
+                <button class="tablinks" id="screenshare_button" onclick="openTab('screenshare')">Screenshare</button>
+            </div>
+            <div class="tabcontent" id="gallery"></div>
+            <div class="tabcontent" id="screenshare"><p>screenshare</p></div>
         </div>
     </div>
+    <script>
+        /*openTab('gallery');*/
+    </script>
   </body>
 
 </html>
