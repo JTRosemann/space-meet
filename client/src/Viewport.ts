@@ -58,7 +58,6 @@ export class Viewport {
         const self_rad = this.game.get_item_rad(this.user_id);
         // only draw if neccary information is available
         if (ctx && self_state != undefined && self_rad != undefined) {
-            ctx.save();
             // move self to center and rotate in direction of self -π/2
             const mid_x = width / 2;
             const mid_y = height / 2;
@@ -66,26 +65,14 @@ export class Viewport {
             ctx.rotate(-Math.PI / 2);
             
             ctx.rotate(-self_state.dir);
-            // draw appropriate projections, potentially with supporting lines
-            if (this.show_support) {
-                this.draw_rays(ctx);
-            }
-            if (gallerymode) {
-                this.draw_gallery_projections(ctx, width);
-            } else {
-                this.draw_positional_projections(ctx, width, sqrt);
-            }
-            //draw circle around self
-            ctx.beginPath();
-            ctx.arc(0, 0, width / 6, 0, 2 * Math.PI);
-            ctx.strokeStyle = "black";
-            ctx.stroke();
+            // the content that is still to be rendered is on the map,
+            // it has to be scaled appropriatly
+
             // if enabled clip the map outside of the circle
             if (this.clip) {
                 ctx.clip();
             }
-            // the content that is still to be rendered is on the map,
-            // it has to be scaled appropriatly
+            ctx.save();
             ctx.scale(scale, scale);
             //this or several canvas layers may be used to prevent overwriting videos
             //this.ctx.globalCompositeOperation = 'destination-over';
@@ -100,6 +87,21 @@ export class Viewport {
             //    this.ctx.rotate(Math.PI/2);
             //    this.ctx.translate(-mid_x, -mid_y);
             ctx.restore(); // restore removes the need to reset the translations & rotations one by one
+            // the projections are the last thing to be drawn
+            // draw appropriate projections, potentially with supporting lines
+            if (this.show_support) {
+                this.draw_rays(ctx);
+            }
+            if (gallerymode) {
+                this.draw_gallery_projections(ctx, width);
+            } else {
+                this.draw_positional_projections(ctx, width, sqrt);
+            }
+            //draw circle around self
+            ctx.beginPath();
+            ctx.arc(0, 0, width / 6, 0, 2 * Math.PI);
+            ctx.strokeStyle = "black";
+            ctx.stroke();
         }
         
     }
@@ -113,7 +115,8 @@ export class Viewport {
     }
     
     private draw_icons(ctx: CanvasRenderingContext2D) {
-        for (const p of this.get_drawables()) {
+        const rev = this.get_drawables().reverse();
+        for (const p of rev) {
             //if (p.item.id == this.user_id) continue;
             ctx.save();
             ctx.translate(p.item.state.pos.x, p.item.state.pos.y);
