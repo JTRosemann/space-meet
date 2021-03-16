@@ -20,19 +20,26 @@ export class Game {
         return new this(game.id, 
             RectangleWorld.establish(game.world), 
             game.items.map(establish_item),
-            game.podiums.map(establish_item));
+            game.podiums.map(establish_item),
+            game.tables.map(establish_item));
     }
 
     id: string;
     world: RectangleWorld;
     items: Item[];
     podiums: Item[];
+    tables: Item[];
 
-    constructor(id: string, world = new RectangleWorld(720, 480), items: Item[] = [], podiums: Item[] = []) {
+    constructor(id: string, 
+                world = new RectangleWorld(720, 480), 
+                items: Item[] = [], 
+                podiums: Item[] = [],
+                tables: Item[] = []) {
         this.id = id;
         this.world = world;
         this.items = items;
         this.podiums = podiums;
+        this.tables = tables;
     }
 
     on_podium(pos: vec) {
@@ -42,6 +49,15 @@ export class Game {
             }
         }
         return false;
+    }
+
+    at_table(pos: vec) {
+        for (const tab of this.tables) {
+            if (tab.state.pos.sub(pos).abs() < tab.rad) {
+                return tab.id;
+            }
+        }
+        return '';
     }
 
     get_item(id: string) {

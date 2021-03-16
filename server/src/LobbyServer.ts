@@ -13,10 +13,35 @@ import { Game } from '../../common/src/Game';
 import { vec } from '../../common/src/vec';
 import { RectangleWorld } from '../../common/src/World';
 import { State } from '../../common/src/State';
+import { Item } from '../../common/src/Item';
 
 function create_podium_game() : Game {
     const p = {state: new State(new vec(500,240), 0), rad: 64, id: 'podium'};
     const g = new Game(UUID.v4(), new RectangleWorld(720, 480), [], [p]);
+    return g;
+}
+
+function create_tables_game(n: number) : Game {
+    const table_rad = 64;
+    const rad = 200;
+    const center_x = 2*rad;
+    const center_y = 2*rad;
+    const width = 2*center_x;
+    const height = 2*center_y;
+    const p = {state: new State(new vec(center_x,center_y), 0), rad: 64, id: 'podium'};
+    let tables : Item[] = [];
+    let podiums : Item[] = [p];
+    const seg = 2*Math.PI / n; //angle between tables
+    for (let i=0; i < n; i++) {
+        const x = Math.cos(i*seg)*rad + center_x;
+        const y = Math.sin(i*seg)*rad + center_y;
+        const state = new State(new vec(x,y), 0);
+        const id_tab = 'table' + i;
+        const id_pod = 'podium' + i;
+        tables.push({state: state, rad: table_rad, id: id_tab});
+        podiums.push({state: state, rad: table_rad/3, id: id_pod});
+    }
+    const g = new Game(UUID.v4(), new RectangleWorld(width, height), [], podiums, tables);
     return g;
 }
 
@@ -28,7 +53,7 @@ export class LobbyServer implements ResponderServer {
 
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
-        const game = create_podium_game();
+        const game = create_tables_game(6);
         this.simS = new SimulatorServer(game, this.carrier, sio);
         console.log('start game ' + game.id);
     }

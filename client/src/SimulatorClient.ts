@@ -16,6 +16,7 @@ import { InputPlayer } from "../../common/src/InputPlayer";
 import { PingController } from "./PingController";
 import { Viewport } from "./Viewport";
 import { TripleCircle } from "./TripleCircle";
+import { Table } from "./Table";
 
 /**
  * This class hosts the update loop (requestAnimationFrame).
@@ -68,6 +69,9 @@ export class SimulatorClient {
         }
         for (const pod of game.podiums) {
             this.viewport.push_drawable(new TripleCircle(pod));
+        }
+        for (const tab of game.tables) {
+            this.viewport.push_drawable(new Table(tab));
         }
     }
 
