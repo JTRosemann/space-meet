@@ -172,9 +172,13 @@ export class Viewport {
         ctx.restore();
     }
 
-    private draw_positional_projections(ctx: CanvasRenderingContext2D, width: number, sqrt: boolean) {
+    private draw_positional_projections(ctx: CanvasRenderingContext2D, width: number, sqrt: boolean) {        
         const self_state = this.get_self_state();
-        for (const p of this.projectables) {
+        // order projectables in reverse order with respect to distance, i.e. furthest first
+        const sorted = this.projectables.sort(
+            (a: Projectable, b: Projectable) =>
+             self_state.pos.sub(b.item.state.pos).abs() - self_state.pos.sub(a.item.state.pos).abs());
+        for (const p of sorted) {
             if (p.item.id == this.user_id)
                 continue;
 
