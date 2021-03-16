@@ -27,6 +27,7 @@ export class JitsiConf {
     jitsi_conf_desk: any;
     jitsi_desk: any;
     loc_tracks_desk: Track[];
+    private vid_num: number = 0;
 
     constructor(conf: Conference, carrier: CarrierClient, user_id: string, audio_ctx: AudioContext) {
         this.conf = conf;
@@ -121,6 +122,15 @@ export class JitsiConf {
         delete this.panners[data];
     }
 
+    private set_gallery_columns() {
+        const num = Math.ceil(Math.sqrt(this.vid_num));
+        let res = '';
+        for (let i=1; i <= num; i++) {
+            res += ' auto';
+        }
+        document.getElementById('gallery').style.gridTemplateColumns = res;
+    }
+
     onRemoteTrack(track: Track) {
         if (track.isLocal()) {
             return;
@@ -133,17 +143,24 @@ export class JitsiConf {
             this.add_audio_track(track.stream, this.audio_ctx, sid);
         } else if (track.getType() == 'video') {
             if (sid == undefined) {//TODO this is not a stable solution AT ALL
-                $('#right').children().remove();// remove other screenshares
-                $('#right').append(`<video autoplay='1' id='scr${p_id}' style='width:100%; height:100%;' />`);
-                const scr = document.getElementById(`scr${p_id}`);
-                track.attach(scr);
+                $('#screenshare').children().remove();// remove other screenshares
+                const scr = $(`<video autoplay='1' id='scr${p_id}' style='width:100%; height:100%;' />`);
+                $('#screenshare').append(scr);
+                track.attach(scr[0]);
             } else {
-                $('#gallery').append(`<video autoplay='1' id='vid${p_id}' style='width:100%; height:100%;' />`);
+                const vid  = $(`<video autoplay='1' id='vid${p_id}' style='position:absolute; left:0; top:0;' />`);
+                const vidG = $(`<video autoplay='1' id='vidG${p_id}' style='width:100%; height:100%;' />`);
+                $('#hide').append(vid);
+                $('#gallery').append(vidG);
         //        $('body').append(`<video autoplay='1' id='vid${p_id}' style='visibility:hidden;' onclick='Window:game.remote_video["${p_id}"].attach(this)'/>`);
         //        this.remote_video[`${p_id}`] = track;//do I need this?
         //        setTimeout(function () { // timeout not needed
-                const vid = document.getElementById(`vid${p_id}`);
-                track.attach(vid);
+                //const vid = document.getElementById(`vid${p_id}`);
+                track.attach(vid[0]);
+                //const vidG = document.getElementById(`vidG${p_id}`);
+                track.attach(vidG[0]);
+                this.vid_num++;
+                this.set_gallery_columns();
             }
 //        }, 500);
         }
@@ -151,9 +168,15 @@ export class JitsiConf {
 
     onUserLeft(id: string) {
         const left_vid = $(`#vid${id}`);
+        const left_vidG = $(`#vidG${id}`);
         const left_scr = $(`#scr${id}`);
         if (left_vid) {
             left_vid.remove();
+        }
+        if (left_vidG) {
+            left_vidG.remove();
+            this.vid_num--;
+            this.set_gallery_columns();
         }
         if (left_scr) {
             left_scr.remove();

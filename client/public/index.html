@@ -37,13 +37,13 @@
             const tabcontents = document.getElementsByClassName("tabcontent");
             // set all tabs invisible
             for (let i=0; i < tabcontents.length; i++) {
-                tabcontents.item(i).className = "tabcontent hide";
+                tabcontents.item(i).style.display = "none";
             }
             const tablinks = document.getElementsByClassName("tablinks", "active");
             for (let i=0; i < tablinks.length; i++) {
                 tablinks.item(i).className  = "tablinks";
             }
-            document.getElementById(tab_id).className = "tabcontent show";
+            document.getElementById(tab_id).style.display = "grid";
             document.getElementById(tab_id + "_button").className += " active";
         }
     </script>
@@ -62,7 +62,7 @@
                 <canvas id="viewport"></canvas>
             </div>
         </div>
-        <!-- TODO maybe make it tabbed https://www.w3schools.com/howto/howto_js_tabs.asp -->
+        <!-- tabbed, see: https://www.w3schools.com/howto/howto_js_tabs.asp -->
         <div id="right" class="none">
             <div class="tab">
                 <button class="tablinks" id="gallery_button" onclick="openTab('gallery')">Gallery</button>
@@ -72,6 +72,7 @@
             <div class="tabcontent" id="screenshare"><p>screenshare</p></div>
         </div>
     </div>
+    <div id="hide"></div>
     <script>
         /*openTab('gallery');*/
     </script>

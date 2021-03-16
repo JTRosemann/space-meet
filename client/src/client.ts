@@ -1,4 +1,3 @@
-import { SSL_OP_NETSCAPE_CA_DN_BUG } from "constants";
 import { ClientUI } from "./ClientUI";
 
 let client;

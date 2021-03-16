@@ -164,24 +164,14 @@ export class ClientUI implements ResponderClient {
         }.bind(this));
     }
 
-    private closeTabs() {
-        const tabcontents = document.getElementsByClassName("tabcontent");
-        // set all tabs invisible
-        for (let i=0; i < tabcontents.length; i++) {
-            tabcontents.item(i).className = "tabcontent hide";
-        }
-    }
-
     set_mode_full() {
         document.getElementById('ltop').className = 'none';
         document.getElementById('lbot').className = 'full';
         document.getElementById('right').className = 'none';
-        this.closeTabs();
         this.triplemode = false;
     }
 
     set_mode_triple() {
-        //TODO somehow open tab gallery
         document.getElementById('ltop').className = 'box';
         document.getElementById('lbot').className = 'box';
         document.getElementById('right').className = 'tab';
