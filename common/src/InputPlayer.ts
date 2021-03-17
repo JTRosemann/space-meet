@@ -10,13 +10,12 @@ import { IdController } from "./IdController";
  * Base class for the Player controller used in server and client.
  */
 export class InputPlayer implements IdController {
-    static mv_speed: number = 120;
-    static trn_speed: number = 1;
-    static std_rad: number = 16;
     id: string;
     game: Game;
     last_input_time: number;
     inputs: Queue<InputData>;
+    mv_speed: number;
+    trn_speed: number;
 
     /**
      * Update the controllee corresponding to the time passed.
@@ -27,10 +26,12 @@ export class InputPlayer implements IdController {
         this.process_inputs(delta_time);
     }
 
-    constructor(id: string, game: Game) {
+    constructor(id: string, game: Game, mv_speed: number, trn_speed: number) {
         this.game = game;
         this.id = id;
         this.inputs = new Queue();
+        this.mv_speed = mv_speed;
+        this.trn_speed = trn_speed;
     }
     
     /**
@@ -61,11 +62,11 @@ export class InputPlayer implements IdController {
      * @param base_phi direction to start with
      * @param delta_time time (i.e. time to simulate) passed in ms
      */
-    private static physics_movement_vector_from_direction(r: number, phi: number,
+    private physics_movement_vector_from_direction(r: number, phi: number,
         base_phi: number, delta_time: number): State {
         //Must be fixed step, at physics sync speed.
-        const r_s = r * (InputPlayer.mv_speed * (delta_time / 1000));
-        const phi_s = phi * (InputPlayer.trn_speed * (delta_time / 1000)) + base_phi;
+        const r_s = r * (this.mv_speed * (delta_time / 1000));
+        const phi_s = phi * (this.trn_speed * (delta_time / 1000)) + base_phi;
         return new State(new vec(fixed(r_s * Math.cos(phi_s)),
             fixed(r_s * Math.sin(phi_s))), phi_s);
     }
@@ -107,7 +108,7 @@ export class InputPlayer implements IdController {
         }
         //we have a direction vector now, so apply the same physics as the client
         const base_phi = this.get_controllee_state().dir;
-        const mvmnt = InputPlayer.physics_movement_vector_from_direction(r, phi, base_phi, delta_time);
+        const mvmnt = this.physics_movement_vector_from_direction(r, phi, base_phi, delta_time);
         //console.log({x: mvmnt.pos.x, y: mvmnt.pos.y, dir: mvmnt.dir, r: r});
         this.game.set_item_state(this.id, InputPlayer.apply_mvmnt(controllee, mvmnt));
     }

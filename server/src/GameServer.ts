@@ -62,8 +62,8 @@ export class SimulatorServer {
 
     push_client(client: sio.Socket, r_id: number = 1) {
         const start_state : State = new State(new vec( r_id * 40, 50 ), 0);
-        const p = new InputPlayer(client.id, this.sim.game);//Beware: id != userid
-        this.sim.put_player(p, start_state);
+        const p = new InputPlayer(client.id, this.sim.game, this.sim.game.std_mv_speed, this.sim.game.std_trn_speed);//Beware: id != userid
+        this.sim.put_player(p, start_state, this.sim.game.std_rad);
         this.conf.call_ids[client.id] = '';
         this.carrier.emit_pushplayer(this.server, {id: client.id, call_id: '', state: start_state.downsize()});
     } // push_client

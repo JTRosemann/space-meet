@@ -51,14 +51,12 @@ export class SimulatorClient {
         const ping_ctrl = new PingController(this.carrier);
         this.sim.bots.push(ping_ctrl);
         const game = this.sim.game;
-        const my_it : Item = {id: this.user_id, state: new State(new vec(50,50), 0), rad: InputPlayer.std_rad};
-        game.push_item(my_it);
         for (const it of game.get_items()) {
             const its_state = game.get_item_state(it.id);
             if (it.id == this.user_id) {
                 // init self (controls listener)
                 const p = new SelfPlayer(it.id, game, this.server_data[it.id], listener);
-                this.sim.put_player(p, its_state);
+                this.sim.put_player(p, its_state, game.std_rad);
                 this.viewport.push_drawable(new ArrowShape(it));
             } else {
                 // init other players (control pannernodes)
@@ -68,7 +66,7 @@ export class SimulatorClient {
             }
         }
         for (const pod of game.podiums) {
-            this.viewport.push_drawable(new TripleCircle(pod));
+            this.viewport.push_drawable(new TripleCircle(pod, game.std_step));
         }
         for (const tab of game.tables) {
             this.viewport.push_drawable(new Table(tab));
@@ -135,7 +133,7 @@ export class SimulatorClient {
             this.server_data[id] = new Queue();
         }
         const p = new OtherPlayer(id, this.sim.game, this.server_data[id], panner, this.user_id);
-        this.sim.put_player(p, state);
+        this.sim.put_player(p, state, this.sim.game.std_rad);
         const it = this.sim.game.get_item(id);
         this.viewport.push_drawable(new ArrowShape(it));
         this.viewport.push_projectable(new JitsiProjectable(it, conf));

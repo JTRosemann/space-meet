@@ -41,9 +41,9 @@ export class Simulator {
      * Adds a player for updating.
      * @param player the player to push
      */
-    put_player(player: IdController, start_state: State) {
+    put_player(player: IdController, start_state: State, rad: number) {
         this.players[player.id] = player;
-        this.game.push_item({id: player.id, state: start_state, rad: InputPlayer.std_rad});
+        this.game.push_item({id: player.id, state: start_state, rad: rad});
     }
 
     /**

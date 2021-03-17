@@ -17,25 +17,41 @@ export function establish_item(it: Item) {
 */
 export class Game {
     static establish(game: Game) {
-        return new this(game.id, 
-            RectangleWorld.establish(game.world), 
+        return new this(game.id,
+            game.std_rad,
+            game.std_mv_speed,
+            game.std_trn_speed,
+            game.std_step,
+            RectangleWorld.establish(game.world),
             game.items.map(establish_item),
             game.podiums.map(establish_item),
             game.tables.map(establish_item));
     }
 
     id: string;
+    std_rad: number;
+    std_mv_speed: number;
+    std_trn_speed: number;
+    std_step: number;
     world: RectangleWorld;
     items: Item[];
     podiums: Item[];
     tables: Item[];
 
-    constructor(id: string, 
+    constructor(id: string,
+                std_rad: number,
+                std_mv_speed: number,
+                std_trn_speed: number,
+                std_step: number,
                 world = new RectangleWorld(720, 480), 
                 items: Item[] = [], 
                 podiums: Item[] = [],
                 tables: Item[] = []) {
         this.id = id;
+        this.std_rad = std_rad;
+        this.std_mv_speed = std_mv_speed;
+        this.std_trn_speed = std_trn_speed;
+        this.std_step = std_step;
         this.world = world;
         this.items = items;
         this.podiums = podiums;
@@ -119,7 +135,6 @@ export class Game {
                 return;
             }
         }
-        this.items.push({id: id, state: state, rad: InputPlayer.std_rad});
         console.warn('set_item_state: id ' + id + ' not found.');
     }
 }
