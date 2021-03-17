@@ -5,6 +5,10 @@ import { vec } from "../../common/src/vec";
 
 /**
  * This class draws on the viewport.
+ * It holds a list of drawables and projectables.
+ * Drawables are drawn at their position relative to the viewer.
+ * Projectables are drawn as projection of their relative position to the viewer on a screen in between.
+ * There are different modes for projections, they vary in size and arrangement.
  */
 
 export class Viewport {
@@ -44,6 +48,7 @@ export class Viewport {
     }
 
     draw(gallerymode: boolean = false, sqrt: boolean) {
+        // get a fresh context - this is necessary in case some resizing has happenend
         const ctx = this.viewport.getContext('2d');
         this.viewport.width = this.viewport.offsetWidth;
         this.viewport.height = this.viewport.offsetHeight;
@@ -133,6 +138,14 @@ export class Viewport {
         return sub.angle();
     }
 
+    /**
+     * This method draws projections as a gallery:
+     * Each projection has the same size independent from distance to the viewer.
+     * The projection are drawn loosely in the (angular) order they appear to the viewer,
+     * while maximizing the size of the projections.
+     * @param ctx context to be drawn upon
+     * @param width width of said context
+     */
     private draw_gallery_projections(ctx: CanvasRenderingContext2D, width: number) {
         const self_state = this.get_self_state();
         // sort projectables by their angle relative to the self_player
@@ -164,6 +177,14 @@ export class Viewport {
         }
     }
 
+    /**
+     * Draw a given projectable at a given position with a given radius.
+     * @param ctx context to be drawn upon
+     * @param center_x x coordinate of center
+     * @param center_y y coordinate of center
+     * @param rad radius
+     * @param p projectable to be drawn
+     */
     private positional_draw_projection(ctx: CanvasRenderingContext2D, center_x: number, center_y: number, rad: number, p: Projectable) {
         ctx.save();
         ctx.translate(center_x, center_y);
@@ -172,6 +193,14 @@ export class Viewport {
         ctx.restore();
     }
 
+    /**
+     * Draw the projectables as actual positional projections:
+     * The projection is drawn at the same angle as the corresponding item is viewed from the viewer,
+     * and the radius is either 1/d or 1/√d depending on the flag `sqrt` where d is the distance relative to the viewer.
+     * @param ctx context to be drawn upon
+     * @param width width of said context
+     * @param sqrt boolean flag to indicate how to compute the radius from the distance.
+     */
     private draw_positional_projections(ctx: CanvasRenderingContext2D, width: number, sqrt: boolean) {        
         const self_state = this.get_self_state();
         // order projectables in reverse order with respect to distance, i.e. furthest first
@@ -202,6 +231,10 @@ export class Viewport {
         }
     }
 
+    /**
+     * Draw rays indicating the euclidian projected position of the corresponding item with respect to the viewer.
+     * @param ctx context to be drawn upon
+     */
     private draw_rays(ctx: CanvasRenderingContext2D) {
         const self_state = this.get_self_state();
         const self_rad = this.get_self_rad();
