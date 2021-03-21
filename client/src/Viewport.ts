@@ -84,6 +84,16 @@ export class Viewport {
             ctx.translate(-self_state.pos.x, -self_state.pos.y);
             ctx.strokeStyle = "red";
             ctx.strokeRect(0, 0, this.game.world.width, this.game.world.height);
+            // draw corner names
+            const txt_dist = 20;
+            const vert_fact = 1.5;
+            ctx.fillStyle = "red";
+            ctx.textAlign = "center";
+            ctx.font = "20px Verdana";
+            ctx.fillText('A', this.game.world.width - txt_dist, this.game.world.height - txt_dist);
+            ctx.fillText('B', this.game.world.width - txt_dist, vert_fact*txt_dist);
+            ctx.fillText('C', txt_dist, vert_fact*txt_dist);
+            ctx.fillText('D', txt_dist, this.game.world.height - txt_dist);
 
             this.draw_icons(ctx);
 

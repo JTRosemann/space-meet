@@ -12,8 +12,8 @@ export class GameFactory {
     static std_step = 4;
 
     static create_podium_game(): Game {
-        const p = { state: new State(new vec(500, 240), 0), rad: 64, id: 'podium' };
-        const g = new Game(UUID.v4(), GameFactory.std_rad, GameFactory.std_mv_speed, GameFactory.std_trn_speed, GameFactory.std_step, new RectangleWorld(720, 480), [], [p]);
+        const p = { state: new State(new vec(300, 160), 0), rad: 64, id: 'podium' };
+        const g = new Game(UUID.v4(), GameFactory.std_rad, GameFactory.std_mv_speed, GameFactory.std_trn_speed, GameFactory.std_step, new RectangleWorld(480, 320), [], [p]);
         return g;
     }
 

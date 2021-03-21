@@ -19,7 +19,8 @@ export class LobbyServer implements ResponderServer {
 
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
-        const game = GameFactory.create_tables_game(6);
+        //const game = GameFactory.create_tables_game(6);
+        const game = GameFactory.create_podium_game();
         this.simS = new SimulatorServer(game, this.carrier, sio);
         console.log('start game ' + game.id);
     }

@@ -45,7 +45,7 @@ html , body {
 
 /* Style the tab content */
 .tabcontent {
-  display: none;
+  display: grid; /* TODO change this as soon as more options are available */
   padding: 6px 12px;
   border-top: none;
 }

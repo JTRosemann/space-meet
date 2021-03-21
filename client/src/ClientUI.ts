@@ -27,8 +27,8 @@ export class ClientUI implements ResponderClient {
     audio_ctx: AudioContext;
     screenshare: boolean = false; // just DEMO 
     debugger: Debugger;
-    gallerymode: boolean = false;
-    triplemode: boolean = false;
+    equally_distributed: boolean = false;
+    show_gallery: boolean = false;
     sqrt: boolean = true;
 
     constructor() {
@@ -125,7 +125,7 @@ export class ClientUI implements ResponderClient {
     client_create_gui() {
         this.gui = new dat.GUI();
         // add gallery option
-        const gallerymode = this.gui.add(this, 'gallerymode');
+        const gallerymode = this.gui.add(this, 'equally_distributed');
         gallerymode.onChange(function(value: boolean) {
             if (value) {
                 (this.sim as SimulatorClient).enable_gallerymode();
@@ -143,7 +143,7 @@ export class ClientUI implements ResponderClient {
             }
         }.bind(this));
         // add viewmode option
-        const triplemode = this.gui.add(this, 'triplemode');
+        const triplemode = this.gui.add(this, 'show_gallery');
         triplemode.onChange(function(value: boolean) {
             if (value) {
                 (this as ClientUI).set_mode_triple();
@@ -152,6 +152,7 @@ export class ClientUI implements ResponderClient {
             }
         }.bind(this));
         // add screenshare option
+        /*
         const screenshare = this.gui.add(this, 'screenshare');
         screenshare.onChange(function(value: boolean){
             if (value) {
@@ -162,19 +163,20 @@ export class ClientUI implements ResponderClient {
                 (this.conf as JitsiConf).stop_screenshare();
             }
         }.bind(this));
+        */
     }
 
     set_mode_full() {
         document.getElementById('ltop').className = 'none';
         document.getElementById('lbot').className = 'full';
         document.getElementById('right').className = 'none';
-        this.triplemode = false;
+        this.show_gallery = false;
     }
 
     set_mode_triple() {
         document.getElementById('ltop').className = 'box';
         document.getElementById('lbot').className = 'box';
         document.getElementById('right').className = 'tab';
-        this.triplemode = true;
+        this.show_gallery = true;
     }
 }
