@@ -257,8 +257,8 @@ export class JitsiConf {
         //cf. https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
         const distance_model = 'linear'; // possible values are: 'linear', 'inverse' & 'exponential'
         const max_distance = 10000;
-        const ref_distance = 1;
-        const roll_off = 20;
+        const ref_distance = 16;
+        const roll_off = 8;
         const panner =  new PannerNode(this.audio_ctx, {
             panningModel: panner_model,
             distanceModel: distance_model,
