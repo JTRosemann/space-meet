@@ -95,6 +95,7 @@ export class SimulatorClient {
 
     do_update(timestamp: number) {
         //capture inputs from local player & send them to the server
+        // TODO replace magic number with reasonable one
         this.in_ctrl.update(42, timestamp);
         //draw
         this.viewport.draw(this.gallerymode, this.sqrt);
@@ -102,6 +103,7 @@ export class SimulatorClient {
         //this.client_refresh_fps(); not needed yeeeeet
 
         //repeat
+        // FIXME time argument dysfunctional
         window.requestAnimationFrame(this.do_update.bind(this))
     }
 

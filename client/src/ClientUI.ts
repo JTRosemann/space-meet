@@ -7,6 +7,7 @@ import { JitsiConf } from "./JitsiConf";
 import { Conference } from "../../common/src/Conference";
 import { State } from "../../common/src/State";
 import { Debugger } from "./Debugger";
+import { fixed } from "../../common/src/util";
 
 //window['DEBUG'] = false;
 export const DEBUG = false;
@@ -30,6 +31,7 @@ export class ClientUI implements ResponderClient {
     equally_distributed: boolean = false;
     show_gallery: boolean = false;
     sqrt: boolean = true;
+    rndm: boolean = false;
 
     constructor() {
         //Create the default configuration settings
@@ -39,21 +41,25 @@ export class ClientUI implements ResponderClient {
 
         //Make this only if requested
         if(String(window.location).indexOf('debug') != -1) {
+            // TODO improve this, e.g. see https://www.carlrippon.com/accessing-browser-query-parameters-in-javascript/
             this.debugger = new Debugger(this.gui);
+            this.rndm = true;
+        } else {
+
+            //Fetch the viewport
+            this.viewport = document.getElementById('viewport') as HTMLCanvasElement;
+            //Adjust their size
+            this.viewport.width = this.viewport.offsetWidth;
+            this.viewport.height = this.viewport.offsetHeight;
+
+            //Fetch the rendering contexts
+            // TODO remove
+            this.ctx = this.viewport.getContext('2d');
+
+            //Set the draw style for the font
+            this.ctx.font = '11px "Helvetica"';
+            console.log('ui initialised');
         }
-
-        //Fetch the viewport
-        this.viewport = document.getElementById('viewport') as HTMLCanvasElement;
-        //Adjust their size
-        this.viewport.width = this.viewport.offsetWidth;
-        this.viewport.height = this.viewport.offsetHeight;
-
-        //Fetch the rendering contexts
-        this.ctx = this.viewport.getContext('2d');
-
-        //Set the draw style for the font
-        this.ctx.font = '11px "Helvetica"';
-        console.log('ui initialised');
     }
 
     client_onconnected(data: ConnectedData): void {
@@ -63,10 +69,53 @@ export class ClientUI implements ResponderClient {
         this.user_id = data.id;
     }
 
+    private coin_flip() : boolean {
+        return Math.random() < 0.5;
+    }
+
+    client_loop(res: number, modu: number, curr: number) {
+        const input : string[] = [];
+        if (curr % modu < res) {
+            input.push('r');
+        }
+        input.push('u');
+        const new_num = curr < 100*modu ? curr + 1 : 0;
+        this.client_emit_inp(input);
+        window.setTimeout(this.client_loop.bind(this), 16, res, modu, new_num);
+    }
+
+    client_emit_inp(input: string[]) {
+        if (input.length) {
+            const server_packet = {
+                keys : input,
+                time : 42
+            }
+            this.carrier.emit_input(server_packet);
+        }
+    }
+
+    client_rndm_spam() {
+        const input : string[] = [];
+        if (this.coin_flip()) {
+            input.push(this.coin_flip() ? 'l' : 'r');
+        }
+        if (this.coin_flip()) {
+            input.push(this.coin_flip() ? 'd' : 'u');
+        }
+        this.client_emit_inp(input);
+        //repeat
+        window.setTimeout(this.client_rndm_spam.bind(this), 16);
+        //window.requestAnimationFrame(this.client_rndm_spam.bind(this));
+    }
+
     client_onjoingame(data: GameJoinData): void {
         console.log('RECEIVE onjoin');
         if (DEBUG) {
             console.log(data);
+        }
+        if (this.rndm) {
+            this.client_loop(2, 3, 0);
+            return;
         }
         const game = Game.establish(data.game);
         const conf = Conference.establish(data.conf);
@@ -92,8 +141,10 @@ export class ClientUI implements ResponderClient {
     }
 
     client_on_rm_player(data: string): void {
-        this.conf.rm_player(data);
-        this.sim.rm_player(data);
+        if (!this.rndm) { // FIXME
+            this.conf.rm_player(data);
+            this.sim.rm_player(data);
+        }
     }
 
     client_on_push_player(data: PushPlayerData): void {
@@ -104,7 +155,9 @@ export class ClientUI implements ResponderClient {
     }
 
     client_on_update_cid(data: UpdateCidData): void {
-        this.conf.set_cid(data.id, data.call_id);
+        if (!this.rndm) {//FIXME
+            this.conf.set_cid(data.id, data.call_id);
+        }
     }
 
     client_ondisconnect(data: string): void {
@@ -112,7 +165,9 @@ export class ClientUI implements ResponderClient {
     }
 
     client_on_pong(data: number): void {
-        this.sim.on_pong(data);
+        if (!this.rndm) {
+            this.sim.on_pong(data);
+        }
     }
 
     client_connect_to_server() {

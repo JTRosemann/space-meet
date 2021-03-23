@@ -12,7 +12,8 @@ export class InputController implements Controller {
         this.carrier = carrier;    
     }
     
-    update(delta_time: number, now_time: number): void {
+    update(_delta_time: number, now_time: number): void {
+        //TODO use delta_time to make speed independent from browser speed (or better on server side?)
         this.capture_emit_input(now_time);
     }
 
