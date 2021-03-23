@@ -133,11 +133,13 @@ export class ClientUI implements ResponderClient {
     }
 
     client_onserverupdate_recieved(data: ServerUpdateData): void {
-        const remat = {
-            game: data.game.map(establish_item),
-            time: data.time
+        if (!this.rndm) {//FIXME
+            const remat = {
+                game: data.game.map(establish_item),
+                time: data.time
+            }
+            this.sim.incorporate_update(remat);
         }
-        this.sim.incorporate_update(remat);
     }
 
     client_on_rm_player(data: string): void {
