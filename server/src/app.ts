@@ -6,7 +6,7 @@
     Usage : node app.js
 */
 
-const dir = '/home/jt/projects/space-meet'; // de-hardcode this!
+const dir = '/home/julian/projects/space-meet'; // de-hardcode this!
 
 const gameport        = 4004;
 
@@ -15,8 +15,8 @@ import express        = require('express');
 const  verbose        = true;
 import https          = require('https');
 import fs             = require('fs');
-const privateKey      = fs.readFileSync('/home/jt/projects/space-meet/key.pem', 'utf8');
-const certificate     = fs.readFileSync('/home/jt/projects/space-meet/cert.pem', 'utf8');
+const privateKey      = fs.readFileSync('/home/julian/projects/space-meet/key.pem', 'utf8');
+const certificate     = fs.readFileSync('/home/julian/projects/space-meet/cert.pem', 'utf8');
 const app             = express();
 const sserver         = https.createServer({key:privateKey, cert: certificate}, app);
 
@@ -50,7 +50,7 @@ console.log('\t :: Express :: Listening on port ' + gameport );
     }); //app.get **/
 
 
-app.use(express.static('/home/jt/projects/space-meet/client/dist'));
+app.use(express.static('/home/julian/projects/space-meet/client/dist'));
 
 
 //Tell the server to listen for incoming connections
