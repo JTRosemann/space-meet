@@ -81,6 +81,11 @@ export type SingleUpdateCidData = string;
 export type UpdateCidData = {id: string, call_id: string};
 export type PingData = number;
 
+export interface FullUpdateData {
+    game: Game;
+    conf: Conference;
+    time: number;
+}
 
 export interface GameStateData {
     game: GameState;
@@ -88,12 +93,8 @@ export interface GameStateData {
 }
 
 export interface ResponderClient {
-    client_onconnected(data: ConnectedData) : void;
-    client_onjoingame(data: GameJoinData) : void;
-    client_onserverupdate_recieved(data: ServerUpdateData) : void;
-    client_on_rm_player(data: RmPlayerData) : void;
-    client_on_push_player(data: PushPlayerData) : void;
-    client_on_update_cid(data: UpdateCidData) : void;
+    //client_onconnected(data: ConnectedData) : void;
+    client_onserverupdate_received(data: FullUpdateData) : void;
     client_ondisconnect(data: DisconnectData) : void;
     client_on_pong(data: PingData) : void;
 }
@@ -105,21 +106,13 @@ export class CarrierClient {
         //Sent when we are disconnected (network, server down, etc)
         this.socket.on('disconnect', (msgC.client_ondisconnect.bind(msgC)));
         //Sent each tick of the server simulation. This is our authoritive update
-        this.socket.on('onserverupdate', (msgC.client_onserverupdate_recieved.bind(msgC)));
+        this.socket.on('onserverupdate', (msgC.client_onserverupdate_received.bind(msgC)));
         //When we connect, we are not 'connected' until we have a server id
         //and are placed in a game by the server. The server sends us a message for that.
         //Handle when we connect to the server, showing state and storing id's.
-        this.socket.on('onconnected', (msgC.client_onconnected.bind(msgC)));
+        //this.socket.on('onconnected', (msgC.client_onconnected.bind(msgC)));
         //On error we just show that we are not connected for now. Can print the data.
         this.socket.on('error', (msgC.client_ondisconnect.bind(msgC)));
-
-        this.socket.on('onjoingame', (msgC.client_onjoingame.bind(msgC)));
-
-        this.socket.on('on_rm_player', (msgC.client_on_rm_player.bind(msgC)));
-
-        this.socket.on('on_push_player', (msgC.client_on_push_player.bind(msgC)));
-
-        this.socket.on('on_update_cid', (msgC.client_on_update_cid.bind(msgC)));
         
         this.socket.on('pong', (msgC.client_on_pong.bind(msgC)));
     }
@@ -143,10 +136,10 @@ export class CarrierClient {
 
 export interface ResponderServer {
     on_connection(client: io.Socket) : void;// missing in CarrierServer by design
-    on_update_cid(client: any, data: SingleUpdateCidData) : void;
-    on_input(client: any, data: InputData) : void;
-    on_disconnect(client: any, data: DisconnectData) : void;
-    on_ping(client: any, data: PingData) : void;
+    on_update_cid(client: io.Socket, data: SingleUpdateCidData) : void;
+    on_input(client: io.Socket, data: InputData) : void;
+    on_disconnect(client: io.Socket, data: DisconnectData) : void;
+    on_ping(client: io.Socket, data: PingData) : void;
 }
 
 function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
@@ -166,28 +159,8 @@ export class CarrierServer {
         this.emit(client, 'pong', data, false);
     }
 
-    emit_connected(socket: io.Socket, data: ConnectedData) {
-        this.emit(socket, 'onconnected', data);
-    }
-    
-    emit_joingame(socket: io.Socket, data: GameJoinData) {
-        this.emit(socket, 'onjoingame', data);
-    }
-
-    emit_pushplayer(socket: io.Socket | io.Server, data: PushPlayerData) {
-        this.emit(socket, 'on_push_player', data);
-    }
-
-    emit_updatecid(socket: io.Socket | io.Server, data: UpdateCidData) {
-        this.emit(socket, 'on_update_cid', data);
-    }
-
-    emit_update(socket: io.Socket | io.Server, data: ServerUpdateData) {
+    emit_update(socket: io.Server, data: FullUpdateData) {
         this.emit(socket, 'onserverupdate', data, false);
-    }
-
-    emit_rmplayer(socket: io.Socket | io.Server, data: RmPlayerData) {
-        this.emit(socket, 'on_rm_player', data);
     }
 
     private emit(socket: io.Socket | io.Server, key: string, data: any, log = true) {

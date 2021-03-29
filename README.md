@@ -3,6 +3,7 @@ Space Meet
 
 Space Meet is a meeting space, where you can walk & talk.
 This is work in progress, it's only a proof of concept yet.
+you'll need typescript
 
 ## Install
 * clone it

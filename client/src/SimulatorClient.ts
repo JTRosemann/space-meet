@@ -17,6 +17,7 @@ import { PingController } from "./PingController";
 import { Viewport } from "./Viewport";
 import { TripleCircle } from "./TripleCircle";
 import { Table } from "./Table";
+import { JitsiConf } from "./JitsiConf";
 
 /**
  * This class hosts the update loop (requestAnimationFrame).
@@ -109,20 +110,38 @@ export class SimulatorClient {
         //TODO implement (update latency)
     }
 
-    incorporate_update(data: ServerUpdateData) {
-        this.push_game_data(data.game, data.time);
-    }
-
-    private push_game_data(items: Item[], time: number) {
+    incorporate_update(game: Game, jconf: JitsiConf, conf: Conference, time: number) {
+        // TODO TBD should I just enqueue the old game?
+        const items = game.items;
         for (const it of items) {
             if (this.server_data[it.id] == undefined) {
-                this.server_data[it.id] = new Queue();
+                const its_state = game.get_item_state(it.id);
+                this.push_player(it.id, its_state, jconf.get_Panner(it.id), conf);
             }
             this.server_data[it.id].enqueue({state: it.state, time: time});
         }
+        //if (Math.floor(time) % 10 == 0) {//don't do garbage collection all the time
+            for (const ot_it of this.sim.game.items) {
+                let lost = true;
+                for (const new_it of game.items) {
+                    if (new_it.id == ot_it.id) {
+                        lost = false;
+                    }
+                }
+                if (lost) {
+                    this.rm_player(ot_it.id);
+                }
+            }
+        //}
+    }
+
+    private push_game_data(items: Item[], time: number) {
     }
     
     rm_player(id: string) {
+        if (this.server_data[id]) {
+            delete this.server_data[id];
+        }
         this.viewport.rm_drawable(id);
         this.viewport.rm_projectable(id);
         this.sim.rm_player(id);

@@ -25,26 +25,17 @@ export class LobbyServer implements ResponderServer {
         console.log('start game ' + game.id);
     }
 
+    on_update_cid(client: io.Socket, data: string): void {
+        this.simS.on_update_cid(client, data);
+    }
+
     on_connection(client: io.Socket) {
         //Useful to know when someone connects
         console.log('\t socket.io:: player ' + client.id + ' connected');
-        this.simS.push_client(client, this.running_id);
         this.running_id++;
-
-        //tell the player they connected, giving them their id
+        this.simS.push_client(client, this.running_id);
+        // add listeners to this socket
         this.carrier.init_socket(client, this);
-        this.carrier.emit_connected(client, { id: client.id }); //TODO remove this id probably
-        console.log('looking for a game.');
-        const data = {
-            game: this.simS.sim.game,
-            conf: this.simS.conf,
-            time: this.simS.sim.local_time
-        };
-        this.carrier.emit_joingame(client, data);
-    }
-
-    on_update_cid(client: io.Socket, data: SingleUpdateCidData) {
-        this.simS.on_update_cid(client, data);
     }
 
     on_ping(client: io.Socket, data: number) {
@@ -56,7 +47,7 @@ export class LobbyServer implements ResponderServer {
     }
 
     on_disconnect(client: io.Socket, _data: DisconnectData) {
-        this.simS.on_disconnect(client);
+        this.simS.rm_client(client);
     }
 
 }

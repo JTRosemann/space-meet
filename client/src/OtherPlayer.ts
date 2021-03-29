@@ -39,7 +39,7 @@ export class OtherPlayer extends UpdatePlayer {
                 this.panner.positionX.value = -10000;
                 this.panner.positionZ.value = -10000;
             }
-        }
+        } // FIXNOW positional audio broken: panner position stays stable
     }
 
 }

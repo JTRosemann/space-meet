@@ -15,7 +15,7 @@ type Track = {
 };
 export class JitsiConf {
     user_id: string;
-    conf: Conference;
+    private conf: Conference;
     jitsi_connect: any;
     carrier: CarrierClient;
     loc_tracks: any[];
@@ -48,8 +48,12 @@ export class JitsiConf {
         return this.panners;
     }
 
-    get_conference() {
-        return this.conf;
+    update_conf(conf: Conference) {
+        // FIXNOW when removal : delete this.panners[data];
+        this.conf.conf_id = this.conf.conf_id;
+        for (const k of Object.keys(conf.call_ids)) {
+            this.conf.call_ids[k] = conf.call_ids[k];
+        }
     }
 
     init_meeting() {
@@ -112,16 +116,7 @@ export class JitsiConf {
         this.jitsi_desk.disconnect();
         //this.jitsi_conf_desk.removeTrack(track); // this is needed to enable muting/camera off
     }
-
-    set_cid(id: string, cid: string) {
-        this.conf.call_ids[id] = cid;
-    }
-
-    rm_player(data: string) {
-        delete this.conf.call_ids[data];
-        delete this.panners[data];
-    }
-
+    
     private set_gallery_columns() {
         const num = Math.ceil(Math.sqrt(this.vid_num));
         let res = '';

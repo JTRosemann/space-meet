@@ -1,7 +1,7 @@
 import { SimulatorClient } from "./SimulatorClient";
 import * as dat from 'dat.gui';
 import * as sio from 'socket.io-client';
-import { CarrierClient, ConnectedData, GameJoinData, PushPlayerData, ResponderClient, ServerUpdateData, UpdateCidData } from "../../common/src/protocol";
+import { CarrierClient, ConnectedData, FullUpdateData, GameJoinData, PushPlayerData, ResponderClient, ServerUpdateData, UpdateCidData } from "../../common/src/protocol";
 import { establish_item, Game } from "../../common/src/Game";
 import { JitsiConf } from "./JitsiConf";
 import { Conference } from "../../common/src/Conference";
@@ -56,56 +56,40 @@ export class ClientUI implements ResponderClient {
         console.log('ui initialised');
     }
 
-    client_onconnected(data: ConnectedData): void {
-        console.log('onconnected with id ' + data.id);
-        //The server responded that we are now in a game,
-        //this lets us store our id
-        this.user_id = data.id;
-    }
-
-    client_onjoingame(data: GameJoinData): void {
-        console.log('RECEIVE onjoin');
-        if (DEBUG) {
-            console.log(data);
-        }
-        const game = Game.establish(data.game);
-        const conf = Conference.establish(data.conf);
-        if (this.user_id) {
+    client_onserverupdate_received(data: FullUpdateData): void {
+        this.user_id = this.carrier.socket.id;
+        if (this.sim == undefined) {
+            // on the first update there is more to do
+            const game = Game.establish(data.game);
+            const conf = Conference.establish(data.conf);
             this.audio_ctx = new AudioContext();
             this.conf = new JitsiConf(conf, this.carrier, this.user_id, this.audio_ctx);
             this.sim = new SimulatorClient(game, data.time, this.carrier, this.user_id,
-                 this.viewport,
-                 this.conf.get_listener(), this.conf.get_panners(), conf);
+                this.viewport,
+                this.conf.get_listener(), this.conf.get_panners(), conf);
             this.conf.init_meeting();
             this.sim.start();
         } else {
-            window.setInterval(this.client_onjoingame.bind(this), 50, data);
+            const conf = Conference.establish(data.conf);
+            this.conf.update_conf(conf);
+            this.sim.incorporate_update(Game.establish(data.game), this.conf, conf, data.time);
         }
-    }
-
-    client_onserverupdate_recieved(data: ServerUpdateData): void {
-        const remat = {
-            game: data.game.map(establish_item),
-            time: data.time
-        }
-        this.sim.incorporate_update(remat);
-    }
+    }        
+/*
 
     client_on_rm_player(data: string): void {
-        this.conf.rm_player(data);
-        this.sim.rm_player(data);
+    X    this.conf.rm_player(data);
+    X    this.sim.rm_player(data);
     }
 
     client_on_push_player(data: PushPlayerData): void {
         //TODO is this message even neccessary? player should exist anyway in next server update
-        if (this.conf == undefined || this.sim == undefined) return;
-        this.conf.set_cid(data.id, data.call_id);
-        this.sim.push_player(data.id, State.establish(data.state), this.conf.get_Panner(data.id), this.conf.conf);
+    X    if (this.conf == undefined || this.sim == undefined) return;
+    X    this.conf.set_cid(data.id, data.call_id);
+    FIXNOW    this.sim.push_player(data.id, State.establish(data.state), this.conf.get_Panner(data.id), this.conf.conf);
     }
 
-    client_on_update_cid(data: UpdateCidData): void {
-        this.conf.set_cid(data.id, data.call_id);
-    }
+*/
 
     client_ondisconnect(data: string): void {
         console.log('Disconnected.');
@@ -118,7 +102,7 @@ export class ClientUI implements ResponderClient {
     client_connect_to_server() {
         //Store a local reference to our connection to the server
         const socket = sio.connect();
-        console.log('Connect to server with id ' + socket.id)
+        console.log('Connect to server with id ' + socket.id)// here we don't know the id yet
         this.carrier = new CarrierClient(socket, this);
     }; //game_core.client_connect_to_server
 
