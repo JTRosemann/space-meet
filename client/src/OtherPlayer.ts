@@ -3,7 +3,9 @@ import { Queue } from "../../common/src/Queue";
 import { ServerPlayerData } from "./ServerPlayerData";
 import { UpdatePlayer } from "./UpdatePlayer";
 
-
+/**
+ * This class handles the server updates of the other players.
+ */
 export class OtherPlayer extends UpdatePlayer {
     panner: PannerNode;
     listener_id: string;
@@ -16,6 +18,7 @@ export class OtherPlayer extends UpdatePlayer {
     }
 
     update(delta_time: number, now_time: number) {
+        //TODO implement smoothing
         super.update(delta_time, now_time);
         const pos = this.game.get_item_state(this.id).pos;
         const l_st = this.game.get_item_state(this.listener_id);

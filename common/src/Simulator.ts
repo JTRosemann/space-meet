@@ -74,6 +74,7 @@ export class Simulator {
      * Start the timer loop.
      */
     create_timer() {
+        //TODO investigate whether this is a potential threat for performance: even if they don't "build up", they are fired quite ferquently
         setInterval(function () {
             this.local_time = new Date().getTime() - this.start_time;
         }.bind(this), Simulator.timer_loop);
@@ -83,6 +84,8 @@ export class Simulator {
      * Start the physics simulation loop.
      */
     create_physics_simulation() {
+        //TODO: why do we need a separate (faster) physics loop? Couldn't we just update with the update loop?
+        //- this may prevent "jumping over collisions" but in the current implementations, there are no such collisions
         setInterval(function () {
             this.physics_delta = new Date().getTime() - this.physics_prev;
             this.physics_prev = new Date().getTime();

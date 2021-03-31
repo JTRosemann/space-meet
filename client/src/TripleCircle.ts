@@ -1,7 +1,9 @@
 import { Item } from "../../common/src/Item";
 import { Drawable } from "./Drawable";
 
-
+/**
+ * TripleCircle draws three circles, that are stacked on to each other.
+ */
 export class TripleCircle implements Drawable {
     item: Item;
     private step: number;

@@ -3,6 +3,9 @@ import { IdController } from "../../common/src/IdController";
 import { Queue } from "../../common/src/Queue";
 import { ServerPlayerData } from "./ServerPlayerData";
 
+/**
+ * This class controls an item and updates it according to the transmitted state from the server.
+ */
 export class UpdatePlayer implements IdController {
     id: string;
     game: Game;

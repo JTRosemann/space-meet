@@ -1,6 +1,9 @@
 import { Item } from "../../common/src/Item";
 import { Drawable } from "./Drawable";
 
+/**
+ * It draws a table.
+ */
 export class Table implements Drawable {
     item: Item;
 
