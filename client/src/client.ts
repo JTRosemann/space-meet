@@ -1,4 +1,4 @@
-import { ClientUI } from "./ClientUI";
+import { ClientInstance } from "./ClientInstance";
 
 let client;
 //When loading, we store references to our
@@ -6,6 +6,9 @@ let client;
 console.log('before onload');
 window.onload = function(){
     console.log('onload');
+    //Fetch the viewport
+    const viewport = document.getElementById('viewport') as HTMLCanvasElement;
     //Create our game client instance.
-    client = new ClientUI();
+    client = new ClientInstance(viewport);
 }; //window.onload
+

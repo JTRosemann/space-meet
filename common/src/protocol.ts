@@ -100,7 +100,7 @@ export interface ResponderClient {
 }
 
 export class CarrierClient {
-    socket: any; // SocketIOClient.Socket
+    private socket: io.Socket; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient) {
         this.socket = socket;
         //Sent when we are disconnected (network, server down, etc)
@@ -124,6 +124,9 @@ export class CarrierClient {
     }
     emit_ping(data: PingData){
         this.emit('ping', data, false);
+    }
+    get_id() {
+        return this.socket.id;
     }
     private emit(key: string, data: any, log = true) {
         if (log) {
