@@ -1,6 +1,7 @@
 import { Simulation } from "./Simulation";
 import { Snap } from "./Snap";
 import { InterpretedInput } from "./InterpretedInput";
+import { EuclideanCircle } from "./EuclideanCircle";
 
 /**
  * This class is responsible for producing the snapshot of the simulation,
@@ -10,20 +11,37 @@ import { InterpretedInput } from "./InterpretedInput";
  * as well as emitting the inputs to the server using the input processor.
  * Here only geometric information is handled - not the respective media.
  */
-export class ViewSelector {
-    private simulation: Simulation;
+export class ViewSelector<S> {
+    private simulation: Simulation<S>;
     private viewer_id: string;
 
-    constructor(simulation: Simulation, viewer_id: string) {
+    constructor(simulation: Simulation<S>, viewer_id: string) {
         this.simulation = simulation;
         this.viewer_id = viewer_id;
     }
 
-    private snapshot(tbuf: number) : Snap {
-        //TODO: where is which code for interpolation?
-        // we need a for loop over players, interpolating eachs position
-        // interpolation should be in the geometry model
-        throw new Error("Method not implemented.");
+    //Q: (A) apply inputs in simulation on client. 
+    //       advantage: don't have to apply inputs several times
+    //       NOT possible: for representation we only fetch the most recent data from self, relative inputs on wrong assumed state would stick on top and be used for further inputs
+    //or (B) keep input queue and apply all inputs newer than most recent server update. advantage: no clash between server_updates & inputs
+    //A: B is the way to go
+
+    /**
+     * Register inputs for client prediction.
+     * @param input to register for client prediction
+     */
+    register_input(input: InterpretedInput<S>) : void {
+        //TODO: implement
+    }
+
+    /**
+     * Replay inputs that are more recent than the given state and return the resulting state.
+     * @param state start state to replay inputs on
+     * @returns the resulting state
+     */
+    private replay_inputs(state: S) : S {
+        //TODO: implement
+        return state;
     }
 
     /**
@@ -33,13 +51,17 @@ export class ViewSelector {
      * For the controlling player the last server update is used.
      * All inputs that are newer than that update are played upon it.
      * @param tbuf the time difference in ms between now and the view to be rendered
+     * @returns the smoothened & client-predicted snap
      */
-    select_view(tbuf: number, input: InterpretedInput): Snap {
-        // make a snap from the past
-        const snap = this.snapshot(tbuf);
-        // update the current state of this player with read inputs
-        const curr_state = snap.get_player_state(this.viewer_id);
-        const predict_me = input.apply_to(curr_state);
+    select_view(tbuf: number, input: InterpretedInput<S>): Snap<S> {
+        // make a snap `tbuf` ms in the past
+        const snap = this.simulation.interpolate_snap(tbuf);
+        // update the **current** state of this player with read inputs
+        // Q: what is "current" ?
+        // FIXME:
+        const now = 0;
+        const curr_state = this.simulation.get_player_state_at_time(this.viewer_id, now);
+        const predict_me = this.replay_inputs(curr_state);
         snap.set_player(this.viewer_id, predict_me);
         // return smoothened & predicted snap
         return snap;

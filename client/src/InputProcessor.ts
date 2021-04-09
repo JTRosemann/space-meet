@@ -1,7 +1,5 @@
 import { InterpretedInput } from "./InterpretedInput";
 
-export class InputProcessor {
-    fetch_input() : InterpretedInput {
-        throw new Error("Method not implemented.");
-    }
+export interface InputProcessor<S> {
+    fetch_input() : InterpretedInput<S>;
 }
