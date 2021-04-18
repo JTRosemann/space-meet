@@ -4,7 +4,8 @@ import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
 import { HybridMap } from "./HybridMap";
 import { SimulationC } from "./SimulationC";
-import { Simulation } from "./Simulation";
+import { SimulationI } from "./SimulationI";
+import { ClientSimulationI } from "./ClientSimulationI";
 import { Auditorium } from "./Auditorium";
 import { MediaManager } from "./MediaManager";
 import { ViewSelector } from "./ViewSelector";
@@ -22,12 +23,12 @@ export class ClientInstance implements ResponderClient {
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient;
     private debugger: Debugger;
-    private simulation: Simulation<EuclideanCircle>;
+    private simulation: ClientSimulationI<EuclideanCircle>;
     private in_proc: InputProcessor<EuclideanCircle>;
     private media_manager: MediaManager;
     private view_selector: ViewSelector<EuclideanCircle>;
-    private audioFrontend: Frontend;
-    private videoFrontend: Frontend;
+    private audioFrontend: Frontend<EuclideanCircle>;
+    private videoFrontend: Frontend<EuclideanCircle>;
     private my_id: string;
 
     constructor(viewport: HTMLCanvasElement) {
@@ -70,8 +71,8 @@ export class ClientInstance implements ResponderClient {
      */
     private init_frontends() {
         //TODO frontends shouldn't need the simulation. (nor the media_manager?)
-        this.videoFrontend = new HybridMap(this.simulation, this.media_manager, this.viewport);
-        this.audioFrontend = new Auditorium(this.simulation, this.media_manager);
+        this.videoFrontend = new HybridMap<EuclideanCircle>(this.simulation, this.media_manager, this.viewport);
+        this.audioFrontend = new Auditorium<EuclideanCircle>(this.simulation, this.media_manager);
         //start animation loop
         this.run();
     }
@@ -93,8 +94,8 @@ export class ClientInstance implements ResponderClient {
      */
     run() {
         const tbuf = 100;//ms // TODO: make the smoothening buffer dynamic
-        const input = this.read_sync_input();
-        const snap = this.view_selector.select_view(tbuf, input);
+        this.read_sync_input();
+        const snap = this.view_selector.select_view(tbuf);
         //TODO: connect snap with media
         this.videoFrontend.animate(snap);
         this.audioFrontend.animate(snap);
@@ -111,6 +112,11 @@ export class ClientInstance implements ResponderClient {
         // the own id should be available after the first update, as soon as we have it we can initialize stuff
         if (this.my_id == '') {
             //TODO change FullUpdateData into Simulation-like format (+ Conf id ?)
+            // FullUpdate should include: 
+            //   (a) player position(s) with timestamp <- don't send them twice
+            //   (b) static map data
+            //   (c) data for conference (conference id)
+            // a & b together form the simulation on server & client: same datastructure, different methods to access them
             //core initialization includes incorporating the update in simulation & media_manager
             this.init_core(data);
             this.init_frontends();

@@ -1,11 +1,16 @@
 import { FullUpdateData } from "../../common/src/protocol";
+import { SimulationI } from "./SimulationI";
 import { Simulation } from "./Simulation";
+import { ClientSimulationI } from "./ClientSimulationI";
 import { Snap } from "./Snap";
 import { EuclideanCircle } from "./EuclideanCircle";
 import { InterpolationQueue } from "./InterpolationQueue";
 import { RecSnap } from "./RecSnap";
 
-export class SimulationC implements Simulation<EuclideanCircle> {
+export class SimulationC 
+        extends Simulation<EuclideanCircle> 
+        implements ClientSimulationI<EuclideanCircle> {
+
     private players: Record<string, InterpolationQueue<EuclideanCircle>>;
 
     static establish(data: FullUpdateData): SimulationC {

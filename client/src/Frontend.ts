@@ -1,5 +1,5 @@
 import { Snap } from "./Snap";
 
-export interface FrontEnd {
-    animate(frame: Snap) : void;
+export interface FrontEnd<S> {
+    animate(frame: Snap<S>) : void;
 }

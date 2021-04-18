@@ -1,4 +1,5 @@
-import { Simulation } from "./Simulation";
+import { SimulationI } from "./SimulationI";
+import { ClientSimulationI } from "./ClientSimulationI";
 import { Snap } from "./Snap";
 import { InterpretedInput } from "./InterpretedInput";
 import { EuclideanCircle } from "./EuclideanCircle";
@@ -12,10 +13,10 @@ import { EuclideanCircle } from "./EuclideanCircle";
  * Here only geometric information is handled - not the respective media.
  */
 export class ViewSelector<S> {
-    private simulation: Simulation<S>;
+    private simulation: ClientSimulationI<S>;
     private viewer_id: string;
 
-    constructor(simulation: Simulation<S>, viewer_id: string) {
+    constructor(simulation: ClientSimulationI<S>, viewer_id: string) {
         this.simulation = simulation;
         this.viewer_id = viewer_id;
     }
@@ -53,7 +54,7 @@ export class ViewSelector<S> {
      * @param tbuf the time difference in ms between now and the view to be rendered
      * @returns the smoothened & client-predicted snap
      */
-    select_view(tbuf: number, input: InterpretedInput<S>): Snap<S> {
+    select_view(tbuf: number): Snap<S> {
         // make a snap `tbuf` ms in the past
         const snap = this.simulation.interpolate_snap(tbuf);
         // update the **current** state of this player with read inputs

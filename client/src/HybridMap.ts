@@ -1,14 +1,14 @@
 import { FrontEnd as Frontend } from "./Frontend";
 import { MediaManager } from "./MediaManager";
-import { Simulation } from "./Simulation";
+import { SimulationI } from "./SimulationI";
 import { Snap } from "./Snap";
 
-export class HybridMap implements Frontend {
-    private simulation: Simulation;
+export class HybridMap<S> implements Frontend<S> {
+    private simulation: SimulationI<S>;
     private mediaManager: MediaManager;
     private viewport: HTMLCanvasElement;
 
-    constructor(simulation: Simulation, mediaManager: MediaManager, viewport: HTMLCanvasElement) {
+    constructor(simulation: SimulationI<S>, mediaManager: MediaManager, viewport: HTMLCanvasElement) {
         this.simulation = simulation;
         this.mediaManager = mediaManager;
         this.viewport = viewport;
@@ -16,7 +16,8 @@ export class HybridMap implements Frontend {
         viewport.width = viewport.offsetWidth;
         viewport.height = viewport.offsetHeight;
     }
-    animate(frame: Snap): void {
+
+    animate(frame: Snap<S>): void {
         throw new Error("Method not implemented.");
     }
 }
