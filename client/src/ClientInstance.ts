@@ -76,6 +76,10 @@ export class ClientInstance implements ResponderClient {
         this.run();
     }
 
+    /**
+     * Read input, register it in the ViewSelector and emit it to the server.
+     * @returns the read input
+     */
     private read_sync_input() : InterpretedInput<EuclideanCircle> {
         const input = this.in_proc.fetch_input();
         //TODO update input here & on server
@@ -125,7 +129,7 @@ export class ClientInstance implements ResponderClient {
     }
 
     /**
-     * Responsible for determining the lag.
+     * Responsible for determining the lag & synchronising server_time
      * @param data timestamp
      */
     client_on_pong(data: number): void {
