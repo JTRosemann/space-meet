@@ -1,12 +1,20 @@
 import { InterpretedInput } from "./InterpretedInput";
 
 /**
- * The client Simulation keeps information on different timestamps to interpolate between them.
+ * The Simulation keeps information on different timestamps to interpolate between them.
  * It automatically removes old information at some point.
  * Only for the most recent information there is a guarantee, that it won't be removed:
  * Accesses to older information may result in just returning the most recent information.
  */
 export interface SimulationI<S> {
+    /**
+     * Remove the player `id` from the simulation.
+     * @param id of player to be removed
+     */
+    rm_player(id: string) : void;
+
+    get_last_fixed_player_state_before(id: string, time: number) : S;
+
     /**
      * Push an update for a dedicated player in the simulation at a dedicated time.
      * @param id ID of player to update

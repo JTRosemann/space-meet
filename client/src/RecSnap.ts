@@ -1,4 +1,4 @@
-import { Snap } from "./Snap";
+import { Snap } from "../../common/src/Snap";
 
 
 export class RecSnap<S> implements Snap<S> {

@@ -8,7 +8,7 @@ import * as sio from 'socket.io';
 
 import {
     CarrierServer, 
-    SingleUpdateCidData,
+    CidData,
     InputData
 } from '../../common/src/protocol';
 
@@ -21,84 +21,92 @@ import {
 //Import shared game library code.
 //require('./game.core.js');
 
-import { Simulator } from '../../common/src/Simulator';
-import { vec } from '../../common/src/vec';
-import { Game } from '../../common/src/Game';
 import * as io from 'socket.io';
-import { InputPlayer } from '../../common/src/InputPlayer';
+import { Snap } from '../../common/src/Snap';
 import { Conference } from '../../common/src/Conference';
-import { State } from '../../common/src/State';
+import { InterpretedInput } from '../../common/src/InterpretedInput';
+import { ServerSimulation } from './ServerSimulation';
 
-export class SimulatorServer {
-    static update_loop = 45;//ms
+export class SimulatorServer<S> {
     //static update_loop = 500;//ms DEBUGGING
-    sim: Simulator;
-    carrier: CarrierServer;
-    server: io.Server;
-    conf: Conference;
-    update_loop_interval: NodeJS.Timeout;
+    private sim: ServerSimulation<S>;
+    private carrier: CarrierServer<S>;
+    private server: io.Server;
+    private conf: Conference;
+    private id: string;
+    private update_loop_interval: NodeJS.Timeout;
 
-    constructor(game: Game, carrier: CarrierServer, sio: io.Server) {
-        this.sim = new Simulator(game);// starts timer & update_physics loop
+    constructor(init_snap: Snap<S>, id: string, carrier: CarrierServer<S>, sio: io.Server) {
+        this.sim = new ServerSimulation(init_snap);// starts timer & update_physics loop
+        this.id = id;
         this.carrier = carrier;
         this.server = sio;
-        this.conf = new Conference(game.id);
-        this.create_update_loop();
+        this.conf = new Conference(id);
     }
 
+    /**
+     * Remove client from simulation.
+     * @param client to be removed
+     */
     rm_client(client: sio.Socket) {
         //Useful to know when soomeone disconnects
-        console.log('\t socket.io:: client disconnected ' + client.id + ' ' + this.sim.game.id);
+        console.log('\t socket.io:: client disconnected ' + client.id + ' ' + this.id);
         //When this client disconnects, we want to tell the game server
         //about that as well, so it can remove from the game they are
         //in, and make sure the other player knows that they left and so on.
         this.sim.rm_player(client.id);
     }
     
-    on_input(client: sio.Socket, data: InputData) {
-        const input = data.keys;
-        const input_time = data.time;
-        for (const p of this.sim.get_players()) {
-            if (client.id == p.id) {
-                //Store the input on the player instance for processing in the physics loop
-                // here we know simulator contains players, still ugly
-                (p as InputPlayer).push_input({keys:input, time:input_time});
-                return;
-            }
-        }
+    /**
+     * Update the simulation according to the input `i_input` at server_time `time` for client `client`.
+     * @param client who made the input
+     * @param i_input input to process
+     * @param time server_time when the client made the input
+     */
+    on_input(client: sio.Socket, i_input: InterpretedInput<S>, time: number) {
+        const p_id = client.id;
+        const p_state = this.sim.get_last_fixed_player_state_before(p_id, time);
+        const new_state = i_input.apply_to(p_state);
+        this.sim.push_update(p_id, new_state, time);
     }
 
-    push_client(client: sio.Socket, r_id: number = 1) {
-        const start_state : State = new State(new vec( r_id * 40, 50 ), 0);
-        const p = new InputPlayer(client.id, this.sim.game, this.sim.game.std_mv_speed, this.sim.game.std_trn_speed);//Beware: id != userid
-        this.sim.put_player(p, start_state, this.sim.game.std_rad);
-        this.conf.call_ids[client.id] = '';
-    } // push_client
+    /**
+     * Add a client player at the corresponding time and set its call_id to ''.
+     * @param client to be added
+     * @param time server_time when to add
+     */
+    push_client(client: sio.Socket, time: number) {
+        const p_id = client.id;
+        this.sim.add_player(p_id, time);
+        this.conf.set_cid(p_id, '');
+    }
 
-    on_update_cid(client: sio.Socket, data: SingleUpdateCidData) {
+    /**
+     * Update the call_id of `client` to `cid`.
+     * @param client the client to update its call_id
+     * @param cid the new call_id
+     */
+    on_update_cid(client: sio.Socket, cid: string) {
         console.log('update cid');
-        this.conf.call_ids[client.id] = data;
+        this.conf.set_cid(client.id, cid);
     }
 
-    //Makes sure things run smoothly and notifies clients of changes
-    //on the server side
-    do_update() {
-        //Update the state of our local clock to match the timer
-        const server_time = this.sim.local_time;
-        const items = this.sim.game.get_items();
-        //Make a snapshot of the current state, for updating the clients
+    /**
+     * Notify the clients about the server state.
+     */
+    do_update(server_time: number) {
+        //Send the current state of simulation to clients
+        //TODO is that too much info?
         const data = {
-            game: this.sim.game,
+            sim: this.sim,
             time: server_time,
             conf: this.conf
         }
         this.carrier.emit_update(this.server, data);
     } //game_core.server_update
 
-    create_update_loop() {
-        this.update_loop_interval
-         = setInterval(this.do_update.bind(this), SimulatorServer.update_loop);
-    } //game_core.client_create_physics_simulation
-
+    get_id() {
+        return this.id;
+    }
 
 }

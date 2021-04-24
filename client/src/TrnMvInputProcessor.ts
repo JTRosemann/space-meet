@@ -1,6 +1,6 @@
-import { InterpretedInput } from "./InterpretedInput";
+import { InterpretedInput } from "../../common/src/InterpretedInput";
 import { InputProcessor } from "./InputProcessor";
-import { EuclideanCircle } from "./EuclideanCircle";
+import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 
 
 export class TrnMvInputProcessor implements InputProcessor<EuclideanCircle> {

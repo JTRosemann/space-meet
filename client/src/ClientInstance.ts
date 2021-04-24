@@ -4,24 +4,25 @@ import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
 import { HybridMap } from "./HybridMap";
 import { SimulationC } from "./SimulationC";
-import { SimulationI } from "./SimulationI";
+import { SimulationI } from "../../common/src/SimulationI";
 import { ClientSimulationI } from "./ClientSimulationI";
 import { Auditorium } from "./Auditorium";
 import { MediaManager } from "./MediaManager";
 import { ViewSelector } from "./ViewSelector";
 import { InputProcessor } from "./InputProcessor";
-import { InterpretedInput } from "./InterpretedInput";
+import { InterpretedInput } from "../../common/src/InterpretedInput";
 import { TrnMvInputProcessor } from "./TrnMvInputProcessor";
-import { EuclideanCircle } from "./EuclideanCircle";
+import { EuclideanCircle } from "../../common/src/EuclideanCircle";
+import { Timer } from "./Timer";
 
 /**
  * This class represents a client UI.
  * It manages several FrontEnds for Visua-/Audiolization and a debugging menu.
  * This is also the first responder for all messages from the server.
  */
-export class ClientInstance implements ResponderClient {
+export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private viewport: HTMLCanvasElement;
-    private carrier: CarrierClient;
+    private carrier: CarrierClient<EuclideanCircle>;
     private debugger: Debugger;
     private simulation: ClientSimulationI<EuclideanCircle>;
     private in_proc: InputProcessor<EuclideanCircle>;
@@ -30,6 +31,7 @@ export class ClientInstance implements ResponderClient {
     private audioFrontend: Frontend<EuclideanCircle>;
     private videoFrontend: Frontend<EuclideanCircle>;
     private my_id: string;
+    private timer: Timer;
 
     constructor(viewport: HTMLCanvasElement) {
         if (String(window.location).indexOf('debug') != -1 ) {
@@ -40,6 +42,7 @@ export class ClientInstance implements ResponderClient {
         }
         this.viewport = viewport;
         this.connect_to_server();
+        this.timer = new Timer();
         this.my_id = '';
     }
 
@@ -58,9 +61,9 @@ export class ClientInstance implements ResponderClient {
      * This is only possible as soon as we have received the first server update.
      * @param data the data to create the initial simulation etc
      */
-    private init_core(data: FullUpdateData) {
-        this.simulation = SimulationC.establish(data);
-        this.media_manager = new MediaManager(data);
+    private init_core(data: FullUpdateData<EuclideanCircle>) {
+        this.simulation = SimulationC.establish(data.sim);
+        this.media_manager = new MediaManager(data.conf);
         this.in_proc = new TrnMvInputProcessor();
         this.my_id = this.carrier.get_id();
         this.view_selector = new ViewSelector(this.simulation, this.my_id);
@@ -81,12 +84,15 @@ export class ClientInstance implements ResponderClient {
      * Read input, register it in the ViewSelector and emit it to the server.
      * @returns the read input
      */
-    private read_sync_input() : InterpretedInput<EuclideanCircle> {
-        const input = this.in_proc.fetch_input();
+    private read_sync_input(server_time: number) {
+        const i_input = this.in_proc.fetch_input();
         //TODO update input here & on server
-        this.view_selector.register_input(input);
-        //this.carrier.emit_input(input);
-        return input;
+        this.view_selector.register_input(i_input, server_time);
+        const data = {
+            input: i_input,
+            time: server_time
+        }
+        this.carrier.emit_input(data);
     }
 
     /**
@@ -94,7 +100,8 @@ export class ClientInstance implements ResponderClient {
      */
     run() {
         const tbuf = 100;//ms // TODO: make the smoothening buffer dynamic
-        this.read_sync_input();
+        const server_time = this.timer.get_current_server_time();
+        this.read_sync_input(server_time);
         const snap = this.view_selector.select_view(tbuf);
         //TODO: connect snap with media
         this.videoFrontend.animate(snap);
@@ -108,7 +115,7 @@ export class ClientInstance implements ResponderClient {
      * If it's the first message from the server, simulation, mediaManager and both Frontends have to be inittialized as well.
      * @param data update received from server
      */
-    client_onserverupdate_received(data: FullUpdateData): void {
+    client_onserverupdate_received(data: FullUpdateData<EuclideanCircle>): void {
         // the own id should be available after the first update, as soon as we have it we can initialize stuff
         if (this.my_id == '') {
             //TODO change FullUpdateData into Simulation-like format (+ Conf id ?)

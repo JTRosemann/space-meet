@@ -1,7 +1,7 @@
 import { FrontEnd as Frontend } from "./Frontend";
 import { MediaManager } from "./MediaManager";
-import { SimulationI } from "./SimulationI";
-import { Snap } from "./Snap";
+import { SimulationI } from "../../common/src/SimulationI";
+import { Snap } from "../../common/src/Snap";
 
 export class HybridMap<S> implements Frontend<S> {
     private simulation: SimulationI<S>;

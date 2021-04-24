@@ -4,6 +4,7 @@ import { vec } from '../../common/src/vec';
 import { RectangleWorld } from '../../common/src/World';
 import { State } from '../../common/src/State';
 import { Item } from '../../common/src/Item';
+import { EuclidianCircleSnap } from '../../common/src/EuclideanCircleSnap';
 
 export class GameFactory {
     static std_mv_speed = 120;
@@ -11,13 +12,13 @@ export class GameFactory {
     static std_rad = 16;
     static std_step = 4;
 
-    static create_podium_game(): Game {
+    static create_podium_game(): EuclidianCircleSnap {
         const p = { state: new State(new vec(300, 160), 0), rad: 64, id: 'podium' };
         const g = new Game(UUID.v4(), GameFactory.std_rad, GameFactory.std_mv_speed, GameFactory.std_trn_speed, GameFactory.std_step, new RectangleWorld(480, 320), [], [p]);
         return g;
     }
 
-    static create_tables_game(n: number): Game {
+    static create_tables_game(n: number): EuclidianCircleSnap {
         const table_rad = 64;
         const rad = 200;
         const center_x = 2 * rad;

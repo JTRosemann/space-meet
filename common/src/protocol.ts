@@ -3,12 +3,10 @@
 const JSONIFY = false; // this is exactly what is done anyway: 
 //https://stackoverflow.com/questions/37512304/send-object-in-socket-io
 
-import { timeStamp } from "console";
-import { runInThisContext } from "vm";
 import * as io from 'socket.io';
-import { Game } from "./Game";
-import { Conference } from "./Conference";
-import { Item } from "./Item";
+import { Conference } from './Conference';
+import { InterpretedInput } from "./InterpretedInput";
+import { Simulation } from "./Simulation";
 
 /*
  * client connects via socket.io
@@ -37,71 +35,33 @@ export interface ClientConfigData {
     gallery: boolean;
 }
 
-export type GameState = {
-    id: string,
-    call_id: string,
-    state: {x: number, y: number, d: number}
-}[];
-
-export interface GameJoinData {
-    game: Game;
-    conf: Conference;
-    time: number;
-}
 export type DisconnectData = string;//"reason" see Socket.IO doc
 
-export interface InputData {
-    keys: string[];
+export interface InputData<S> {
+    input: InterpretedInput<S>;
     time: number;
 };
 
-export type PlayerState =
-    {
-        state: {
-            x: number,
-            y: number,
-            d: number
-        },
-        lis: number
-    };
-
-export interface ServerUpdateData {
-    game: Item[];
-    time: number;
-}
-
-export type ConnectedData = {id: string};
-export type RmPlayerData = string;
-export type PushPlayerData = {
-    id: string,
-    call_id: string,
-    state: {x: number, y: number, d: number}
-};
-export type SingleUpdateCidData = string;
-export type UpdateCidData = {id: string, call_id: string};
+export type CidData = string;
 export type PingData = number;
+export type PongData = [number, number];
 
-export interface FullUpdateData {
-    game: Game;
+export interface FullUpdateData<S> {
+    sim: Simulation<S>;
     conf: Conference;
     time: number;
 }
 
-export interface GameStateData {
-    game: GameState;
-    time: number;
-}
-
-export interface ResponderClient {
+export interface ResponderClient<S> {
     //client_onconnected(data: ConnectedData) : void;
-    client_onserverupdate_received(data: FullUpdateData) : void;
+    client_onserverupdate_received(data: FullUpdateData<S>) : void;
     client_ondisconnect(data: DisconnectData) : void;
     client_on_pong(data: PingData) : void;
 }
 
-export class CarrierClient {
+export class CarrierClient<S> {
     private socket: io.Socket; // SocketIOClient.Socket
-    constructor(socket: any, msgC: ResponderClient) {
+    constructor(socket: any, msgC: ResponderClient<S>) {
         this.socket = socket;
         //Sent when we are disconnected (network, server down, etc)
         this.socket.on('disconnect', (msgC.client_ondisconnect.bind(msgC)));
@@ -116,10 +76,10 @@ export class CarrierClient {
         
         this.socket.on('pong', (msgC.client_on_pong.bind(msgC)));
     }
-    emit_call_id(data: SingleUpdateCidData) {
+    emit_call_id(data: CidData) {
         this.emit('on_update_cid', data);
     }
-    emit_input(data: InputData){
+    emit_input(data: InputData<S>){
         this.emit('input', data, false);
     }
     emit_ping(data: PingData){
@@ -137,10 +97,10 @@ export class CarrierClient {
     }
 }
 
-export interface ResponderServer {
+export interface ResponderServer<S> {
     on_connection(client: io.Socket) : void;// missing in CarrierServer by design
-    on_update_cid(client: io.Socket, data: SingleUpdateCidData) : void;
-    on_input(client: io.Socket, data: InputData) : void;
+    on_update_cid(client: io.Socket, data: CidData) : void;
+    on_input(client: io.Socket, data: InputData<S>) : void;
     on_disconnect(client: io.Socket, data: DisconnectData) : void;
     on_ping(client: io.Socket, data: PingData) : void;
 }
@@ -149,20 +109,20 @@ function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
     return function (z: B) { return f(arg, z);};
 }
 
-export class CarrierServer {
+export class CarrierServer<S> {
     
-    init_socket(socket: io.Socket, msgS: ResponderServer) {
+    init_socket(socket: io.Socket, msgS: ResponderServer<S>) {
         socket.on('on_update_cid', (curry(msgS.on_update_cid.bind(msgS),socket)));
         socket.on('input', (curry(msgS.on_input.bind(msgS),socket)));
         socket.on('disconnect', (curry(msgS.on_disconnect.bind(msgS),socket)));
         socket.on('ping', (curry(msgS.on_ping.bind(msgS), socket)));
     }
 
-    emit_pong(client: io.Socket, data: number) {
+    emit_pong(client: io.Socket, data: PongData) {
         this.emit(client, 'pong', data, false);
     }
 
-    emit_update(socket: io.Server, data: FullUpdateData) {
+    emit_update(socket: io.Server, data: FullUpdateData<S>) {
         this.emit(socket, 'onserverupdate', data, false);
     }
 

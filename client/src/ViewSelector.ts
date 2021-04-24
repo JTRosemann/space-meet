@@ -1,8 +1,8 @@
-import { SimulationI } from "./SimulationI";
+import { SimulationI } from "../../common/src/SimulationI";
 import { ClientSimulationI } from "./ClientSimulationI";
-import { Snap } from "./Snap";
-import { InterpretedInput } from "./InterpretedInput";
-import { EuclideanCircle } from "./EuclideanCircle";
+import { Snap } from "../../common/src/Snap";
+import { InterpretedInput } from "../../common/src/InterpretedInput";
+import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 
 /**
  * This class is responsible for producing the snapshot of the simulation,
@@ -31,7 +31,7 @@ export class ViewSelector<S> {
      * Register inputs for client prediction.
      * @param input to register for client prediction
      */
-    register_input(input: InterpretedInput<S>) : void {
+    register_input(input: InterpretedInput<S>, server_time: number) : void {
         //TODO: implement
     }
 
@@ -61,7 +61,7 @@ export class ViewSelector<S> {
         // Q: what is "current" ?
         // FIXME:
         const now = 0;
-        const curr_state = this.simulation.get_player_state_at_time(this.viewer_id, now);
+        const curr_state = this.simulation.get_last_fixed_player_state_before(this.viewer_id, now);
         const predict_me = this.replay_inputs(curr_state);
         snap.set_player(this.viewer_id, predict_me);
         // return smoothened & predicted snap

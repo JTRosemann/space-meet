@@ -92,5 +92,6 @@ import { LobbyServer } from "./LobbyServer";
 //maintain the list of players.
 
 const game_server = new LobbyServer(sio);
+game_server.create_update_loop();
 // .sockets selects every client
 sio.sockets.on('connection', game_server.on_connection.bind(game_server));

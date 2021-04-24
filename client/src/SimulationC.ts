@@ -1,19 +1,22 @@
 import { FullUpdateData } from "../../common/src/protocol";
-import { SimulationI } from "./SimulationI";
-import { Simulation } from "./Simulation";
+import { SimulationI } from "../../common/src/SimulationI";
+import { Simulation } from "../../common/src/Simulation";
 import { ClientSimulationI } from "./ClientSimulationI";
-import { Snap } from "./Snap";
-import { EuclideanCircle } from "./EuclideanCircle";
+import { Snap } from "../../common/src/Snap";
+import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { InterpolationQueue } from "./InterpolationQueue";
 import { RecSnap } from "./RecSnap";
 
 export class SimulationC 
         extends Simulation<EuclideanCircle> 
         implements ClientSimulationI<EuclideanCircle> {
+    get_interpolated_player_state_at(id: string, time: number): EuclideanCircle {
+        throw new Error("Method not implemented.");
+    }
 
     private players: Record<string, InterpolationQueue<EuclideanCircle>>;
 
-    static establish(data: FullUpdateData): SimulationC {
+    static establish(data: Simulation<EuclideanCircle>): SimulationC {
         throw new Error("Method not implemented.");
     }
 
@@ -42,11 +45,11 @@ export class SimulationC
      * @param time time to observe
      * @returns the state of the player with `id` at `time`
      */
-    get_player_state_at_time(id: string, time: number): EuclideanCircle {
+    get_last_fixed_player_state_before(id: string, time: number): EuclideanCircle {
         return this.players[id].state_at_time(time);
     }
 
-    incorporate_update(data: FullUpdateData) {
+    incorporate_update(data: FullUpdateData<EuclideanCircle>) {
         throw new Error("Method not implemented.");
     }
 

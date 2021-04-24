@@ -1,18 +1,37 @@
 
+/**
+ * This class represents a Jitsi Conference.
+ * It has an id and a table that associates player ids with their call ids.
+ */
 export class Conference {
     static establish(conf: Conference) {
         return new this(conf.conf_id, conf.call_ids);
     }
 
-    conf_id: string;
-    call_ids: Record<string,string> = {};
+    private conf_id: string;
+    private call_ids: Record<string,string> = {};
 
     constructor(id: string, call_ids: Record<string,string> = {}) {
         this.conf_id = id;
         this.call_ids = call_ids;
     }
 
-    get_sid_from_cid(cid: string) {
+    /**
+     * Get the call_id associated with the given socket.io id.
+     * @param sid socket.io id
+     * @returns the corresponding call_id or undefined if non-existent
+     */
+    get_cid(sid: string) {
+        return this.call_ids[sid];
+    }
+
+    /**
+     * Get the socket.io ID associated with the given call_id.
+     * If there are several, one of them is chosen.
+     * @param cid call_id
+     * @returns the corresponding socket.io ID or undefined if non-existent
+     */
+    get_sid(cid: string) {
         for (const e of Object.entries(this.call_ids)) {
             if (e[1] == cid) {
                 return e[0];
@@ -21,11 +40,12 @@ export class Conference {
         return undefined;
     }
 
-    init_panners(audio_ctx: AudioContext) : Record<string,PannerNode> {
-        const ret : Record<string,PannerNode> = {};
-        for (const k of Object.keys(this.call_ids)) {
-            ret[k] = new PannerNode(audio_ctx);
-        }
-        return ret;
+    /**
+     * Set call_id of `sid` to `cid`.
+     * @param sid socket.io ID
+     * @param cid call_id
+     */
+    set_cid(sid: string, cid: string) {
+        this.call_ids[sid] = cid;
     }
 }
