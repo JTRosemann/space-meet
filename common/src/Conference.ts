@@ -1,10 +1,15 @@
 
+export interface ConferenceData {
+    conf_id: string;
+    call_ids: Record<string,string>
+}
+
 /**
  * This class represents a Jitsi Conference.
  * It has an id and a table that associates player ids with their call ids.
  */
 export class Conference {
-    static establish(conf: Conference) {
+    static establish(conf: ConferenceData) {
         return new this(conf.conf_id, conf.call_ids);
     }
 
@@ -47,5 +52,12 @@ export class Conference {
      */
     set_cid(sid: string, cid: string) {
         this.call_ids[sid] = cid;
+    }
+
+    to_data() : ConferenceData {
+        return {
+            conf_id: this.conf_id,
+            call_ids: this.call_ids
+        }
     }
 }

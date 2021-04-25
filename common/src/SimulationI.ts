@@ -16,6 +16,13 @@ export interface SimulationI<S> {
     get_last_fixed_player_state_before(id: string, time: number) : S;
 
     /**
+     * Freeze the last state before `time` of player `p_id` until `time` and return it.
+     * @param p_id ID of the player to manipulate
+     * @param time time before/until the freeze
+     */
+    freeze_last_player_state_before(p_id: string, time: number) : S;
+
+    /**
      * Push an update for a dedicated player in the simulation at a dedicated time.
      * @param id ID of player to update
      * @param state new state

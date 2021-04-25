@@ -4,9 +4,9 @@ const JSONIFY = false; // this is exactly what is done anyway:
 //https://stackoverflow.com/questions/37512304/send-object-in-socket-io
 
 import * as io from 'socket.io';
-import { Conference } from './Conference';
+import { ConferenceData } from './Conference';
 import { InterpretedInput } from "./InterpretedInput";
-import { Simulation } from "./Simulation";
+import { SimulationData } from "./Simulation";
 
 /*
  * client connects via socket.io
@@ -37,6 +37,7 @@ export interface ClientConfigData {
 
 export type DisconnectData = string;//"reason" see Socket.IO doc
 
+//TODO specialize to the actual interpretedInput I use, when there are more I need a general solution
 export interface InputData<S> {
     input: InterpretedInput<S>;
     time: number;
@@ -47,8 +48,8 @@ export type PingData = number;
 export type PongData = [number, number];
 
 export interface FullUpdateData<S> {
-    sim: Simulation<S>;
-    conf: Conference;
+    sim: SimulationData<S>;
+    conf: ConferenceData;
     time: number;
 }
 

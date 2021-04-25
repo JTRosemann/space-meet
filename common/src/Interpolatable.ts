@@ -10,3 +10,4 @@ export interface Interpolatable<A> {
      */
     interpolate(other: A, frac: number): A;
 }
+

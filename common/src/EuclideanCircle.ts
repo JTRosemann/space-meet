@@ -1,4 +1,4 @@
-import { Interpolatable } from "../../client/src/Interpolatable";
+import { State } from "./State";
 
-export interface EuclideanCircle extends Interpolatable<EuclideanCircle> {
+export interface EuclideanCircle extends State {
 }

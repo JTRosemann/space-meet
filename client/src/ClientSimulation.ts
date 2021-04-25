@@ -1,22 +1,23 @@
 import { FullUpdateData } from "../../common/src/protocol";
 import { SimulationI } from "../../common/src/SimulationI";
-import { Simulation } from "../../common/src/Simulation";
+import { Simulation, SimulationData } from "../../common/src/Simulation";
 import { ClientSimulationI } from "./ClientSimulationI";
 import { Snap } from "../../common/src/Snap";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
-import { InterpolationQueue } from "./InterpolationQueue";
+import { Trail } from "../../common/src/Trail";
 import { RecSnap } from "./RecSnap";
 
-export class SimulationC 
+export class ClientSimulation 
         extends Simulation<EuclideanCircle> 
         implements ClientSimulationI<EuclideanCircle> {
+
     get_interpolated_player_state_at(id: string, time: number): EuclideanCircle {
         throw new Error("Method not implemented.");
     }
 
-    private players: Record<string, InterpolationQueue<EuclideanCircle>>;
+    private players: Record<string, Trail<EuclideanCircle>>;
 
-    static establish(data: Simulation<EuclideanCircle>): SimulationC {
+    static establish(data: SimulationData<EuclideanCircle>): ClientSimulation {
         throw new Error("Method not implemented.");
     }
 

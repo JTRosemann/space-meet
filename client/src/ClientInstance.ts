@@ -3,7 +3,7 @@ import { Debugger } from "./Debugger";
 import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
 import { HybridMap } from "./HybridMap";
-import { SimulationC } from "./SimulationC";
+import { ClientSimulation } from "./ClientSimulation";
 import { SimulationI } from "../../common/src/SimulationI";
 import { ClientSimulationI } from "./ClientSimulationI";
 import { Auditorium } from "./Auditorium";
@@ -62,7 +62,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * @param data the data to create the initial simulation etc
      */
     private init_core(data: FullUpdateData<EuclideanCircle>) {
-        this.simulation = SimulationC.establish(data.sim);
+        this.simulation = ClientSimulation.establish(data.sim);
         this.media_manager = new MediaManager(data.conf);
         this.in_proc = new TrnMvInputProcessor();
         this.my_id = this.carrier.get_id();
@@ -118,7 +118,6 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     client_onserverupdate_received(data: FullUpdateData<EuclideanCircle>): void {
         // the own id should be available after the first update, as soon as we have it we can initialize stuff
         if (this.my_id == '') {
-            //TODO change FullUpdateData into Simulation-like format (+ Conf id ?)
             // FullUpdate should include: 
             //   (a) player position(s) with timestamp <- don't send them twice
             //   (b) static map data
@@ -128,8 +127,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
             this.init_core(data);
             this.init_frontends();
         } else {
-            this.simulation.incorporate_update(data);
-            this.media_manager.incorporate_update(data);
+            this.simulation.incorporate_update(data.sim);
+            this.media_manager.incorporate_update(data.conf);
         }
     }
 

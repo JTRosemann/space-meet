@@ -1,6 +1,7 @@
 import { FullUpdateData } from "../../common/src/protocol";
 import { Snap } from "../../common/src/Snap";
 import { SimulationI } from "../../common/src/SimulationI";
+import { SimulationData } from "../../common/src/Simulation";
 
 
 export interface ClientSimulationI<S> extends SimulationI<S> {
@@ -9,7 +10,7 @@ export interface ClientSimulationI<S> extends SimulationI<S> {
      * This may correct information altered by `apply_input`, effectively replacing that information.
      * @param data the data to incorporate
      */
-    incorporate_update(data: FullUpdateData<S>): void; //TODO fix type
+    incorporate_update(data: SimulationData<S>): void;
 
     /**
      * Interpolate the snap at the given time.

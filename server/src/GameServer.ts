@@ -5,30 +5,15 @@
 */
 
 import * as sio from 'socket.io';
-
-import {
-    CarrierServer, 
-    CidData,
-    InputData
-} from '../../common/src/protocol';
-
-//const game_server = module.exports = Server;
-//const UUID        = require('node-uuid');
-//Since we are sharing code with the browser, we
-//are going to include some values to handle that.
-//global.window = global.document = global;
-
-//Import shared game library code.
-//require('./game.core.js');
-
+import { CarrierServer } from '../../common/src/protocol';
 import * as io from 'socket.io';
 import { Snap } from '../../common/src/Snap';
 import { Conference } from '../../common/src/Conference';
 import { InterpretedInput } from '../../common/src/InterpretedInput';
 import { ServerSimulation } from './ServerSimulation';
+import { State } from '../../common/src/State';
 
-export class SimulatorServer<S> {
-    //static update_loop = 500;//ms DEBUGGING
+export class GameServer<S extends State> {
     private sim: ServerSimulation<S>;
     private carrier: CarrierServer<S>;
     private server: io.Server;
@@ -65,9 +50,11 @@ export class SimulatorServer<S> {
      */
     on_input(client: sio.Socket, i_input: InterpretedInput<S>, time: number) {
         const p_id = client.id;
-        const p_state = this.sim.get_last_fixed_player_state_before(p_id, time);
+        // To prevent over-reaching interpolation, we have to duplicate the old state before the move.
+        const p_state = this.sim.freeze_last_player_state_before(p_id, time);
         const new_state = i_input.apply_to(p_state);
-        this.sim.push_update(p_id, new_state, time);
+        const after_input = time + i_input.get_duration();
+        this.sim.push_update(p_id, new_state, after_input);
     }
 
     /**
@@ -95,16 +82,20 @@ export class SimulatorServer<S> {
      * Notify the clients about the server state.
      */
     do_update(server_time: number) {
+        //TODO run bots
         //Send the current state of simulation to clients
-        //TODO is that too much info?
         const data = {
-            sim: this.sim,
+            sim: this.sim.to_data(),
             time: server_time,
-            conf: this.conf
+            conf: this.conf.to_data()
         }
         this.carrier.emit_update(this.server, data);
-    } //game_core.server_update
+    }
 
+    /**
+     * Getter for the ID.
+     * @returns the id of this
+     */
     get_id() {
         return this.id;
     }
