@@ -7,6 +7,7 @@ import * as io from 'socket.io';
 import { ConferenceData } from './Conference';
 import { InterpretedInput } from "./InterpretedInput";
 import { SimulationData } from "./Simulation";
+import { State } from './State';
 
 /*
  * client connects via socket.io
@@ -47,20 +48,20 @@ export type CidData = string;
 export type PingData = number;
 export type PongData = [number, number];
 
-export interface FullUpdateData<S> {
+export interface FullUpdateData<S extends State> {
     sim: SimulationData<S>;
     conf: ConferenceData;
     time: number;
 }
 
-export interface ResponderClient<S> {
+export interface ResponderClient<S extends State> {
     //client_onconnected(data: ConnectedData) : void;
     client_onserverupdate_received(data: FullUpdateData<S>) : void;
     client_ondisconnect(data: DisconnectData) : void;
     client_on_pong(data: PingData) : void;
 }
 
-export class CarrierClient<S> {
+export class CarrierClient<S extends State> {
     private socket: io.Socket; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient<S>) {
         this.socket = socket;
@@ -110,7 +111,7 @@ function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
     return function (z: B) { return f(arg, z);};
 }
 
-export class CarrierServer<S> {
+export class CarrierServer<S extends State> {
     
     init_socket(socket: io.Socket, msgS: ResponderServer<S>) {
         socket.on('on_update_cid', (curry(msgS.on_update_cid.bind(msgS),socket)));

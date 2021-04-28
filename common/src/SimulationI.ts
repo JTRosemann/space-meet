@@ -1,4 +1,7 @@
+import { Effector } from "./Effector";
 import { InterpretedInput } from "./InterpretedInput";
+import { Snap } from "./Snap";
+import { State } from "./State";
 
 /**
  * The Simulation keeps information on different timestamps to interpolate between them.
@@ -6,14 +9,12 @@ import { InterpretedInput } from "./InterpretedInput";
  * Only for the most recent information there is a guarantee, that it won't be removed:
  * Accesses to older information may result in just returning the most recent information.
  */
-export interface SimulationI<S> {
+export interface SimulationI<S extends State> {
     /**
      * Remove the player `id` from the simulation.
      * @param id of player to be removed
      */
     rm_player(id: string) : void;
-
-    get_last_fixed_player_state_before(id: string, time: number) : S;
 
     /**
      * Freeze the last state before `time` of player `p_id` until `time` and return it.
@@ -41,7 +42,7 @@ export interface SimulationI<S> {
      * Clear all data strictly older than `time`.
      * @param time threshold before which everything is cleared on all queues
      */
-    clear_all_before(time: string) : void;
+    clear_all_before(time: number) : void;
 
     /**
      * Clear the queue of player id.
@@ -53,4 +54,18 @@ export interface SimulationI<S> {
      * Clear all player queues, keeping only access to the most recent state.
      */
     clear_all() : void;
+
+    /**
+     * Initiate a Simulation using a Snap object.
+     * This overwrites any existing data in this Simulation.
+     * @param snap state of this simulation at start
+     * @param time start time
+     */
+    init_from_snap(snap: Snap<S>, time: number) : void;
+
+    /**
+     * Return all the effectors that apply at the given `state`.
+     * @param state state to check for the hit
+     */
+    hit(state : S) : Effector<S>[];
 }

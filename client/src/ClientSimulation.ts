@@ -10,6 +10,9 @@ import { RecSnap } from "./RecSnap";
 export class ClientSimulation 
         extends Simulation<EuclideanCircle> 
         implements ClientSimulationI<EuclideanCircle> {
+    incorporate_update(data: SimulationData<EuclideanCircle>): void {
+        throw new Error("Method not implemented.");
+    }
 
     get_interpolated_player_state_at(id: string, time: number): EuclideanCircle {
         throw new Error("Method not implemented.");
@@ -34,7 +37,7 @@ export class ClientSimulation
             const stateQ = p[1];
             const state = stateQ.state_at_time(time);
             //older data is no longer used
-            stateQ.free_older_than(time); // TODO:expose
+            //stateQ.free_older_than(time); // TODO:expose
             res.set_player(id, state);
         }
         return res;
@@ -48,10 +51,6 @@ export class ClientSimulation
      */
     get_last_fixed_player_state_before(id: string, time: number): EuclideanCircle {
         return this.players[id].state_at_time(time);
-    }
-
-    incorporate_update(data: FullUpdateData<EuclideanCircle>) {
-        throw new Error("Method not implemented.");
     }
 
 }

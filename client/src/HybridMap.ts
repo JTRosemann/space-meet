@@ -2,8 +2,9 @@ import { FrontEnd as Frontend } from "./Frontend";
 import { MediaManager } from "./MediaManager";
 import { SimulationI } from "../../common/src/SimulationI";
 import { Snap } from "../../common/src/Snap";
+import { State } from "../../common/src/State";
 
-export class HybridMap<S> implements Frontend<S> {
+export class HybridMap<S extends State> implements Frontend<S> {
     private simulation: SimulationI<S>;
     private mediaManager: MediaManager;
     private viewport: HTMLCanvasElement;

@@ -2,9 +2,10 @@ import { FullUpdateData } from "../../common/src/protocol";
 import { Snap } from "../../common/src/Snap";
 import { SimulationI } from "../../common/src/SimulationI";
 import { SimulationData } from "../../common/src/Simulation";
+import { State } from "../../common/src/State";
 
 
-export interface ClientSimulationI<S> extends SimulationI<S> {
+export interface ClientSimulationI<S extends State> extends SimulationI<S> {
     /**
      * Incorporate the update into the simulation.
      * This may correct information altered by `apply_input`, effectively replacing that information.

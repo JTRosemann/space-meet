@@ -3,6 +3,7 @@ import { ClientSimulationI } from "./ClientSimulationI";
 import { Snap } from "../../common/src/Snap";
 import { InterpretedInput } from "../../common/src/InterpretedInput";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
+import { State } from "../../common/src/State";
 
 /**
  * This class is responsible for producing the snapshot of the simulation,
@@ -12,7 +13,7 @@ import { EuclideanCircle } from "../../common/src/EuclideanCircle";
  * as well as emitting the inputs to the server using the input processor.
  * Here only geometric information is handled - not the respective media.
  */
-export class ViewSelector<S> {
+export class ViewSelector<S extends State> {
     private simulation: ClientSimulationI<S>;
     private viewer_id: string;
 
