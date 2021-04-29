@@ -73,4 +73,8 @@ export class Simulation<S extends State> implements SimulationI<S> {
             zones: this.zones
         };
     }
+
+    get_num_players() : number {
+        return Object.keys(this.trails).length;
+    }
 }

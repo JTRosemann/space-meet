@@ -1,5 +1,7 @@
 import * as UUID from 'uuid';
+import { EuclideanCircle } from '../../common/src/EuclideanCircle';
 import { EuclidianCircleSnap } from '../../common/src/EuclideanCircleSnap';
+import { ServerSimulation } from './ServerSimulation';
 
 export class GameFactory {
     static std_mv_speed = 7; //TODO: what unit?
@@ -7,7 +9,7 @@ export class GameFactory {
     static std_rad = 0.5;// ~ in meters
     static std_step = 0.25;
 
-    static create_podium_game(): EuclidianCircleSnap {
+    static create_podium_game(): ServerSimulation<EuclideanCircle> {
         //const p = { state: new State(new vec(10, 5), 0), rad: 2, id: 'podium' };
         //const g = new Game(UUID.v4(), GameFactory.std_rad, GameFactory.std_mv_speed, GameFactory.std_trn_speed, GameFactory.std_step, new RectangleWorld(15, 10), [], [p]);
         //return g;
