@@ -12,11 +12,11 @@ export interface SimulationData<S extends State> {
 export class Simulation<S extends State> implements SimulationI<S> {
 
     private trails : Record<string,Trail<S>>;
-    private zones : Effector<S>[];
+    private effectors : Effector<S>[];
 
-    constructor(trails: Record<string,Trail<S>> = {}, zones : Effector<S>[] = []) {
+    constructor(trails: Record<string,Trail<S>> = {}, effectors : Effector<S>[] = []) {
         this.trails = trails;
-        this.zones = zones;
+        this.effectors = effectors;
     }
 
     init_from_snap(snap: Snap<S>, time: number) {
@@ -28,11 +28,7 @@ export class Simulation<S extends State> implements SimulationI<S> {
             this.trails[k].push_mark(states[k], time);
         }
         //init effectors
-        this.zones = snap.get_zones();
-    }
-
-    hit(state : S) : Effector<S>[] {
-        return this.zones.filter((z : Effector<S>) => z.covers(state));
+        this.effectors = snap.get_effectors();
     }
 
     freeze_last_player_state_before(p_id: string, time: number): S {
@@ -70,7 +66,7 @@ export class Simulation<S extends State> implements SimulationI<S> {
     to_data() : SimulationData<S> {
         return {
             trails: this.trails,
-            zones: this.zones
+            zones: this.effectors
         };
     }
 

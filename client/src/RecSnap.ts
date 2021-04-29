@@ -4,7 +4,7 @@ import { State } from "../../common/src/State";
 
 
 export class RecSnap<S extends State> implements Snap<S> {
-    get_zones(): Effector<S>[] {
+    get_effectors(): Effector<S>[] {
         throw new Error("Method not implemented.");
     }
     get_states(): Record<string, S> {

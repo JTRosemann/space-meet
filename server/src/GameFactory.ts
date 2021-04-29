@@ -1,6 +1,8 @@
 import * as UUID from 'uuid';
 import { EuclideanCircle } from '../../common/src/EuclideanCircle';
 import { EuclidianCircleSnap } from '../../common/src/EuclideanCircleSnap';
+import { EuclideanVector } from '../../common/src/EuclideanVector';
+import { Podium } from '../../common/src/Podium';
 import { ServerSimulation } from './ServerSimulation';
 
 export class GameFactory {
@@ -8,12 +10,14 @@ export class GameFactory {
     static std_trn_speed = 1;//TODO: what unit?
     static std_rad = 0.5;// ~ in meters
     static std_step = 0.25;
+    static x_plus_2 = (num : number) => 
+        new EuclideanCircle(EuclideanVector.create_cartesian(1 + num * 2,1), EuclideanVector.create_polar(GameFactory.std_rad, 0));
 
     static create_podium_game(): ServerSimulation<EuclideanCircle> {
-        //const p = { state: new State(new vec(10, 5), 0), rad: 2, id: 'podium' };
-        //const g = new Game(UUID.v4(), GameFactory.std_rad, GameFactory.std_mv_speed, GameFactory.std_trn_speed, GameFactory.std_step, new RectangleWorld(15, 10), [], [p]);
-        //return g;
-        throw new Error("Methond not implemented.");
+        const p = new Podium(EuclideanVector.create_cartesian(10, 5), 2);
+        const snap = new EuclidianCircleSnap([p]);
+        const g = new ServerSimulation(snap, GameFactory.x_plus_2)
+        return g;
     }
 
     static create_tables_game(n: number): EuclidianCircleSnap {

@@ -1,4 +1,3 @@
-import { Effector } from "./Effector";
 import { InterpretedInput } from "./InterpretedInput";
 import { Snap } from "./Snap";
 import { State } from "./State";
@@ -63,9 +62,4 @@ export interface SimulationI<S extends State> {
      */
     init_from_snap(snap: Snap<S>, time: number) : void;
 
-    /**
-     * Return all the effectors that apply at the given `state`.
-     * @param state state to check for the hit
-     */
-    hit(state : S) : Effector<S>[];
 }
