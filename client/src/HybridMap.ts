@@ -1,15 +1,15 @@
 import { FrontEnd as Frontend } from "./Frontend";
 import { MediaManager } from "./MediaManager";
-import { SimulationI } from "../../common/src/SimulationI";
+import { Simulation } from "../../common/src/Simulation";
 import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
 
 export class HybridMap<S extends State> implements Frontend<S> {
-    private simulation: SimulationI<S>;
+    private simulation: Simulation<S>;
     private mediaManager: MediaManager;
     private viewport: HTMLCanvasElement;
 
-    constructor(simulation: SimulationI<S>, mediaManager: MediaManager, viewport: HTMLCanvasElement) {
+    constructor(simulation: Simulation<S>, mediaManager: MediaManager, viewport: HTMLCanvasElement) {
         this.simulation = simulation;
         this.mediaManager = mediaManager;
         this.viewport = viewport;

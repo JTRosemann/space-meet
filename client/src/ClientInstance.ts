@@ -4,7 +4,6 @@ import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
 import { HybridMap } from "./HybridMap";
 import { ClientSimulation } from "./ClientSimulation";
-import { ClientSimulationI } from "./ClientSimulationI";
 import { Auditorium } from "./Auditorium";
 import { MediaManager } from "./MediaManager";
 import { ViewSelector } from "./ViewSelector";
@@ -22,7 +21,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
     private debugger: Debugger;
-    private simulation: ClientSimulationI<EuclideanCircle>;
+    private simulation: ClientSimulation<EuclideanCircle>;
     private in_proc: InputProcessor;
     private media_manager: MediaManager;
     private view_selector: ViewSelector<EuclideanCircle>;

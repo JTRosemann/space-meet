@@ -1,4 +1,4 @@
-import { ClientSimulationI } from "./ClientSimulationI";
+import { ClientSimulation } from "./ClientSimulation";
 import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
 import { ParsedInput } from "../../common/src/protocol";
@@ -12,10 +12,10 @@ import { ParsedInput } from "../../common/src/protocol";
  * Here only geometric information is handled - not the respective media.
  */
 export class ViewSelector<S extends State> {
-    private simulation: ClientSimulationI<S>;
+    private simulation: ClientSimulation<S>;
     private viewer_id: string;
 
-    constructor(simulation: ClientSimulationI<S>, viewer_id: string) {
+    constructor(simulation: ClientSimulation<S>, viewer_id: string) {
         this.simulation = simulation;
         this.viewer_id = viewer_id;
     }
