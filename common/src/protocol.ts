@@ -46,6 +46,10 @@ export interface ParsedInput {
 
 export type CidData = string;
 export type PingData = number;
+
+/**
+ * First number is the key from the ping, second is the receive time on server.
+ */
 export type PongData = [number, number];
 
 export interface FullUpdateData<S extends State> {
@@ -58,7 +62,7 @@ export interface ResponderClient<S extends State> {
     //client_onconnected(data: ConnectedData) : void;
     client_onserverupdate_received(data: FullUpdateData<S>) : void;
     client_ondisconnect(data: DisconnectData) : void;
-    client_on_pong(data: PingData) : void;
+    client_on_pong(data: PongData) : void;
 }
 
 export class CarrierClient<S extends State> {

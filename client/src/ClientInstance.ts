@@ -1,4 +1,4 @@
-import { CarrierClient, FullUpdateData, ResponderClient } from "../../common/src/protocol";
+import { CarrierClient, FullUpdateData, PongData, ResponderClient } from "../../common/src/protocol";
 import { Debugger } from "./Debugger";
 import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
@@ -18,6 +18,9 @@ import { Timer } from "./Timer";
  * This is also the first responder for all messages from the server.
  */
 export class ClientInstance implements ResponderClient<EuclideanCircle> {
+
+    private static offset = 100//ms
+
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
     private debugger: Debugger;
@@ -70,9 +73,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Initialize the different frontends and start the animation loop.
      */
     private init_frontends() {
-        //TODO frontends shouldn't need the simulation. (nor the media_manager?)
-        this.videoFrontend = new HybridMap<EuclideanCircle>(this.simulation, this.media_manager, this.viewport);
-        this.audioFrontend = new Auditorium<EuclideanCircle>(this.simulation, this.media_manager);
+        this.videoFrontend = new HybridMap<EuclideanCircle>(this.media_manager, this.viewport);
+        this.audioFrontend = new Auditorium<EuclideanCircle>(this.media_manager);
         //start animation loop
         this.run();
     }
@@ -83,8 +85,9 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      */
     private read_sync_input(server_time: number) {
         const input = this.in_proc.fetch_input();
-        //TODO update input here & on server
+        // register input for client prediction
         this.view_selector.register_input(input, server_time);
+        // emit input to server
         this.carrier.emit_input(input);
     }
 
@@ -92,13 +95,16 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Produce a snap of the simulation and hit the frontends to render it.
      */
     run() {
-        const tbuf = 100;//ms // TODO: make the smoothening buffer dynamic
-        const server_time = this.timer.get_current_server_time();
+        const tbuf = ClientInstance.offset + this.timer.get_lag();
+        const server_time = this.timer.get_server_time();
+        // read the input and distribute it
         this.read_sync_input(server_time);
+        // select a snapshot to render
         const snap = this.view_selector.select_view(tbuf);
-        //TODO: connect snap with media
-        this.videoFrontend.animate(snap);
-        this.audioFrontend.animate(snap);
+        // render the chosen snapshot of the simulation
+        this.videoFrontend.render(snap);
+        this.audioFrontend.render(snap);
+        // this guarantees updates forever
         window.requestAnimationFrame(this.run.bind(this));
     }
 
@@ -137,8 +143,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Responsible for determining the lag & synchronising server_time
      * @param data timestamp
      */
-    client_on_pong(data: number): void {
-        //TODO implement
-        throw new Error("Method not implemented.");
+    client_on_pong(data: PongData): void {
+        const now = Date.now();
+        this.timer.register_pong(now, data);
     }
 }

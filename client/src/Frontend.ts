@@ -1,6 +1,7 @@
 import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
+import { MediaManager } from "./MediaManager";
 
 export interface FrontEnd<S extends State> {
-    animate(frame: Snap<S>) : void;
+    render(frame: Snap<S>) : void;
 }

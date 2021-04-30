@@ -5,15 +5,14 @@ import { State } from "../../common/src/State";
 import { Simulation } from "../../common/src/Simulation";
 
 export class Auditorium<S extends State> implements Frontend<S> {
-    private simulation: Simulation<S>; 
+    
     private mediaManager: MediaManager;
 
-    constructor(simulation: Simulation<S>, mediaManager: MediaManager) {
-        this.simulation = simulation;
+    constructor(mediaManager: MediaManager) {
         this.mediaManager = mediaManager;
     }
 
-    animate(frame: Snap<S>): void {
+    render(frame: Snap<S>): void {
         throw new Error("Method not implemented.");
     }
 }

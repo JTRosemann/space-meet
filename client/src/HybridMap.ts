@@ -5,12 +5,11 @@ import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
 
 export class HybridMap<S extends State> implements Frontend<S> {
-    private simulation: Simulation<S>;
+
     private mediaManager: MediaManager;
     private viewport: HTMLCanvasElement;
 
-    constructor(simulation: Simulation<S>, mediaManager: MediaManager, viewport: HTMLCanvasElement) {
-        this.simulation = simulation;
+    constructor(mediaManager: MediaManager, viewport: HTMLCanvasElement) {
         this.mediaManager = mediaManager;
         this.viewport = viewport;
         //Adjust viewport size
@@ -18,7 +17,7 @@ export class HybridMap<S extends State> implements Frontend<S> {
         viewport.height = viewport.offsetHeight;
     }
 
-    animate(frame: Snap<S>): void {
+    render(frame: Snap<S>): void {
         throw new Error("Method not implemented.");
     }
 }
