@@ -5,7 +5,6 @@ const JSONIFY = false; // this is exactly what is done anyway:
 
 import * as io from 'socket.io';
 import { ConferenceData } from './Conference';
-import { InterpretedInput } from "./InterpretedInput";
 import { SimulationData } from "./Simulation";
 import { State } from './State';
 
@@ -38,11 +37,12 @@ export interface ClientConfigData {
 
 export type DisconnectData = string;//"reason" see Socket.IO doc
 
-//TODO specialize to the actual interpretedInput I use, when there are more I need a general solution
-export interface InputData<S> {
-    input: InterpretedInput<S>;
-    time: number;
-};
+export interface ParsedInput {
+    up: -1 | 0 | 1;
+    left: -1 | 0 | 1;
+    start: number;
+    duration: number;
+}
 
 export type CidData = string;
 export type PingData = number;
@@ -81,7 +81,7 @@ export class CarrierClient<S extends State> {
     emit_call_id(data: CidData) {
         this.emit('on_update_cid', data);
     }
-    emit_input(data: InputData<S>){
+    emit_input(data: ParsedInput){
         this.emit('input', data, false);
     }
     emit_ping(data: PingData){
@@ -99,10 +99,10 @@ export class CarrierClient<S extends State> {
     }
 }
 
-export interface ResponderServer<S> {
+export interface ResponderServer {
     on_connection(client: io.Socket) : void;// missing in CarrierServer by design
     on_update_cid(client: io.Socket, data: CidData) : void;
-    on_input(client: io.Socket, data: InputData<S>) : void;
+    on_input(client: io.Socket, data: ParsedInput) : void;
     on_disconnect(client: io.Socket, data: DisconnectData) : void;
     on_ping(client: io.Socket, data: PingData) : void;
 }
@@ -113,7 +113,7 @@ function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
 
 export class CarrierServer<S extends State> {
     
-    init_socket(socket: io.Socket, msgS: ResponderServer<S>) {
+    init_socket(socket: io.Socket, msgS: ResponderServer) {
         socket.on('on_update_cid', (curry(msgS.on_update_cid.bind(msgS),socket)));
         socket.on('input', (curry(msgS.on_input.bind(msgS),socket)));
         socket.on('disconnect', (curry(msgS.on_disconnect.bind(msgS),socket)));

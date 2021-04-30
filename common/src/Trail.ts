@@ -2,10 +2,23 @@ import { Queue } from "./Queue";
 import { State } from "./State";
 
 export interface TrailData<S extends State> {
-
+    recent: [S,number][],
+    latest: [S,number]
 }
 
 export class Trail<S extends State> {
+
+    /**
+     * Expose the data of this trail for communication.
+     * @returns the TrailData of this trail
+     */
+    to_data(): TrailData<S> {
+        return {
+            recent: this.marks.peek_all(),
+            latest: this.marks.latest()
+        };
+    }
+
     /*
     Implementation note:
     This keeps a queue with the invariant that all elements are ordered by time.
@@ -13,6 +26,11 @@ export class Trail<S extends State> {
     */
 
     private marks : Queue<[S,number]> = new Queue();
+
+    constructor(init_state : S, init_time : number) {
+        this.marks = new Queue();
+        this.marks.enqueue([init_state, init_time]);
+    }
 
     /**
      * Clear all marks.

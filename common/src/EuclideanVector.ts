@@ -135,4 +135,5 @@ export class EuclideanVector {
         const phi = EuclideanVector.lin_interpolate(this.get_phi(), other.get_phi(), frac);
         return EuclideanVector.create_polar(r, phi);
     }
+
 }

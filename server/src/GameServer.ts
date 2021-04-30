@@ -5,11 +5,9 @@
 */
 
 import * as sio from 'socket.io';
-import { CarrierServer } from '../../common/src/protocol';
+import { CarrierServer, ParsedInput } from '../../common/src/protocol';
 import * as io from 'socket.io';
-import { Snap } from '../../common/src/Snap';
 import { Conference } from '../../common/src/Conference';
-import { InterpretedInput } from '../../common/src/InterpretedInput';
 import { ServerSimulation } from './ServerSimulation';
 import { State } from '../../common/src/State';
 
@@ -45,16 +43,12 @@ export class GameServer<S extends State> {
     /**
      * Update the simulation according to the input `i_input` at server_time `time` for client `client`.
      * @param client who made the input
-     * @param i_input input to process
+     * @param p_input input to process
      * @param time server_time when the client made the input
      */
-    on_input(client: sio.Socket, i_input: InterpretedInput<S>, time: number) {
+    on_input(client: sio.Socket, p_input: ParsedInput) {
         const p_id = client.id;
-        // To prevent over-reaching interpolation, we have to duplicate the old state before the move.
-        const p_state = this.sim.freeze_last_player_state_before(p_id, time);
-        const new_state = i_input.apply_to(p_state);
-        const after_input = time + i_input.get_duration();
-        this.sim.push_update(p_id, new_state, after_input);
+        this.sim.interpret_input(p_id, p_input);
     }
 
     /**

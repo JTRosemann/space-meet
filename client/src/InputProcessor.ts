@@ -1,5 +1,5 @@
-import { InterpretedInput } from "../../common/src/InterpretedInput";
+import { ParsedInput } from "../../common/src/protocol";
 
-export interface InputProcessor<S> {
-    fetch_input() : InterpretedInput<S>;
+export interface InputProcessor {
+    fetch_input() : ParsedInput;
 }

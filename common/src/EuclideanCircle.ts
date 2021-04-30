@@ -2,6 +2,17 @@ import { EuclideanVector } from "./EuclideanVector";
 import { State } from "./State";
 
 export class EuclideanCircle implements State {
+
+    /**
+     * Create a circle given position `pos`, radius `rad` and facing direction `phi`.
+     * @param pos the position of the center
+     * @param rad the radius
+     * @param phi the facing direction
+     * @returns 
+     */
+    static create_from_pos_dir_rad(pos : EuclideanVector, rad : number, phi : number): EuclideanCircle {
+        return new EuclideanCircle(pos, EuclideanVector.create_polar(rad, phi))
+    }
     
     private pos : EuclideanVector;
     private ext : EuclideanVector;
@@ -36,7 +47,23 @@ export class EuclideanCircle implements State {
      * as a vector.
      * @returns the extend/orientation
      */
-    get_ext(): any {
+    get_ext() {
         return this.ext;
+    }
+
+    /**
+     * Getter for the facing direction.
+     * @returns direction of this circle
+     */
+    get_dir() {
+        return this.ext.get_phi();
+    }
+
+    /**
+     * Getter for the radius of this of circle.
+     * @returns the radius
+     */
+    get_rad() {
+        return this.ext.get_abs();
     }
 }

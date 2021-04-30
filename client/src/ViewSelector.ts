@@ -1,9 +1,7 @@
-import { SimulationI } from "../../common/src/SimulationI";
 import { ClientSimulationI } from "./ClientSimulationI";
 import { Snap } from "../../common/src/Snap";
-import { InterpretedInput } from "../../common/src/InterpretedInput";
-import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { State } from "../../common/src/State";
+import { ParsedInput } from "../../common/src/protocol";
 
 /**
  * This class is responsible for producing the snapshot of the simulation,
@@ -32,7 +30,7 @@ export class ViewSelector<S extends State> {
      * Register inputs for client prediction.
      * @param input to register for client prediction
      */
-    register_input(input: InterpretedInput<S>, server_time: number) : void {
+    register_input(input: ParsedInput, server_time: number) : void {
         //TODO: implement
     }
 

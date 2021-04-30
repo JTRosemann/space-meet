@@ -1,4 +1,4 @@
-import { InterpretedInput } from "./InterpretedInput";
+import { ParsedInput } from "./protocol";
 import { Snap } from "./Snap";
 import { State } from "./State";
 
@@ -62,4 +62,10 @@ export interface SimulationI<S extends State> {
      */
     init_from_snap(snap: Snap<S>, time: number) : void;
 
+    /**
+     * Interpret the given `input` of player `id`.
+     * @param id id of player
+     * @param inp given input
+     */
+    interpret_input(id : string, inp : ParsedInput) : void;
 }

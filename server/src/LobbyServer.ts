@@ -4,8 +4,8 @@ import {
     CarrierServer,
     ResponderServer,
     DisconnectData,
-    InputData,
-    PingData
+    PingData,
+    ParsedInput
 } from '../../common/src/protocol';
 
 import { GameServer } from './GameServer';
@@ -18,7 +18,7 @@ import { EuclideanCircle } from '../../common/src/EuclideanCircle';
  * (b) forward events to these games.
  * Currently it just starts one game and forwards everything there.
  */
-export class LobbyServer implements ResponderServer<EuclideanCircle> {
+export class LobbyServer implements ResponderServer {
     //static update_loop = 500;//ms DEBUGGING
     static update_loop = 45;//ms
     private simS: GameServer<EuclideanCircle>;
@@ -88,11 +88,9 @@ export class LobbyServer implements ResponderServer<EuclideanCircle> {
      * @param client who has sent an input
      * @param data the input data, consisting of the input and the corresponding timestamp
      */
-    on_input(client: io.Socket, data: InputData<EuclideanCircle>) {
+    on_input(client: io.Socket, data: ParsedInput) {
         //TODO security threat: If client gives timestamp as data, they may "rewrite history"
-        const i_input = data.input;
-        const time = data.time;
-        this.simS.on_input(client, i_input, time);
+        this.simS.on_input(client, data);
     }
 
     /**

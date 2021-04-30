@@ -1,6 +1,7 @@
 import * as UUID from 'uuid';
 import { EuclideanCircle } from '../../common/src/EuclideanCircle';
 import { EuclidianCircleSnap } from '../../common/src/EuclideanCircleSnap';
+import { EuclideanStepPhysics } from '../../common/src/EuclideanStepPhysics';
 import { EuclideanVector } from '../../common/src/EuclideanVector';
 import { Podium } from '../../common/src/Podium';
 import { ServerSimulation } from './ServerSimulation';
@@ -15,7 +16,10 @@ export class GameFactory {
 
     static create_podium_game(): ServerSimulation<EuclideanCircle> {
         const p = new Podium(EuclideanVector.create_cartesian(10, 5), 2);
-        const snap = new EuclidianCircleSnap([p]);
+        const phy = new EuclideanStepPhysics(
+            GameFactory.std_mv_speed, GameFactory.std_trn_speed, 15, 10
+        );
+        const snap = new EuclidianCircleSnap(phy, [p]);
         const g = new ServerSimulation(snap, GameFactory.x_plus_2)
         return g;
     }

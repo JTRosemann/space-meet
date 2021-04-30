@@ -4,14 +4,12 @@ import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
 import { HybridMap } from "./HybridMap";
 import { ClientSimulation } from "./ClientSimulation";
-import { SimulationI } from "../../common/src/SimulationI";
 import { ClientSimulationI } from "./ClientSimulationI";
 import { Auditorium } from "./Auditorium";
 import { MediaManager } from "./MediaManager";
 import { ViewSelector } from "./ViewSelector";
 import { InputProcessor } from "./InputProcessor";
-import { InterpretedInput } from "../../common/src/InterpretedInput";
-import { TrnMvInputProcessor } from "./TrnMvInputProcessor";
+import { ArrowInputProcessor } from "./ArrowInputProcessor";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { Timer } from "./Timer";
 
@@ -25,7 +23,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private carrier: CarrierClient<EuclideanCircle>;
     private debugger: Debugger;
     private simulation: ClientSimulationI<EuclideanCircle>;
-    private in_proc: InputProcessor<EuclideanCircle>;
+    private in_proc: InputProcessor;
     private media_manager: MediaManager;
     private view_selector: ViewSelector<EuclideanCircle>;
     private audioFrontend: Frontend<EuclideanCircle>;
@@ -64,7 +62,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private init_core(data: FullUpdateData<EuclideanCircle>) {
         this.simulation = ClientSimulation.establish(data.sim);
         this.media_manager = new MediaManager(data.conf);
-        this.in_proc = new TrnMvInputProcessor();
+        this.in_proc = new ArrowInputProcessor();
         this.my_id = this.carrier.get_id();
         this.view_selector = new ViewSelector(this.simulation, this.my_id);
     }
@@ -85,14 +83,10 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * @returns the read input
      */
     private read_sync_input(server_time: number) {
-        const i_input = this.in_proc.fetch_input();
+        const input = this.in_proc.fetch_input();
         //TODO update input here & on server
-        this.view_selector.register_input(i_input, server_time);
-        const data = {
-            input: i_input,
-            time: server_time
-        }
-        this.carrier.emit_input(data);
+        this.view_selector.register_input(input, server_time);
+        this.carrier.emit_input(input);
     }
 
     /**
