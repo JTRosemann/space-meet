@@ -54,6 +54,14 @@ export class Conference {
         this.call_ids[sid] = cid;
     }
 
+    /**
+     * Remove the call_id of player `id`.
+     * @param id 
+     */
+    rm_player(id: string) {
+        delete this.call_ids[id];
+    }
+
     to_data() : ConferenceData {
         return {
             conf_id: this.conf_id,

@@ -38,6 +38,7 @@ export class GameServer<S extends State> {
         //about that as well, so it can remove from the game they are
         //in, and make sure the other player knows that they left and so on.
         this.sim.rm_player(client.id);
+        this.conf.rm_player(client.id);
     }
     
     /**

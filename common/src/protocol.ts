@@ -121,11 +121,11 @@ export class CarrierServer<S extends State> {
     }
 
     emit_pong(client: io.Socket, data: PongData) {
-        this.emit(client, 'pong', data, false);
+        this.emit(client, 'pong', data, true);
     }
 
     emit_update(socket: io.Server, data: FullUpdateData<S>) {
-        this.emit(socket, 'onserverupdate', data, false);
+        this.emit(socket, 'onserverupdate', data, true);
     }
 
     private emit(socket: io.Socket | io.Server, key: string, data: any, log = true) {

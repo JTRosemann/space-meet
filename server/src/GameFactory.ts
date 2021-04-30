@@ -19,8 +19,7 @@ export class GameFactory {
         const phy = new EuclideanStepPhysics(
             GameFactory.std_mv_speed, GameFactory.std_trn_speed, 15, 10
         );
-        const snap = new EuclidianCircleSnap(phy, [p]);
-        const g = new ServerSimulation(snap, GameFactory.x_plus_2)
+        const g = new ServerSimulation({}, [p], phy, GameFactory.x_plus_2)
         return g;
     }
 

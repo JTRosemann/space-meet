@@ -15,8 +15,8 @@ import express        = require('express');
 const  verbose        = true;
 import https          = require('https');
 import fs             = require('fs');
-const privateKey      = fs.readFileSync('/home/julian/projects/space-meet/key.pem', 'utf8');
-const certificate     = fs.readFileSync('/home/julian/projects/space-meet/cert.pem', 'utf8');
+const privateKey      = fs.readFileSync('key.pem', 'utf8');
+const certificate     = fs.readFileSync('cert.pem', 'utf8');
 const app             = express();
 const sserver         = https.createServer({key:privateKey, cert: certificate}, app);
 
@@ -50,7 +50,7 @@ console.log('\t :: Express :: Listening on port ' + gameport );
     }); //app.get **/
 
 
-app.use(express.static('/home/julian/projects/space-meet/client/dist'));
+app.use(express.static('client/dist'));
 
 
 //Tell the server to listen for incoming connections

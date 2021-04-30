@@ -18,9 +18,11 @@ export class Simulation<S extends State> {
     private effectors : Effector<S>[];
     private physics : Physics<S>;
 
-    constructor(trails: Record<string,Trail<S>> = {}, effectors : Effector<S>[] = []) {
+    constructor(trails: Record<string,Trail<S>> = {}, 
+            effectors : Effector<S>[] = [],  physics : Physics<S>) {
         this.trails = trails;
         this.effectors = effectors;
+        this.physics = physics;
     }
 
     /**
@@ -101,7 +103,11 @@ export class Simulation<S extends State> {
      * @param time timestamp of the update
      */
     push_update(id: string, state: S, time: number): void {
-        this.trails[id].push_mark(state, time);
+        if (this.trails[id] == undefined) {
+            this.trails[id] = new Trail(state, time);
+        } else {
+            this.trails[id].push_mark(state, time);
+        }
     }
 
     to_data() : SimulationData<S> {
