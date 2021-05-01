@@ -40,7 +40,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         // if (!this.traces) //MAYDO add trace support
         ctx.clearRect(0, 0, width, height);
 
-        //translate & rotate according to self position/direction
+        //rotate according to self position and center the context
         const self_state = eu_snap.get_player_state(this.viewer_id);
         if (self_state == undefined) {
             //Don't render without self_state (shouldn't even be called)
@@ -55,12 +55,14 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             ctx.clip();
         }*/
 
-        //save unscaled ctx to be restored, scale into map scale
+        //save unscaled ctx to be restored, scale into map scale, translate to self position
         ctx.save();
         ctx.scale(scale, scale);
+        ctx.translate(-self_state.get_pos().get_x(), -self_state.get_pos().get_y());
 
         //draw boundaries
-        //this.draw_boundaries()
+        this.draw_border(ctx, map_width, map_height);
+
         //draw zones
 
         //draw player icons
@@ -82,5 +84,11 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         ctx.translate(mid, mid);
         ctx.rotate(-Math.PI / 2);        
         ctx.rotate(- self_state.get_dir());
+    }
+
+    private draw_border(ctx : CanvasRenderingContext2D, map_width: number, map_height: number) {
+        ctx.strokeStyle = "red";//MAYDO Parameterize
+        ctx.lineWidth = 0.02;//TODO should lineWidth be (de-)scaled? TODO Parametrize
+        ctx.strokeRect(0, 0, map_width, map_height);
     }
 }
