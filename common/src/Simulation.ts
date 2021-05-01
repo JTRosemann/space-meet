@@ -4,7 +4,7 @@ import { PhysicsData } from "./PhysicsFactory";
 import { ParsedInput } from "./protocol";
 import { Snap } from "./Snap";
 import { State } from "./State";
-import { Trail, TrailData } from "./Trail";
+import { Trail, TrailData, TrailFactory } from "./Trail";
 
 export interface SimulationData<S extends State> {
     trails: Record<string,TrailData<S>>,
@@ -14,7 +14,7 @@ export interface SimulationData<S extends State> {
 
 export class Simulation<S extends State> {
 
-    private trails : Record<string,Trail<S>>;
+    protected trails : Record<string,Trail<S>>;
     private effectors : Effector<S>[];
     private physics : Physics<S>;
 
@@ -35,8 +35,9 @@ export class Simulation<S extends State> {
         //init trails
         this.trails = {};//first, reset trails
         const states = snap.get_states();
+        const factory = new TrailFactory<S>();
         for (const k of Object.keys(states)) {
-            this.trails[k] = new Trail<S>(states[k], time);
+            this.trails[k] = factory.create_singleton_trail(states[k], time);
         }
         //init effectors
         this.effectors = snap.get_effectors();
@@ -104,7 +105,8 @@ export class Simulation<S extends State> {
      */
     push_update(id: string, state: S, time: number): void {
         if (this.trails[id] == undefined) {
-            this.trails[id] = new Trail(state, time);
+            const factory = new TrailFactory<S>();
+            this.trails[id] = factory.create_singleton_trail(state, time);
         } else {
             this.trails[id].push_mark(state, time);
         }
@@ -138,5 +140,21 @@ export class Simulation<S extends State> {
         const new_state = this.physics.interpret_input(old_state, inp);
         const end_time = start_time + inp.duration;
         this.push_update(id, new_state, end_time);
+    }
+
+    /**
+     * Getter for physics.
+     * @returns this simulation's physics
+     */
+    get_physics() {
+        return this.physics;
+    }
+
+    /**
+     * Getter for effectors.
+     * @returns this simulation's effectors
+     */
+    get_effectors() {
+        return this.effectors;
     }
 }

@@ -13,6 +13,11 @@ export class EuclideanCircle implements State {
     static create_from_pos_dir_rad(pos : EuclideanVector, rad : number, phi : number): EuclideanCircle {
         return new EuclideanCircle(pos, EuclideanVector.create_polar(rad, phi))
     }
+
+    //MAYDO enforce specific EuclideanCircleData type
+    static establish(data : EuclideanCircle) {
+        return new EuclideanCircle(EuclideanVector.establish(data.pos), EuclideanVector.establish(data.ext))
+    }
     
     private pos : EuclideanVector;
     private ext : EuclideanVector;
@@ -38,7 +43,7 @@ export class EuclideanCircle implements State {
      * Get the position.
      * @returns the position
      */
-    get_pos(): any {
+    get_pos() {
         return this.pos;
     }
 
@@ -55,7 +60,7 @@ export class EuclideanCircle implements State {
      * Getter for the facing direction.
      * @returns direction of this circle
      */
-    get_dir() {
+    get_dir() : number {
         return this.ext.get_phi();
     }
 

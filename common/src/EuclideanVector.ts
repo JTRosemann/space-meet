@@ -4,6 +4,10 @@
  * Instances are *immutable*.
  */
 export class EuclideanVector {
+    
+    static establish(ext: EuclideanVector): EuclideanVector {
+        return EuclideanVector.create_cartesian(ext.x, ext.y);
+    }
 
     /**
      * Create a vector using cartesion coordinates.

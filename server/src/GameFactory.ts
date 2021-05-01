@@ -1,6 +1,6 @@
 import * as UUID from 'uuid';
 import { EuclideanCircle } from '../../common/src/EuclideanCircle';
-import { EuclidianCircleSnap } from '../../common/src/EuclideanCircleSnap';
+import { EuclideanCircleSnap } from '../../common/src/EuclideanCircleSnap';
 import { EuclideanStepPhysics } from '../../common/src/EuclideanStepPhysics';
 import { EuclideanVector } from '../../common/src/EuclideanVector';
 import { Podium } from '../../common/src/Podium';
@@ -23,7 +23,7 @@ export class GameFactory {
         return g;
     }
 
-    static create_tables_game(n: number): EuclidianCircleSnap {
+    static create_tables_game(n: number): EuclideanCircleSnap {
         /*const table_rad = 2;
         const rad = 8;
         const center_x = 2 * rad;

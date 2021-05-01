@@ -54,15 +54,18 @@ export class ViewSelector<S extends State> {
      * @returns the smoothened & client-predicted snap
      */
     select_view(tbuf: number): Snap<S> {
+        console.warn("client prediction disabled");
         // make a snap `tbuf` ms in the past
         const snap = this.simulation.interpolate_snap(tbuf);
         // update the **current** state of this player with read inputs
         // Q: what is "current" ?
         // FIXME:
         const now = 0;
-        const curr_state = this.simulation.get_last_fixed_player_state_before(this.viewer_id, now);
+        //FIXME
+        //const curr_state = this.simulation.get_last_fixed_player_state_before(this.viewer_id, now);
+        /*const curr_state = this.simulation.freeze_last_player_state_before(this.viewer_id, now);
         const predict_me = this.replay_inputs(curr_state);
-        snap.set_player(this.viewer_id, predict_me);
+        snap.set_player(this.viewer_id, predict_me);*/
         // return smoothened & predicted snap
         return snap;
     }

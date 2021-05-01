@@ -6,6 +6,39 @@ export interface TrailData<S extends State> {
     latest: [S,number]
 }
 
+export class TrailFactory<S extends State> {
+
+    /**
+     * Create a trail consisting only of one entry.
+     * @param init_state initial state
+     * @param init_time initial time
+     * @returns a singleton trail
+     */
+    create_singleton_trail(init_state : S, init_time : number) {
+        const marks = new Queue<[S,number]>();
+        marks.enqueue([init_state, init_time]);
+        return new Trail(marks);
+    }
+
+    /**
+     * Realize a trail from data.
+     * @param data a trail as data
+     * @returns a trail correponding to the trail data
+     */
+    realize(data : TrailData<S>) : Trail<S> {
+        const queue = new Queue<[S,number]>();
+        if (data.recent == []) {
+            //if recent is empty we have to pseudo-enqueue the latest element
+            queue.enqueue(data.latest);
+            queue.dequeue();
+        } else {
+            queue.enqueue_list(data.recent);
+        }
+        return new Trail(queue);
+    }
+
+}
+
 export class Trail<S extends State> {
 
     /**
@@ -27,9 +60,8 @@ export class Trail<S extends State> {
 
     private marks : Queue<[S,number]> = new Queue();
 
-    constructor(init_state : S, init_time : number) {
-        this.marks = new Queue();
-        this.marks.enqueue([init_state, init_time]);
+    constructor(marks : Queue<[S,number]> = new Queue()) {
+        this.marks = marks;
     }
 
     /**
@@ -94,7 +126,7 @@ export class Trail<S extends State> {
             const peek = this.marks.peek_all();
             let prev = peek[0];
             let curr : [S,number];
-            for (let i=0; i++; i < peek.length) {
+            for (let i=0; i < peek.length; i++) {
                 curr = peek[i];
                 if (curr[1] >= time) {
                     const diff_bef = time - prev[1];
@@ -105,7 +137,9 @@ export class Trail<S extends State> {
                 }
                 prev = curr;
             }
-            return curr[0];//Assume stable position, if no new info is available
+            //Assume stable position, if no new info is available
+            // this also covers the case where peek == [], but latest != undefined
+            return this.marks.latest()[0];
         } else {
             throw Error("no state");
         }

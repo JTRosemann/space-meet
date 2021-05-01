@@ -1,3 +1,4 @@
+import { inherits } from "util";
 import { EuclideanCircle } from "./EuclideanCircle";
 import { EuclideanVector } from "./EuclideanVector";
 import { Physics } from "./Physics";
@@ -21,6 +22,9 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
         this.height = height;
     }
 
+    /**
+     * @inheritdoc
+     */
     interpret_input(old_state: EuclideanCircle, inp: ParsedInput): EuclideanCircle {
         const old_dir = old_state.get_dir();
         const new_dir = old_dir + this.trn_speed * inp.duration * inp.left;
@@ -33,6 +37,9 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
         return EuclideanCircle.create_from_pos_dir_rad(bounded_pos, old_rad, new_dir);
     }
 
+    /**
+     * @inheritdoc
+     */
     to_data() : PhysicsData {
         return {
             mv_speed : this.mv_speed,
@@ -42,10 +49,34 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
         };
     }
 
+    /**
+     * Return a new position, that 
+     * - is the best approximation of the proposed position and
+     * - respects the boundaries of the map.
+     * If `pos` already respects the boundaries, a position identical to `pos` is returned.
+     * @param pos proposed position
+     * @returns bounded position
+     */
     private fix_boundaries(pos : EuclideanVector) {
         const x = Math.max(this.width , Math.min(0, pos.get_x()));
         const y = Math.max(this.height, Math.min(0, pos.get_y()));
         return EuclideanVector.create_cartesian(x, y);
+    }
+
+    /**
+     * Getter for the width.
+     * @returns width of map
+     */
+    get_width(): number {
+        return this.width;
+    }
+
+    /**
+     * Getter for the height.
+     * @returns height of map
+     */
+    get_height(): number {
+        return this.height;
     }
 
 }

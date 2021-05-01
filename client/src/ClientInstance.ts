@@ -73,8 +73,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Initialize the different frontends and start the animation loop.
      */
     private init_frontends() {
-        this.videoFrontend = new HybridMap<EuclideanCircle>(this.media_manager, this.viewport);
-        this.audioFrontend = new Auditorium<EuclideanCircle>(this.media_manager);
+        this.videoFrontend = new HybridMap(this.media_manager, this.viewport, this.my_id);
+        this.audioFrontend = new Auditorium<EuclideanCircle>(this.media_manager, this.my_id);
         //start animation loop
         this.run();
     }
@@ -98,7 +98,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         const tbuf = ClientInstance.offset + this.timer.get_lag();
         const server_time = this.timer.get_server_time();
         // read the input and distribute it
-        this.read_sync_input(server_time);
+        //TODO enable this //this.read_sync_input(server_time);
         // select a snapshot to render
         const snap = this.view_selector.select_view(tbuf);
         // render the chosen snapshot of the simulation

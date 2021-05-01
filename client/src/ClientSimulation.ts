@@ -1,9 +1,12 @@
 import { Simulation, SimulationData } from "../../common/src/Simulation";
 import { Snap } from "../../common/src/Snap";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
-import { Trail } from "../../common/src/Trail";
-import { RecSnap } from "./RecSnap";
+import { Trail, TrailData, TrailFactory } from "../../common/src/Trail";
 import { State } from "../../common/src/State";
+import { PhysicsFactory } from "../../common/src/PhysicsFactory";
+import { EuclideanCircleSnap } from "../../common/src/EuclideanCircleSnap";
+import { EuclideanStepPhysics } from "../../common/src/EuclideanStepPhysics";
+import { Effector } from "../../common/src/Effector";
 
 export class ClientSimulation<S extends State> 
         extends Simulation<S> {
@@ -13,18 +16,38 @@ export class ClientSimulation<S extends State>
      * @param data the data to incorporate
      */
     incorporate_update(data: SimulationData<S>): void {
-        throw new Error("Method not implemented.");
+        //TODO implement
+        //throw new Error("Method not implemented.");
     }
 
     get_interpolated_player_state_at(id: string, time: number): S {
         throw new Error("Method not implemented.");
     }
 
-    private players: Record<string, Trail<S>>;
-
-    //TODO move to factory ?
+    //TODO fix this super ugly hack
+    private static establish_trail(data : Record<string,TrailData<EuclideanCircle>>) : Record<string,TrailData<EuclideanCircle>> {
+        let trls : Record<string,TrailData<EuclideanCircle>> = {};
+        for (const id of Object.keys(data)) {
+            const mks : [EuclideanCircle,number][] = [];
+            for (const s of data[id].recent) {
+                mks.push([EuclideanCircle.establish(s[0]), s[1]]);
+            }
+            trls[id] = {
+                recent : mks, 
+                latest : [EuclideanCircle.establish(data[id].latest[0]), data[id].latest[1]]
+            };
+        }
+        return trls;
+    }
+    //TODO move to factory 
     static establish(data: SimulationData<EuclideanCircle>): ClientSimulation<EuclideanCircle> {
-        throw new Error("Method not implemented.");
+        let trails : Record<string,Trail<EuclideanCircle>> = {};
+        const est_trails = this.establish_trail(data.trails);
+        const t_factory = new TrailFactory<EuclideanCircle>();
+        for (const id of Object.keys(data.trails)) {
+            trails[id] = t_factory.realize(est_trails[id]);
+        }
+        return new ClientSimulation(trails, data.effectors, PhysicsFactory.realize(data.physics));
     }
 
     /**
@@ -34,26 +57,20 @@ export class ClientSimulation<S extends State>
      * @returns a snap of the simulation at the given time
      */
     interpolate_snap(time: number): Snap<S> {
-        let res = new RecSnap<S>();
-        for (const p of Object.entries(this.players)) {
+        const trails : Record<string,EuclideanCircle> = {};
+        for (const p of Object.entries(this.trails)) {
             const id = p[0];
             const stateQ = p[1];
             const state = stateQ.state_at_time(time);
             //older data is no longer used
             //stateQ.free_older_than(time); // TODO:expose
-            res.set_player(id, state);
+            trails[id] = (state as unknown as EuclideanCircle);
         }
-        return res;
-    }
-
-    /**
-     * Return the state of the player `id` at `time`.
-     * @param id of the player requested
-     * @param time time to observe
-     * @returns the state of the player with `id` at `time`
-     */
-    get_last_fixed_player_state_before(id: string, time: number): S {
-        return this.players[id].state_at_time(time);
+        //TODO fix this generalization issue
+        return new EuclideanCircleSnap(
+            (this.get_physics() as unknown as EuclideanStepPhysics), 
+            (this.get_effectors() as unknown as Effector<EuclideanCircle>[]), 
+            trails) as unknown as Snap<S>;
     }
 
 }

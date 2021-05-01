@@ -19,6 +19,16 @@ export class Queue<T> {
     }
 
     /**
+     * Enqueue a whole list.
+     * `queue` is enqueued from left to right, i.e. `queue[0]` is the first element to be enqueued.
+     * @param queue to concat to the existing queue
+     */
+    enqueue_list(queue : T[]) : void {
+        this.tl = this.tl.concat(queue);
+        this.last = queue[queue.length - 1];
+    }
+
+    /**
      * Returns whether the queue has any elements
      *  - excluding a possibly saved latest element if that was removed again.
      * @returns whether this queue has elements
