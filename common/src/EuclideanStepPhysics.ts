@@ -32,8 +32,8 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
         const old_pos = old_state.get_pos();
         const mv_pos = EuclideanVector.create_polar(this.mv_speed, mid_dir);
         const new_pos = old_pos.add(mv_pos);
-        const bounded_pos = this.fix_boundaries(new_pos);
         const old_rad = old_state.get_rad();
+        const bounded_pos = this.fix_boundaries(new_pos, old_rad);
         return EuclideanCircle.create_from_pos_dir_rad(bounded_pos, old_rad, new_dir);
     }
 
@@ -57,10 +57,12 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
      * @param pos proposed position
      * @returns bounded position
      */
-    private fix_boundaries(pos : EuclideanVector) {
-        const x = Math.max(this.width , Math.min(0, pos.get_x()));
-        const y = Math.max(this.height, Math.min(0, pos.get_y()));
-        return EuclideanVector.create_cartesian(x, y);
+    private fix_boundaries(pos : EuclideanVector, rad : number) {
+        const zero_bounded_x = Math.min(rad, pos.get_x());
+        const full_bounded_x = Math.max(this.width - rad, zero_bounded_x);
+        const zero_bounded_y = Math.min(rad, pos.get_y());
+        const full_bounded_y = Math.max(this.height - rad, zero_bounded_y);
+        return EuclideanVector.create_cartesian(full_bounded_x, full_bounded_y);
     }
 
     /**
