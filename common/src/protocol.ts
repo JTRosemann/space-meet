@@ -39,7 +39,7 @@ export type DisconnectData = string;//"reason" see Socket.IO doc
 
 export interface ParsedInput {
     up: -1 | 0 | 1;
-    left: -1 | 0 | 1;
+    right: -1 | 0 | 1;
     start: number;
     duration: number;
 }
@@ -129,7 +129,7 @@ export class CarrierServer<S extends State> {
     }
 
     emit_update(socket: io.Server, data: FullUpdateData<S>) {
-        this.emit(socket, 'onserverupdate', data, true);
+        this.emit(socket, 'onserverupdate', data, false);
     }
 
     private emit(socket: io.Socket | io.Server, key: string, data: any, log = true) {

@@ -40,7 +40,15 @@ export class TrailFactory<S extends State> {
 }
 
 export class Trail<S extends State> {
-
+    
+    /**
+     * Get the timestamp of the latest state
+     * @returns the time of latest state
+     */
+    get_latest_time(): number {
+        return this.marks.latest()[1];
+    }
+    
     /**
      * Expose the data of this trail for communication.
      * @returns the TrailData of this trail
@@ -92,12 +100,11 @@ export class Trail<S extends State> {
      */
     freeze_last_state_before(time: number): S {
         const latest = this.marks.latest();
-        if (latest[1] < time) {
-            this.push_mark(latest[0], time);
+        if (latest[1] <= time) {
+            //this.push_mark(latest[0], time);
             return latest[0];
         } else {
-            //TODO should this really make the server crash?
-            throw Error("trying to change history");
+            console.warn("trying to change history");
         }
     }
 
@@ -112,7 +119,7 @@ export class Trail<S extends State> {
             this.marks.enqueue([new_state, time]);
         } else {
             //TODO should this really make the server crash?
-            throw Error("trying to change history");
+            console.warn("trying to change history");
         }
     }
 

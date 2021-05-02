@@ -27,10 +27,10 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
      */
     interpret_input(old_state: EuclideanCircle, inp: ParsedInput): EuclideanCircle {
         const old_dir = old_state.get_dir();
-        const new_dir = old_dir + this.trn_speed * inp.duration * inp.left;
+        const new_dir = old_dir + this.trn_speed * inp.duration * inp.right * 2 * Math.PI;
         const mid_dir = (old_dir + new_dir) / 2;//used if we move and turn at the same time
         const old_pos = old_state.get_pos();
-        const mv_pos = EuclideanVector.create_polar(this.mv_speed, mid_dir);
+        const mv_pos = EuclideanVector.create_polar(inp.up * inp.duration * this.mv_speed, mid_dir);
         const new_pos = old_pos.add(mv_pos);
         const old_rad = old_state.get_rad();
         const bounded_pos = this.fix_boundaries(new_pos, old_rad);
@@ -58,10 +58,10 @@ export class EuclideanStepPhysics implements Physics<EuclideanCircle> {
      * @returns bounded position
      */
     private fix_boundaries(pos : EuclideanVector, rad : number) {
-        const zero_bounded_x = Math.min(rad, pos.get_x());
-        const full_bounded_x = Math.max(this.width - rad, zero_bounded_x);
-        const zero_bounded_y = Math.min(rad, pos.get_y());
-        const full_bounded_y = Math.max(this.height - rad, zero_bounded_y);
+        const zero_bounded_x = Math.max(rad, pos.get_x());
+        const full_bounded_x = Math.min(this.width - rad, zero_bounded_x);
+        const zero_bounded_y = Math.max(rad, pos.get_y());
+        const full_bounded_y = Math.min(this.height - rad, zero_bounded_y);
         return EuclideanVector.create_cartesian(full_bounded_x, full_bounded_y);
     }
 

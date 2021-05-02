@@ -23,7 +23,6 @@ export class LobbyServer implements ResponderServer {
     //static update_loop = 45;//ms
     private simS: GameServer<EuclideanCircle>;
     private carrier: CarrierServer<EuclideanCircle>;
-    private running_id: number = 0;
 
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
@@ -66,8 +65,7 @@ export class LobbyServer implements ResponderServer {
     on_connection(client: io.Socket) {
         //Useful to know when someone connects
         console.log('\t socket.io:: player ' + client.id + ' connected');
-        this.running_id++;
-        this.simS.push_client(client, this.running_id);
+        this.simS.push_client(client, Date.now());
         // add listeners to this socket
         this.carrier.init_socket(client, this);
     }
@@ -90,6 +88,7 @@ export class LobbyServer implements ResponderServer {
      */
     on_input(client: io.Socket, data: ParsedInput) {
         //TODO security threat: If client gives timestamp as data, they may "rewrite history"
+        //console.log(data);//DEBUG
         this.simS.on_input(client, data);
     }
 

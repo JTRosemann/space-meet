@@ -30,10 +30,6 @@ export class ClientSimulation<S extends State>
         }
     }
 
-    get_interpolated_player_state_at(id: string, time: number): S {
-        throw new Error("Method not implemented.");
-    }
-
     //TODO fix this super ugly hack
     private static establish_trails(data : Record<string,TrailData<EuclideanCircle>>)
             : Record<string,Trail<EuclideanCircle>> {
@@ -85,6 +81,15 @@ export class ClientSimulation<S extends State>
             (this.get_physics() as unknown as EuclideanStepPhysics), 
             (this.get_effectors() as unknown as Effector<EuclideanCircle>[]), 
             trails) as unknown as Snap<S>;
+    }
+
+    /**
+     * Get the timestamp of the latest state of player `id`.
+     * @param id id of requested player
+     * @returns latest state time of this player
+     */
+    get_latest_state_time(id: string): number {
+        return this.trails[id].get_latest_time()
     }
 
 }

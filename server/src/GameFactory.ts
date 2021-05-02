@@ -7,8 +7,8 @@ import { Podium } from '../../common/src/Podium';
 import { ServerSimulation } from './ServerSimulation';
 
 export class GameFactory {
-    static std_mv_speed = 7; //TODO: what unit?
-    static std_trn_speed = 1;//TODO: what unit?
+    static std_mv_speed = 1.4/1000; //m/ms (1.4m/s = 5km/h)
+    static std_trn_speed = 0.2/1000;// whole turns per ms
     static std_rad = 0.5;// ~ in meters
     static std_step = 0.25;
     static x_plus_2 = (num : number) => 

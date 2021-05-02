@@ -50,13 +50,13 @@ export class ViewSelector<S extends State> {
      * using the server data.
      * For the controlling player the last server update is used.
      * All inputs that are newer than that update are played upon it.
-     * @param tbuf the time difference in ms between now and the view to be rendered
+     * @param time the time difference in ms between now and the view to be rendered
      * @returns the smoothened & client-predicted snap
      */
-    select_view(tbuf: number): Snap<S> {
+    select_view(time: number): Snap<S> {
         console.warn("client prediction disabled");
         // make a snap `tbuf` ms in the past
-        const snap = this.simulation.interpolate_snap(tbuf);
+        const snap = this.simulation.interpolate_snap(time);
         // update the **current** state of this player with read inputs
         // Q: what is "current" ?
         // FIXME:

@@ -64,8 +64,9 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private init_core(data: FullUpdateData<EuclideanCircle>) {
         this.simulation = ClientSimulation.establish(data.sim);
         this.media_manager = new MediaManager(data.conf);
-        this.in_proc = new ArrowInputProcessor();
         this.my_id = this.carrier.get_id();
+        this.in_proc = new ArrowInputProcessor(
+            this.simulation.get_latest_state_time(this.my_id));
         this.view_selector = new ViewSelector(this.simulation, this.my_id);
     }
 
@@ -73,10 +74,12 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Initialize the different frontends and start the animation loop.
      */
     private init_frontends() {
-        this.videoFrontend = new HybridMap(this.media_manager, this.viewport, this.my_id);
-        this.audioFrontend = new Auditorium<EuclideanCircle>(this.media_manager, this.my_id);
+        this.videoFrontend
+         = new HybridMap(this.media_manager, this.viewport, this.my_id);
+        this.audioFrontend
+         = new Auditorium<EuclideanCircle>(this.media_manager, this.my_id);
         //start animation loop
-        this.run();
+        window.requestAnimationFrame(this.run.bind(this));
     }
 
     /**
@@ -84,7 +87,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * @returns the read input
      */
     private read_sync_input(server_time: number) {
-        const input = this.in_proc.fetch_input();
+        const input = this.in_proc.fetch_input(server_time);
         // register input for client prediction
         this.view_selector.register_input(input, server_time);
         // emit input to server
@@ -98,9 +101,9 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         const tbuf = ClientInstance.offset + this.timer.get_lag();
         const server_time = this.timer.get_server_time();
         // read the input and distribute it
-        //TODO enable this //this.read_sync_input(server_time);
+        this.read_sync_input(server_time);
         // select a snapshot to render
-        const snap = this.view_selector.select_view(tbuf);
+        const snap = this.view_selector.select_view(server_time - tbuf);
         // render the chosen snapshot of the simulation
         this.videoFrontend.render(snap);
         this.audioFrontend.render(snap);
