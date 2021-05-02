@@ -15,7 +15,7 @@ export class GameFactory {
         new EuclideanCircle(EuclideanVector.create_cartesian(1 + num * 2,1), EuclideanVector.create_polar(GameFactory.std_rad, 0));
 
     static create_podium_game(): ServerSimulation<EuclideanCircle> {
-        const p = new Podium(EuclideanVector.create_cartesian(10, 5), 2);
+        const p = new Podium(EuclideanVector.create_cartesian(5, 5), 2);
         const phy = new EuclideanStepPhysics(
             GameFactory.std_mv_speed, GameFactory.std_trn_speed, 15, 10
         );

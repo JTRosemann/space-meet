@@ -1,4 +1,5 @@
 import { Effector } from "./Effector";
+import { EffectorData } from "./EffectorFactory";
 import { Physics } from "./Physics";
 import { PhysicsData } from "./PhysicsFactory";
 import { ParsedInput } from "./protocol";
@@ -8,12 +9,23 @@ import { Trail, TrailData, TrailFactory } from "./Trail";
 
 export interface SimulationData<S extends State> {
     trails: Record<string,TrailData<S>>,
-    effectors: Effector<S>[],
+    effectors: EffectorData[],
     physics: PhysicsData
 }
 
 export class Simulation<S extends State> {
-
+    //TODO maybe a major refactoring is neccessary: 
+    /* 
+    - rename this into Game without Parameters
+    - copy this into simulation & remove effectors & physics from it
+    - copy this into EuclideanGame & replace trails with a simulation object
+    - make Game in interface
+    - EuclideanGame should implement Game using a Sim, transform all the sim methods into wrappers
+    - Physics may vanish, methods could move over to Game (instance)
+    - In the outside world the type parameter should be <G extends Game>
+    - But what about the snap? what type would the snap have? it has to compatible with the sim
+        - idea: hide the snap behind the game! i.e. make game a generic interface that works either with a simulation or with a snap
+     */
     protected trails : Record<string,Trail<S>>;
     private effectors : Effector<S>[];
     private physics : Physics<S>;
@@ -119,7 +131,7 @@ export class Simulation<S extends State> {
         }
         return {
             trails: trail_data,
-            effectors: this.effectors,
+            effectors: this.effectors.map(e => e.to_data()),
             physics: this.physics.to_data()
         };
     }

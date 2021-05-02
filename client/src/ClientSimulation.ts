@@ -7,6 +7,7 @@ import { PhysicsFactory } from "../../common/src/PhysicsFactory";
 import { EuclideanCircleSnap } from "../../common/src/EuclideanCircleSnap";
 import { EuclideanStepPhysics } from "../../common/src/EuclideanStepPhysics";
 import { Effector } from "../../common/src/Effector";
+import { EffectorFactory } from "../../common/src/EffectorFactory";
 
 export class ClientSimulation<S extends State> 
         extends Simulation<S> {
@@ -47,7 +48,8 @@ export class ClientSimulation<S extends State>
         for (const id of Object.keys(data.trails)) {
             trails[id] = t_factory.realize(est_trails[id]);
         }
-        return new ClientSimulation(trails, data.effectors, PhysicsFactory.realize(data.physics));
+        const est_effs = data.effectors.map(e => EffectorFactory.realize(e));
+        return new ClientSimulation(trails, est_effs, PhysicsFactory.realize(data.physics));
     }
 
     /**

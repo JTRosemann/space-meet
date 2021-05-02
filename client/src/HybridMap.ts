@@ -4,12 +4,22 @@ import { Snap } from "../../common/src/Snap";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { EuclideanStepPhysics } from "../../common/src/EuclideanStepPhysics";
 import { EuclideanCircleSnap } from "../../common/src/EuclideanCircleSnap";
+import { Effector } from "../../common/src/Effector";
+import { Podium } from "../../common/src/Podium";
+import { TripleCircle } from "./TripleCircle";
+import { Drawable } from "./Drawable";
+import { EuclideanVector } from "../../common/src/EuclideanVector";
 
 export class HybridMap implements Frontend<EuclideanCircle> {
 
     private mediaManager: MediaManager;
     private viewport: HTMLCanvasElement;
     private viewer_id: string;
+
+    //TODO make parameters accessible
+    private border_style = "red";
+    private circle_style = "black";
+    private line_width = 2;
 
     constructor(mediaManager: MediaManager, viewport: HTMLCanvasElement, viewer_id: string) {
         this.mediaManager = mediaManager;
@@ -49,6 +59,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         this.align_ctx(ctx, self_state, width);
         
         //draw circle & (may) clip
+        ctx.lineWidth = this.line_width;
         this.draw_circle(ctx, width);
         //MAYDO enable (parameterised) clipping
         /*if (this.clip) {
@@ -58,14 +69,17 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         //save unscaled ctx to be restored, scale into map scale, translate to self position
         ctx.save();
         ctx.scale(scale, scale);
+        ctx.lineWidth = this.line_width/scale; //descale line width
         ctx.translate(-self_state.get_pos().get_x(), -self_state.get_pos().get_y());
 
         //draw boundaries
         this.draw_border(ctx, map_width, map_height);
 
         //draw zones
+        this.draw_zones(ctx, eu_snap.get_effectors());
 
         //draw player icons
+        //this.draw_players(ctx, eu_snap.get_states());
 
         //draw bubbles
     }
@@ -74,7 +88,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         ctx.beginPath();
         // radius= width / 6, to make sure another circle of same size fits everywhere around
         ctx.arc(0, 0, width / 6, 0, 2 * Math.PI);
-        ctx.strokeStyle = "black"; //MAYDO Paramaterize
+        ctx.strokeStyle = this.circle_style;
         ctx.stroke();
     }
 
@@ -87,8 +101,35 @@ export class HybridMap implements Frontend<EuclideanCircle> {
     }
 
     private draw_border(ctx : CanvasRenderingContext2D, map_width: number, map_height: number) {
-        ctx.strokeStyle = "red";//MAYDO Parameterize
-        ctx.lineWidth = 0.02;//TODO should lineWidth be (de-)scaled? TODO Parametrize
+        ctx.strokeStyle = this.border_style;
         ctx.strokeRect(0, 0, map_width, map_height);
+    }
+
+    private draw_zones(ctx: CanvasRenderingContext2D, effectors: Effector<EuclideanCircle>[]) {
+        for (const e of effectors) {
+            if (e instanceof Podium) {
+                const drawable = this.create_podium_drawable(ctx, e);
+                const pos = e.get_pos();
+                this.draw_drawable(ctx, drawable, pos, 0);
+            }
+        }
+    }
+
+    //private draw_players(ctx: CanvasRenderingContext2D, )
+
+    private create_podium_drawable(ctx: CanvasRenderingContext2D, p: Podium) : Drawable {
+        const pos = p.get_pos();
+        const rad = p.get_rad();
+        const step = rad / 6; // make sure there is still space after the step
+        return new TripleCircle(pos, rad, step);
+    }
+
+    private draw_drawable(
+            ctx: CanvasRenderingContext2D, d: Drawable, pos: EuclideanVector, dir: number) {
+        ctx.save();
+        ctx.translate(pos.get_x(), pos.get_y());
+        ctx.rotate(dir);
+        d.draw_icon(ctx);
+        ctx.restore();
     }
 }
