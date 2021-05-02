@@ -9,6 +9,7 @@ import { Podium } from "../../common/src/Podium";
 import { TripleCircle } from "./TripleCircle";
 import { Drawable } from "./Drawable";
 import { EuclideanVector } from "../../common/src/EuclideanVector";
+import { ArrowShape } from "./ArrowShape";
 
 export class HybridMap implements Frontend<EuclideanCircle> {
 
@@ -19,6 +20,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
     //TODO make parameters accessible
     private border_style = "red";
     private circle_style = "black";
+    private player_color = "grey";//MAYDO make it customizable
     private line_width = 2;
 
     constructor(mediaManager: MediaManager, viewport: HTMLCanvasElement, viewer_id: string) {
@@ -79,7 +81,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         this.draw_zones(ctx, eu_snap.get_effectors());
 
         //draw player icons
-        //this.draw_players(ctx, eu_snap.get_states());
+        this.draw_players(ctx, Object.values(eu_snap.get_states()));
 
         //draw bubbles
     }
@@ -110,21 +112,26 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             if (e instanceof Podium) {
                 const drawable = this.create_podium_drawable(ctx, e);
                 const pos = e.get_pos();
-                this.draw_drawable(ctx, drawable, pos, 0);
+                this.draw_transl_rot(ctx, drawable, pos, 0);
             }
         }
     }
 
-    //private draw_players(ctx: CanvasRenderingContext2D, )
+    private draw_players(ctx: CanvasRenderingContext2D, states : EuclideanCircle[]) {
+        for (const s of states) {
+            const drawable = new ArrowShape(s.get_rad(), this.player_color);
+            this.draw_transl_rot(ctx, drawable, s.get_pos(), s.get_dir());
+        }
+    }
 
     private create_podium_drawable(ctx: CanvasRenderingContext2D, p: Podium) : Drawable {
         const pos = p.get_pos();
         const rad = p.get_rad();
         const step = rad / 6; // make sure there is still space after the step
-        return new TripleCircle(pos, rad, step);
+        return new TripleCircle(rad, step);
     }
 
-    private draw_drawable(
+    private draw_transl_rot(
             ctx: CanvasRenderingContext2D, d: Drawable, pos: EuclideanVector, dir: number) {
         ctx.save();
         ctx.translate(pos.get_x(), pos.get_y());

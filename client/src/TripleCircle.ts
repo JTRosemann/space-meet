@@ -6,12 +6,11 @@ import { Drawable } from "./Drawable";
  * This class implements a drawable for a three layered circle.
  */
 export class TripleCircle implements Drawable {
-    private pos: EuclideanVector;
+
     private rad: number;
     private step: number;
 
-    constructor(pos: EuclideanVector, rad: number, step: number) {
-        this.pos = pos;
+    constructor(rad: number, step: number) {
         this.rad = rad;
         this.step = step;
     }
