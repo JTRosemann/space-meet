@@ -8,6 +8,7 @@ import { EuclideanCircleSnap } from "../../common/src/EuclideanCircleSnap";
 import { EuclideanStepPhysics } from "../../common/src/EuclideanStepPhysics";
 import { Effector } from "../../common/src/Effector";
 import { EffectorFactory } from "../../common/src/EffectorFactory";
+import { Physics } from "../../common/src/Physics";
 
 export class ClientSimulation<S extends State> 
         extends Simulation<S> {
@@ -17,8 +18,16 @@ export class ClientSimulation<S extends State>
      * @param data the data to incorporate
      */
     incorporate_update(data: SimulationData<S>): void {
-        //TODO implement
-        //throw new Error("Method not implemented.");
+        this.effectors = data.effectors.map(e => EffectorFactory.realize(e) as unknown as Effector<S>);
+        this.physics = PhysicsFactory.realize(data.physics) as unknown as Physics<S>;
+        const new_trls = ClientSimulation.establish_trails(data.trails as unknown as Record<string,TrailData<EuclideanCircle>>);
+        for (const id of Object.keys(new_trls)) {
+            if (this.trails[id] == undefined) {
+                this.trails[id] = new_trls[id] as unknown as Trail<S>;
+            } else {
+                this.trails[id].concat(new_trls[id] as unknown as Trail<S>);
+            }
+        }
     }
 
     get_interpolated_player_state_at(id: string, time: number): S {
@@ -26,30 +35,33 @@ export class ClientSimulation<S extends State>
     }
 
     //TODO fix this super ugly hack
-    private static establish_trail(data : Record<string,TrailData<EuclideanCircle>>) : Record<string,TrailData<EuclideanCircle>> {
-        let trls : Record<string,TrailData<EuclideanCircle>> = {};
+    private static establish_trails(data : Record<string,TrailData<EuclideanCircle>>)
+            : Record<string,Trail<EuclideanCircle>> {
+        //first establish objects inside of trail
+        let trls_data : Record<string,TrailData<EuclideanCircle>> = {};
         for (const id of Object.keys(data)) {
             const mks : [EuclideanCircle,number][] = [];
             for (const s of data[id].recent) {
                 mks.push([EuclideanCircle.establish(s[0]), s[1]]);
             }
-            trls[id] = {
+            trls_data[id] = {
                 recent : mks, 
                 latest : [EuclideanCircle.establish(data[id].latest[0]), data[id].latest[1]]
             };
         }
-        return trls;
+        //now transform traildata into trail
+        let trails : Record<string,Trail<EuclideanCircle>> = {};
+        const t_factory = new TrailFactory<EuclideanCircle>();
+        for (const id of Object.keys(trls_data)) {
+            trails[id] = t_factory.realize(trls_data[id]);
+        }
+        return trails;
     }
     //TODO move to factory 
     static establish(data: SimulationData<EuclideanCircle>): ClientSimulation<EuclideanCircle> {
-        let trails : Record<string,Trail<EuclideanCircle>> = {};
-        const est_trails = this.establish_trail(data.trails);
-        const t_factory = new TrailFactory<EuclideanCircle>();
-        for (const id of Object.keys(data.trails)) {
-            trails[id] = t_factory.realize(est_trails[id]);
-        }
+        const est_trails = this.establish_trails(data.trails);
         const est_effs = data.effectors.map(e => EffectorFactory.realize(e));
-        return new ClientSimulation(trails, est_effs, PhysicsFactory.realize(data.physics));
+        return new ClientSimulation(est_trails, est_effs, PhysicsFactory.realize(data.physics));
     }
 
     /**

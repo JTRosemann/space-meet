@@ -27,8 +27,8 @@ export class Simulation<S extends State> {
         - idea: hide the snap behind the game! i.e. make game a generic interface that works either with a simulation or with a snap
      */
     protected trails : Record<string,Trail<S>>;
-    private effectors : Effector<S>[];
-    private physics : Physics<S>;
+    protected effectors : Effector<S>[];
+    protected physics : Physics<S>;
 
     constructor(trails: Record<string,Trail<S>> = {}, 
             effectors : Effector<S>[] = [],  physics : Physics<S>) {

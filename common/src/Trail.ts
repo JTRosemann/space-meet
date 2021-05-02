@@ -117,6 +117,14 @@ export class Trail<S extends State> {
     }
 
     /**
+     * Enqueue all the elements of `other` on `this.
+     * @param other other trail to concat
+     */
+    concat(other: Trail<S>) {
+        this.marks.enqueue_list(other.marks.peek_all());
+    }
+
+    /**
      * Interpolate the state at `time`.
      * @param time the time of interest
      * @returns the interpolated state
