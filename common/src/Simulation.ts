@@ -62,7 +62,7 @@ export class Simulation<S extends State> {
      * @param time time before/until the freeze
      */
     freeze_last_player_state_before(p_id: string, time: number): S {
-        return this.trails[p_id].freeze_last_state_before(time);
+        return this.trails[p_id].get_last_state_leq(time);
     }
 
     /**

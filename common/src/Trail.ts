@@ -93,15 +93,15 @@ export class Trail<S extends State> {
     }
 
     /**
-     * If the given `time` is after the latest mark,
-     * the latest mark is duplicated at the given timestamp and returned.
+     * If the given `time` is greater or equal to the latest mark,
+     * the latest mark is returned.
+     * Otherwise a warning is issued.
      * @param time the time to freeze
-     * @returns 
+     * @returns the latest mark
      */
-    freeze_last_state_before(time: number): S {
+    get_last_state_leq(time: number): S {
         const latest = this.marks.latest();
         if (latest[1] <= time) {
-            //this.push_mark(latest[0], time);
             return latest[0];
         } else {
             console.warn("trying to change history");

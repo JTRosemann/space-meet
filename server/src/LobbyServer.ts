@@ -19,8 +19,8 @@ import { EuclideanCircle } from '../../common/src/EuclideanCircle';
  * Currently it just starts one game and forwards everything there.
  */
 export class LobbyServer implements ResponderServer {
-    static update_loop = 500;//ms DEBUGGING
-    //static update_loop = 45;//ms
+    //static update_loop = 500;//ms DEBUGGING
+    static update_loop = 45;//ms
     private simS: GameServer<EuclideanCircle>;
     private carrier: CarrierServer<EuclideanCircle>;
 
