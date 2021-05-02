@@ -21,11 +21,13 @@ export class Queue<T> {
     /**
      * Enqueue a whole list.
      * `queue` is enqueued from left to right, i.e. `queue[0]` is the first element to be enqueued.
-     * @param queue to concat to the existing queue
+     * @param list to concat to the existing queue
      */
-    enqueue_list(queue : T[]) : void {
-        this.tl = this.tl.concat(queue);
-        this.last = queue[queue.length - 1];
+    enqueue_list(list : T[]) : void {
+        if (list.length > 0) {
+            this.last = list[list.length - 1];
+        }
+        this.tl = this.tl.concat(list);
     }
 
     /**
@@ -76,6 +78,20 @@ export class Queue<T> {
             return this.hd[this.hd.length - 1];
         } else {
             throw Error('Peek on empty queue');
+        }
+    }
+
+    peek2() : T {
+        if (this.length() >= 2) {
+            if (this.hd.length >= 2) {
+                return this.hd[this.hd.length - 2];
+            } else if (this.hd.length == 1) {
+                return this.tl[0];
+            } else {
+                return this.tl[1];
+            }
+        } else {
+            throw Error('Peek2 on queue with length < 2');
         }
     }
 

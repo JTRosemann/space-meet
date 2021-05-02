@@ -19,6 +19,9 @@ export class ArrowInputProcessor implements InputProcessor {
      * @returns the parsed input
      */
     fetch_input(time: number): ParsedInput {
+        const duration = time - this.last_cycle;
+        //if (duration < 100) return;
+
         let up = 0;
         let right = 0;
         //left
@@ -42,7 +45,6 @@ export class ArrowInputProcessor implements InputProcessor {
         }
 
         const start = this.last_cycle;
-        const duration = time - this.last_cycle;
         this.last_cycle = time;
         return {
             up: up as -1 | 0 | 1,

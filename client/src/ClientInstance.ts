@@ -54,6 +54,13 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         const socket = sio.connect();
         console.log('Connect to server with id ' + socket.id)// here we don't know the id yet
         this.carrier = new CarrierClient(socket, this);
+        console.warn("Ping timer disabled");//TODO fix ping
+        //window.setInterval(this.ping_server.bind(this), 20);
+    }
+
+    private ping_server() {
+        const ping = this.timer.get_server_time();
+        this.carrier.emit_ping(ping);
     }
 
     /**
@@ -88,6 +95,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      */
     private read_sync_input(server_time: number) {
         const input = this.in_proc.fetch_input(server_time);
+        //if (input == undefined) return;
         // register input for client prediction
         this.view_selector.register_input(input, server_time);
         // emit input to server
@@ -111,6 +119,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         window.requestAnimationFrame(this.run.bind(this));
     }
 
+    private last_update : FullUpdateData<EuclideanCircle>;
     /**
      * This is the server-update handler.
      * Whenever a server-update is received the simulation and the mediaManager are updated accordingly.
@@ -118,6 +127,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * @param data update received from server
      */
     client_onserverupdate_received(data: FullUpdateData<EuclideanCircle>): void {
+        this.last_update = data;//DEBUG
         // the own id should be available after the first update, as soon as we have it we can initialize stuff
         if (this.my_id == '') {
             // FullUpdate should include: 

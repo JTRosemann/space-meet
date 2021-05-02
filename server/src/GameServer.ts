@@ -85,7 +85,8 @@ export class GameServer<S extends State> {
             conf: this.conf.to_data()
         }
         this.carrier.emit_update(this.server, data);
-        //this.sim.clear_all();
+        //console.warn("memory leak");
+        this.sim.clear_all();
     }
 
     /**

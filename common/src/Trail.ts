@@ -27,7 +27,7 @@ export class TrailFactory<S extends State> {
      */
     realize(data : TrailData<S>) : Trail<S> {
         const queue = new Queue<[S,number]>();
-        if (data.recent == []) {
+        if (data.recent.length == 0) {
             //if recent is empty we have to pseudo-enqueue the latest element
             queue.enqueue(data.latest);
             queue.dequeue();
@@ -54,6 +54,7 @@ export class Trail<S extends State> {
      * @returns the TrailData of this trail
      */
     to_data(): TrailData<S> {
+        if (this.marks.latest() == undefined) console.warn('latest undefined');
         return {
             recent: this.marks.peek_all(),
             latest: this.marks.latest()
@@ -82,12 +83,13 @@ export class Trail<S extends State> {
     }
 
     /**
-     * Clear all marks before the given threshold `time`.
-     * Beware: This may corrupt interpolation _at_ `time`.
+     * Clear all marks at least one mark before the given threshold `time`.
+     * One mark directly before the threshold is kept
+     *  to avoid corrupting interpolation at `time`.
      * @param time time threshold
      */
-    clear_before(time: number) {
-        while (this.marks.inhabited && this.marks.peek()[1] < time) {
+    clear_strict_before(time: number) {
+        while (this.marks.length() >= 2 && this.marks.peek2()[1] < time) {
             this.marks.dequeue();
         }
     }
@@ -101,11 +103,10 @@ export class Trail<S extends State> {
      */
     get_last_state_leq(time: number): S {
         const latest = this.marks.latest();
-        if (latest[1] <= time) {
-            return latest[0];
-        } else {
-            console.warn("trying to change history");
+        if (latest[1] > time) {
+            console.warn("trying to change history: " + latest[1] + " > " + time);
         }
+        return latest[0];
     }
 
     /**
@@ -141,6 +142,9 @@ export class Trail<S extends State> {
             const peek = this.marks.peek_all();
             let prev = peek[0];
             let curr : [S,number];
+            if (prev[1] >= time) {
+                return prev[0];
+            }
             for (let i=0; i < peek.length; i++) {
                 curr = peek[i];
                 if (curr[1] >= time) {

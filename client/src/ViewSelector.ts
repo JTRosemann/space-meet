@@ -54,9 +54,10 @@ export class ViewSelector<S extends State> {
      * @returns the smoothened & client-predicted snap
      */
     select_view(time: number): Snap<S> {
-        console.warn("client prediction disabled");
+        console.warn("client prediction");
         // make a snap `tbuf` ms in the past
         const snap = this.simulation.interpolate_snap(time);
+        this.simulation.clear_all_before(time);
         // update the **current** state of this player with read inputs
         // Q: what is "current" ?
         // FIXME:

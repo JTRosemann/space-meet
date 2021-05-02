@@ -61,7 +61,7 @@ export class Simulation<S extends State> {
      * @param p_id ID of the player to manipulate
      * @param time time before/until the freeze
      */
-    freeze_last_player_state_before(p_id: string, time: number): S {
+    get_last_player_state_leq(p_id: string, time: number): S {
         return this.trails[p_id].get_last_state_leq(time);
     }
 
@@ -74,21 +74,21 @@ export class Simulation<S extends State> {
     }
 
     /**
-     * Clear data strictly older than `time` in `id`s queque.
+     * Clear data older than the last mark before `time` in `id`s queue.
      * @param id ID of the player whose queque is to be cleared
      * @param time threshold before which everything is cleared on `id`s queue
      */
     clear_before(id: string, time: number): void {
-        this.trails[id].clear_before(time);
+        this.trails[id].clear_strict_before(time);
     }
     
     /**
-     * Clear all data strictly older than `time`.
+     * Clear all data strictly older than the last mark before `time`.
      * @param time threshold before which everything is cleared on all queues
      */
     clear_all_before(time: number): void {
         for (const v of Object.values(this.trails)) {
-            v.clear_before(time);
+            v.clear_strict_before(time);
         }
     }
 
@@ -148,7 +148,7 @@ export class Simulation<S extends State> {
     interpret_input(id : string, inp : ParsedInput) {
         // To prevent over-reaching interpolation, we have to duplicate the old state before the move.
         const start_time = inp.start;
-        const old_state = this.freeze_last_player_state_before(id, start_time);
+        const old_state = this.get_last_player_state_leq(id, start_time);
         const new_state = this.physics.interpret_input(old_state, inp);
         const end_time = start_time + inp.duration;
         this.push_update(id, new_state, end_time);
