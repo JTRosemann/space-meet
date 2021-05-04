@@ -133,34 +133,35 @@ export class Trail<S extends State> {
     }
 
     /**
-     * Interpolate the state at `time`.
+     * Interpolate the state at `time` and remove all older data.
      * @param time the time of interest
      * @returns the interpolated state
      */
     state_at_time(time: number): S {
-        if (this.marks.inhabited()) {
-            const peek = this.marks.peek_all();
-            let prev = peek[0];
-            let curr : [S,number];
-            if (prev[1] >= time) {
-                return prev[0];
+        //TODO also use peek2 and dequeue older stuff
+        while (true) {
+            if (this.marks.length() < 2) {
+                //Assume stable position, if no new info is available
+                return this.marks.latest()[0];
             }
-            for (let i=0; i < peek.length; i++) {
-                curr = peek[i];
-                if (curr[1] >= time) {
-                    const diff_bef = time - prev[1];
-                    const diff_aft = curr[1] - time;
-                    const frac = diff_bef / (diff_bef + diff_aft)/* between 0..1 */
-                    //TODO is there any other way than "as"?
-                    return (prev[0].interpolate(curr[0], frac) as S);
-                }
-                prev = curr;
+            const next = this.marks.peek();
+            if (next[1] >= time) {
+                //Assume stable position if requesting future (shouldn't happen)
+                return this.marks.latest()[0];
             }
-            //Assume stable position, if no new info is available
-            // this also covers the case where peek == [], but latest != undefined
-            return this.marks.latest()[0];
-        } else {
-            throw Error("no state");
+            // next[1] < time
+            const next2 = this.marks.peek2();
+            if (next2[1] >= time) {
+                //next2[1] >= time
+                const diff_bef = time - next[1];// > 0
+                const diff_aft = next2[1] - time;// >= 0
+                const frac = diff_bef / (diff_bef + diff_aft);// > 0 & <= 1
+                //TODO is there any other way than "as"?
+                return (next[0].interpolate(next2[0], frac) as S);
+            } else {
+                this.marks.dequeue();
+            }
+
         }
     }
 }

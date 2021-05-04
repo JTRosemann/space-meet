@@ -7,7 +7,7 @@
 export class Queue<T> {
     private hd: T[] = [];
     private tl: T[] = [];
-    private last: T = null;
+    private last: T = undefined;
 
     /**
      * Enqueue `elem`.
@@ -100,7 +100,11 @@ export class Queue<T> {
      * @returns the latest enqueued element
      */
     latest() : T {
-        return this.last;
+        if (this.last == undefined) {
+            throw Error("Nothing added yet to this queue.");
+        } else {
+            return this.last;
+        }
     }
 
     /**

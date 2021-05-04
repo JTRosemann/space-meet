@@ -72,8 +72,6 @@ export class ClientSimulation<S extends State>
             const id = p[0];
             const stateQ = p[1];
             const state = stateQ.state_at_time(time);
-            //older data is no longer used
-            //stateQ.free_older_than(time); // TODO:expose
             trails[id] = (state as unknown as EuclideanCircle);
         }
         //TODO fix this generalization issue
