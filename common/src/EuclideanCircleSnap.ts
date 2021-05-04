@@ -3,6 +3,7 @@ import { EuclideanCircle as EuclideanCircle } from "./EuclideanCircle";
 import { Effector } from "./Effector";
 import { Physics } from "./Physics";
 import { EuclideanStepPhysics } from "./EuclideanStepPhysics";
+import { ParsedInput } from "./protocol";
 
 /**
  * A snapshot of a Simulation using EuclideanCircle states.
@@ -70,6 +71,15 @@ export class EuclideanCircleSnap implements Snap<EuclideanCircle> {
      */
     get_height() : number {
         return this.physics.get_height();
+    }
+    /**
+     */
+    interpret_input(id: string, inp: ParsedInput, frac: number = 1): void {
+        const old_state = this.get_player_state(id);
+        const new_state = this.physics.interpret_input(old_state, inp);
+        const end_time = inp.start + inp.duration;
+        const interpol = old_state.interpolate(new_state, frac);
+        this.set_player(id, interpol);
     }
 
 }

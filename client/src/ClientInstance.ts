@@ -20,6 +20,7 @@ import { Timer } from "./Timer";
 export class ClientInstance implements ResponderClient<EuclideanCircle> {
 
     private static offset = 100//ms
+    private static offset_self = 500//ms
 
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
@@ -112,7 +113,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         // read the input and distribute it
         this.read_sync_input(server_time);
         // select a snapshot to render
-        const snap = this.view_selector.select_view(server_time - tbuf);
+        const snap = this.view_selector.select_view(server_time - tbuf, 
+                                                    server_time - ClientInstance.offset_self);
         // render the chosen snapshot of the simulation
         this.videoFrontend.render(snap);
         this.audioFrontend.render(snap);

@@ -2,6 +2,8 @@ import { ClientSimulation } from "./ClientSimulation";
 import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
 import { ParsedInput } from "../../common/src/protocol";
+import { Trail, TrailFactory } from "../../common/src/Trail";
+import { Queue } from "../../common/src/Queue";
 
 /**
  * This class is responsible for producing the snapshot of the simulation,
@@ -14,10 +16,12 @@ import { ParsedInput } from "../../common/src/protocol";
 export class ViewSelector<S extends State> {
     private simulation: ClientSimulation<S>;
     private viewer_id: string;
+    private client_inputs: Queue<ParsedInput>;
 
     constructor(simulation: ClientSimulation<S>, viewer_id: string) {
         this.simulation = simulation;
         this.viewer_id = viewer_id;
+        this.client_inputs = new Queue();
     }
 
     //Q: (A) apply inputs in simulation on client. 
@@ -31,17 +35,36 @@ export class ViewSelector<S extends State> {
      * @param input to register for client prediction
      */
     register_input(input: ParsedInput, server_time: number) : void {
-        //TODO: implement
+        return;
+        const new_state = this.simulation.interpret_input(this.viewer_id, input);
+        const end_time = input.start + input.duration;
+        this.client_inputs.enqueue(input);
     }
 
     /**
-     * Replay inputs that are more recent than the given state and return the resulting state.
-     * @param state start state to replay inputs on
+     * Replay inputs that are more recent than the given snap.
+     * @param snap snap to replay inputs on
      * @returns the resulting state
      */
-    private replay_inputs(state: S) : S {
-        //TODO: implement
-        return state;
+    private replay_inputs(snap: Snap<S>, time_base: number, time_self: number) : void {
+        while (this.client_inputs.inhabited() && this.client_inputs.peek().start <= time_base) {
+            this.client_inputs.dequeue();
+        }
+        if (this.client_inputs.inhabited()) {
+            const inps = this.client_inputs.peek_all();
+            for (let i = 0; i < inps.length; i++) {
+                const end_time = inps[i].start + inps[i].duration;
+                if (end_time <= time_self) {
+                    snap.interpret_input(this.viewer_id, inps[i], 1);
+                } else {
+                    const diff_bef = time_self - inps[i].start;// >= 0
+                    const diff_aft = end_time - time_self;// > 0
+                    const frac = diff_bef / (diff_bef + diff_aft);// >= 0 & < 1
+                    snap.interpret_input(this.viewer_id, inps[i], frac);
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -50,23 +73,19 @@ export class ViewSelector<S extends State> {
      * using the server data.
      * For the controlling player the last server update is used.
      * All inputs that are newer than that update are played upon it.
-     * @param time the time difference in ms between now and the view to be rendered
+     * @param time_others the time difference in ms between now and the view to be rendered
      * @returns the smoothened & client-predicted snap
      */
-    select_view(time: number): Snap<S> {
-        console.warn("client prediction");
-        // make a snap `tbuf` ms in the past
-        const snap = this.simulation.interpolate_snap(time);
-        this.simulation.clear_all_before(time);
-        // update the **current** state of this player with read inputs
-        // Q: what is "current" ?
-        // FIXME:
-        const now = 0;
-        //FIXME
-        //const curr_state = this.simulation.get_last_fixed_player_state_before(this.viewer_id, now);
-        /*const curr_state = this.simulation.freeze_last_player_state_before(this.viewer_id, now);
-        const predict_me = this.replay_inputs(curr_state);
-        snap.set_player(this.viewer_id, predict_me);*/
+    select_view(time_others: number, time_self: number): Snap<S> {
+        console.warn("client prediction disabled");
+        // make a snap at `time_others` in the past
+        const snap = this.simulation.interpolate_snap(time_others);
+        // clear all older data
+        this.simulation.clear_all_before(time_others);
+        // MAYDO it would be better to first overwrite self position with most recent position from server
+        //        - and only apply inputs after that
+        // for now: apply all inputs between `time_others` and `time_self`
+        //this.replay_inputs(snap, time_others, time_self);
         // return smoothened & predicted snap
         return snap;
     }

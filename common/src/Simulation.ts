@@ -141,12 +141,11 @@ export class Simulation<S extends State> {
     }
 
     /**
-     * Interpret the given `input` of player `id`.
+     * Interpret the given `input` of player `id` and apply it to the simulation.
      * @param id id of player
      * @param inp given input
      */
     interpret_input(id : string, inp : ParsedInput) {
-        // To prevent over-reaching interpolation, we have to duplicate the old state before the move.
         const start_time = inp.start;
         const old_state = this.get_last_player_state_leq(id, start_time);
         const new_state = this.physics.interpret_input(old_state, inp);

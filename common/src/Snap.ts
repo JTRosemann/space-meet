@@ -1,5 +1,6 @@
 import { Effector } from "./Effector";
 import { Physics } from "./Physics";
+import { ParsedInput } from "./protocol";
 import { State } from "./State";
 
 export interface Snap<S extends State> {
@@ -35,6 +36,15 @@ export interface Snap<S extends State> {
      * @returns the state of player `id`
      */
     get_player_state(id: string) : S;
+
+    /**
+     * Interpret the given input.
+     * If a fraction less than 1, an interpolation is applied.
+     * @param id of the player
+     * @param inp parsed input to be interpreted
+     * @param frac fraction (between 0 and 1) of the input time to interpret
+     */
+    interpret_input(id: string, inp: ParsedInput, frac: number) : void ;
 }
 
 
