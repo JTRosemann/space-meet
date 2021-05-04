@@ -21,6 +21,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
 
     private static offset = 100//ms
     private static offset_self = 500//ms
+    private static ping_interval = 20//ms
 
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
@@ -56,7 +57,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         console.log('Connect to server with id ' + socket.id)// here we don't know the id yet
         this.carrier = new CarrierClient(socket, this);
         console.warn("Ping timer disabled");//TODO fix ping
-        //window.setInterval(this.ping_server.bind(this), 20);
+        console.warn("client prediction disabled");
+        //window.setInterval(this.ping_server.bind(this), ClientInstance.ping_interval);
     }
 
     private ping_server() {

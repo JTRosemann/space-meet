@@ -77,7 +77,7 @@ export class ViewSelector<S extends State> {
      * @returns the smoothened & client-predicted snap
      */
     select_view(time_others: number, time_self: number): Snap<S> {
-        console.warn("client prediction disabled");
+        // TODO enable & fix client prediction
         // make a snap at `time_others` in the past
         const snap = this.simulation.interpolate_snap(time_others);
         // clear all older data
