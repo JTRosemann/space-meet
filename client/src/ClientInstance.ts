@@ -74,8 +74,8 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      */
     private init_core(data: FullUpdateData<EuclideanCircle>) {
         this.simulation = ClientSimulation.establish(data.sim);
-        this.media_manager = new MediaManager(Conference.establish(data.conf));
         this.my_id = this.carrier.get_id();
+        this.media_manager = new MediaManager(Conference.establish(data.conf), this.my_id, this.carrier);
         this.in_proc = new ArrowInputProcessor(
             this.simulation.get_latest_state_time(this.my_id));
         this.view_selector = new ViewSelector(this.simulation, this.my_id);

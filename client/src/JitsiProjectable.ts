@@ -13,7 +13,7 @@ export class JitsiProjectable implements Projectable {
         this.vid = vid;
     }
 
-    draw_projection(ctx: CanvasRenderingContext2D, video_enabled = false): void {
+    draw_projection(ctx: CanvasRenderingContext2D, video_enabled = true): void {
         // the ctx should be appropriately rotated and translated
         ctx.beginPath();
         const rad = this.rad;

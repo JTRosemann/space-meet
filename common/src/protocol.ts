@@ -65,7 +65,11 @@ export interface ResponderClient<S extends State> {
     client_on_pong(data: PongData) : void;
 }
 
-export class CarrierClient<S extends State> {
+export interface CallIDEmitter {
+    emit_call_id(data: CidData) : void;
+}
+
+export class CarrierClient<S extends State> implements CallIDEmitter {
     private socket: io.Socket; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient<S>) {
         this.socket = socket;

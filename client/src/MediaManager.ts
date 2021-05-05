@@ -1,5 +1,5 @@
 import { Conference, ConferenceData } from "../../common/src/Conference";
-import { CarrierClient, FullUpdateData } from "../../common/src/protocol";
+import { CallIDEmitter, CarrierClient, FullUpdateData } from "../../common/src/protocol";
 
 declare const JitsiMeetJS : any;
 
@@ -21,15 +21,17 @@ export class MediaManager {
     private joined_jitsi: boolean = false;
     private loc_tracks: Track[];
     private user_id: string;
-    private carrier: any;//CarrierClient<S>
-    private audio_ctx: AudioContext;
+    private carrier: CallIDEmitter;
 
     incorporate_update(conf: Conference) {
         this.conf = conf;
     }
     
-    constructor(conf: Conference) {
+    constructor(conf: Conference, user_id: string, carrier: CallIDEmitter) {
         this.conf = conf;
+        this.user_id = user_id;
+        this.carrier = carrier;
+        this.init_jitsi();
     }
 
     get_video(id: string) : HTMLVideoElement {
@@ -106,7 +108,7 @@ export class MediaManager {
             // if there is a player with a matching id, add the audio track
             // FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
             //this.audio_tracks.push(track.stream, this.audio_ctx, sid);
-            this.add_audio_track(track.stream, this.audio_ctx, sid);
+            // this.add_audio_track(track.stream, this.audio_ctx, sid);
         } else if (track.getType() == 'video') {
             if (sid != undefined) {
                 const vid  = $(`<video autoplay='1' id='vid${p_id}' style='position:absolute; left:0; top:0;' />`);
