@@ -11,6 +11,7 @@ import { InputProcessor } from "./InputProcessor";
 import { ArrowInputProcessor } from "./ArrowInputProcessor";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { Timer } from "./Timer";
+import { Conference } from "../../common/src/Conference";
 
 /**
  * This class represents a client UI.
@@ -73,7 +74,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      */
     private init_core(data: FullUpdateData<EuclideanCircle>) {
         this.simulation = ClientSimulation.establish(data.sim);
-        this.media_manager = new MediaManager(data.conf);
+        this.media_manager = new MediaManager(Conference.establish(data.conf));
         this.my_id = this.carrier.get_id();
         this.in_proc = new ArrowInputProcessor(
             this.simulation.get_latest_state_time(this.my_id));
@@ -145,7 +146,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
             this.init_frontends();
         } else {
             this.simulation.incorporate_update(data.sim);
-            this.media_manager.incorporate_update(data.conf);
+            this.media_manager.incorporate_update(Conference.establish(data.conf));
         }
     }
 

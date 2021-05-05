@@ -55,6 +55,14 @@ export class Conference {
     }
 
     /**
+     * Getter for the ID of the conference.
+     * @returns the ID of the conference
+     */
+    get_conf_id() {
+        return this.conf_id;
+    }
+
+    /**
      * Remove the call_id of player `id`.
      * @param id 
      */

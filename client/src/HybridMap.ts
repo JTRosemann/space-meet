@@ -10,6 +10,8 @@ import { TripleCircle } from "./TripleCircle";
 import { Drawable } from "./Drawable";
 import { EuclideanVector } from "../../common/src/EuclideanVector";
 import { ArrowShape } from "./ArrowShape";
+import { JitsiProjectable } from "./JitsiProjectable";
+import { Projectable } from "./Projectable";
 
 export class HybridMap implements Frontend<EuclideanCircle> {
 
@@ -30,8 +32,15 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         //Adjust viewport size
         viewport.width = viewport.offsetWidth;
         viewport.height = viewport.offsetHeight;
+        console.warn("HybridMap doesn't apply effectors");//TODO fix this
     }
 
+    /**
+     * Render the hybrid map from the snap:
+     * - render a relatively orientated map
+     * - render a the videos as bubbles around the player
+     * @param snap snap to render
+     */
     render(snap: Snap<EuclideanCircle>): void {
         //MAYDO find a better way (generalize over physics?) 
         const eu_snap = snap as EuclideanCircleSnap;
@@ -84,6 +93,8 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         this.draw_players(ctx, Object.values(eu_snap.get_states()));
 
         //draw bubbles
+        ctx.restore();
+        this.draw_positional_projections(ctx, snap, width, true);
     }
 
     private draw_circle(ctx: CanvasRenderingContext2D, width: number) {
@@ -137,6 +148,68 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         ctx.translate(pos.get_x(), pos.get_y());
         ctx.rotate(dir);
         d.draw_icon(ctx);
+        ctx.restore();
+    }
+
+    /**
+     * Draw the projectables as actual positional projections:
+     * The projection is drawn at the same angle as the corresponding item is viewed from the viewer,
+     * and the radius is either 1/d or 1/√d depending on the flag `sqrt` where d is the distance relative to the viewer.
+     * @param ctx context to be drawn upon
+     * @param width width of said context
+     * @param sqrt boolean flag to indicate how to compute the radius from the distance.
+     */
+     private draw_positional_projections(ctx: CanvasRenderingContext2D, snap: Snap<EuclideanCircle>, width: number, sqrt: boolean) {        
+        const self_state = snap.get_player_state(this.viewer_id);
+        // order projectables in reverse order with respect to distance, i.e. furthest first
+        let players : [string,EuclideanCircle][] = [];
+        const all_states = snap.get_states();
+        for (const id of Object.keys(all_states)) {
+            if (id != this.viewer_id) {
+                players.push([id,all_states[id]]);
+            }
+        }
+        const sorted = players.sort(
+            (a: [string,EuclideanCircle], b: [string,EuclideanCircle]) =>
+             self_state.get_pos().sub(b[1].get_pos()).get_abs()
+              - self_state.get_pos().sub(a[1].get_pos()).get_abs());
+        for (const idp of sorted) {
+            const p = idp[1];
+            const id = idp[0];
+            const pos = p.get_pos().sub(self_state.get_pos());
+            const abs_val = pos.get_abs();
+            const dist_c = width / 6;
+
+            const eps = 0.0001;
+            // use intercept theorem: (projector_rad + rad) / (abs_val) = (rad / player.rad) and solve it
+            // prevent non-positive values in the divisor using Math.max(eps, ..)
+            const max_rad = dist_c;
+            // bound the maximum size of the radius
+            const lin_rad = p.get_rad() * dist_c / Math.max(eps, abs_val - p.get_rad());
+            const sqrt_rad = Math.sqrt(lin_rad/max_rad) * max_rad;
+            const rad = Math.min(sqrt ? sqrt_rad : lin_rad, max_rad);
+            const dist = dist_c + rad;
+            const center_x = dist * pos.get_x() / abs_val; //FIXME: divide by zero
+            const center_y = dist * pos.get_y() / abs_val;
+            const proj = new JitsiProjectable(rad, this.mediaManager.get_video(id));
+            this.positional_draw_projection(ctx, self_state.get_dir(), center_x, center_y, rad, proj);
+        }
+    }
+
+    /**
+     * Draw a given projectable at a given position with a given radius.
+     * @param ctx context to be drawn upon
+     * @param center_x x coordinate of center
+     * @param center_y y coordinate of center
+     * @param rad radius
+     * @param p projectable to be drawn
+     */
+    private positional_draw_projection(ctx: CanvasRenderingContext2D, self_angle: number,
+            center_x: number, center_y: number, rad: number, p: Projectable) {
+        ctx.save();
+        ctx.translate(center_x, center_y);
+        ctx.rotate(self_angle + Math.PI / 2); // rewind the rotation from outside
+        p.draw_projection(ctx);
         ctx.restore();
     }
 }
