@@ -2,7 +2,7 @@
 /**
  * This interface must implemented by front-ends to instantiate effects.
  */
-export interface PresentationCtrl {
+export interface PresentationConfig {
     /**
      * Mute a specific player.
      * @param id the player to be muted

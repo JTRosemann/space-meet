@@ -12,6 +12,9 @@ import { ArrowInputProcessor } from "./ArrowInputProcessor";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { Timer } from "./Timer";
 import { Conference } from "../../common/src/Conference";
+import { Effector } from "../../common/src/Effector";
+import { Snap } from "../../common/src/Snap";
+import { ClientConfig } from "./ClientConfig";
 
 /**
  * This class represents a client UI.
@@ -119,10 +122,20 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         const snap = this.view_selector.select_view(server_time - tbuf, 
                                                     server_time - ClientInstance.offset_self);
         // render the chosen snapshot of the simulation
-        this.videoFrontend.render(snap);
-        this.audioFrontend.render(snap);
+        const client_cfg = this.create_client_config(snap);
+        this.videoFrontend.render(snap, client_cfg);
+        this.audioFrontend.render(snap, client_cfg);
         // this guarantees updates forever
         window.requestAnimationFrame(this.run.bind(this));
+    }
+
+    private create_client_config(snap: Snap<EuclideanCircle>) {
+        const effs = snap.get_effectors();
+        const client_cfg = new ClientConfig();
+        effs.forEach(eff => {
+            eff.provoke(client_cfg, snap);
+        });
+        return client_cfg;
     }
 
     private last_update : FullUpdateData<EuclideanCircle>;

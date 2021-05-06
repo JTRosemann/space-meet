@@ -1,5 +1,5 @@
 import { EffectorData } from "./EffectorFactory";
-import { PresentationCtrl } from "./PresentationCtrl";
+import { PresentationConfig } from "./PresentationConfig";
 import { Snap } from "./Snap";
 import { State } from "./State";
 
@@ -18,5 +18,5 @@ export interface Effector<S extends State> {
      * @param ctrl this the interface a front-end must implement to instantiate the effect
      * @param snap the snap of the simulation to render
      */
-    provoke(ctrl : PresentationCtrl, snap : Snap<S>) : void;
+    provoke(ctrl : PresentationConfig, snap : Snap<S>) : void;
 }

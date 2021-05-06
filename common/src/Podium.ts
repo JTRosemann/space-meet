@@ -2,7 +2,7 @@ import { Effector } from "./Effector";
 import { EuclideanVector } from "./EuclideanVector";
 import { EuclideanCircle } from "./EuclideanCircle";
 import { Snap } from "./Snap";
-import { PresentationCtrl } from "./PresentationCtrl";
+import { PresentationConfig } from "./PresentationConfig";
 import { EffectorData } from "./EffectorFactory";
 
 /**
@@ -33,7 +33,7 @@ export class Podium implements Effector<EuclideanCircle> {
 
     /**
     */
-    provoke(ctrl : PresentationCtrl, snap : Snap<EuclideanCircle>) {
+    provoke(ctrl : PresentationConfig, snap : Snap<EuclideanCircle>) {
         const players = snap.get_states();
         // TODO find a more efficient way to calculate hits/zone-inclusion; think raytracer/boundedbox
         for (const id of Object.keys(players)) {

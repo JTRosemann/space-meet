@@ -2,7 +2,6 @@ import { FrontEnd as Frontend } from "./Frontend";
 import { MediaManager } from "./MediaManager";
 import { Snap } from "../../common/src/Snap";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
-import { EuclideanStepPhysics } from "../../common/src/EuclideanStepPhysics";
 import { EuclideanCircleSnap } from "../../common/src/EuclideanCircleSnap";
 import { Effector } from "../../common/src/Effector";
 import { Podium } from "../../common/src/Podium";
@@ -12,6 +11,7 @@ import { EuclideanVector } from "../../common/src/EuclideanVector";
 import { ArrowShape } from "./ArrowShape";
 import { JitsiProjectable } from "./JitsiProjectable";
 import { Projectable } from "./Projectable";
+import { ClientConfig } from "./ClientConfig";
 
 export class HybridMap implements Frontend<EuclideanCircle> {
 
@@ -41,7 +41,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
      * - render a the videos as bubbles around the player
      * @param snap snap to render
      */
-    render(snap: Snap<EuclideanCircle>): void {
+    render(snap: Snap<EuclideanCircle>, client_cfg: ClientConfig): void {
         //MAYDO find a better way (generalize over physics?) 
         const eu_snap = snap as EuclideanCircleSnap;
 
@@ -94,7 +94,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
 
         //draw bubbles
         ctx.restore();
-        this.draw_positional_projections(ctx, snap, width, true);
+        this.draw_positional_projections(ctx, snap, width, true, client_cfg);
     }
 
     private draw_circle(ctx: CanvasRenderingContext2D, width: number) {
@@ -159,7 +159,8 @@ export class HybridMap implements Frontend<EuclideanCircle> {
      * @param width width of said context
      * @param sqrt boolean flag to indicate how to compute the radius from the distance.
      */
-     private draw_positional_projections(ctx: CanvasRenderingContext2D, snap: Snap<EuclideanCircle>, width: number, sqrt: boolean) {        
+     private draw_positional_projections(ctx: CanvasRenderingContext2D, snap: Snap<EuclideanCircle>,
+            width: number, sqrt: boolean, client_cfg: ClientConfig) {
         const self_state = snap.get_player_state(this.viewer_id);
         // order projectables in reverse order with respect to distance, i.e. furthest first
         let players : [string,EuclideanCircle][] = [];
@@ -187,7 +188,8 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             // bound the maximum size of the radius
             const lin_rad = p.get_rad() * dist_c / Math.max(eps, abs_val - p.get_rad());
             const sqrt_rad = Math.sqrt(lin_rad/max_rad) * max_rad;
-            const rad = Math.min(sqrt ? sqrt_rad : lin_rad, max_rad);
+            const bounded_rad = Math.min(sqrt ? sqrt_rad : lin_rad, max_rad);
+            const rad = client_cfg.is_maximized(id) ? max_rad : bounded_rad;
             const dist = dist_c + rad;
             const center_x = dist * pos.get_x() / abs_val; //FIXME: divide by zero
             const center_y = dist * pos.get_y() / abs_val;

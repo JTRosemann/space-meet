@@ -4,6 +4,7 @@ import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { PosAudioCtrl } from "./PosAudioCtrl";
+import { ClientConfig } from "./ClientConfig";
 
 export class Auditorium<S extends State> implements Frontend<S> {
     
@@ -22,7 +23,7 @@ export class Auditorium<S extends State> implements Frontend<S> {
         console.warn("Auditorium doesn't support effectors");
     }
 
-    render(snap: Snap<S>): void {
+    render(snap: Snap<S>, client_cfg: ClientConfig): void {
         const self_state = snap.get_states()[this.viewer_id];
         if (this.ref_dist == 0) {
             //TODO fix casting
@@ -37,15 +38,24 @@ export class Auditorium<S extends State> implements Frontend<S> {
                 //create missing panners
                 const stream = this.mediaManager.get_audio(id);
                 if (stream != undefined) {
-                    const pa_ctrl = PosAudioCtrl.create_connect_positional_audio(this.audio_ctx, stream, this.ref_dist);
-                    pa_ctrl.set_pos(states[id]);
+                    const pa_ctrl = PosAudioCtrl.create_connect_positional_audio(this.audio_ctx, stream, this.ref_dist);                                        
                     this.pa_ctrls[id] = pa_ctrl;
                 }
             } else {
                 //update position of existing panners
-                const pa_ctrl = this.pa_ctrls[id];
-                pa_ctrl.set_pos(states[id]);
             }
+        }
+    }
+
+    private update_player_audio(id: string, state: State, listener_state: State,
+            client_cfg: ClientConfig, maximized: boolean) {
+        const pa_ctrl = this.pa_ctrls[id];
+        if (client_cfg.is_maximized(id)) {
+            pa_ctrl.set_max(listener_state);
+        } else {
+            //TODO fix this cast
+            const state_ec = state as EuclideanCircle;
+            pa_ctrl.set_pos(state_ec.get_pos().get_x(), state_ec.get_pos().get_y());
         }
     }
 

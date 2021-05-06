@@ -60,11 +60,21 @@ export class PosAudioCtrl<S extends State> {
             .connect(this.audio_ctx.destination);
     }
 
-    set_pos(state: State) {
-        //TODO fix this cast
-        const ec = state as EuclideanCircle;
-        this.panner_node.positionX.value = ec.get_pos().get_x();
-        this.panner_node.positionZ.value = ec.get_pos().get_y(); //z is the new y
+    set_pos(x: number, y: number) {
+        this.panner_node.positionX.value = x;
+        this.panner_node.positionZ.value = y; //z is the new y
+    }
+
+    set_max(l_state: State) {
+        // move the panner position a little in front of the listener such that
+        // we can always here people on the podium clearly and from the front
+        // cos & sin of direction construct a small vector in the direction of the listener
+        // TODO fix this cast
+        const l_pos = (l_state as EuclideanCircle).get_pos();
+        const l_dir = (l_state as EuclideanCircle).get_dir();
+        const x = l_pos.get_x() + Math.cos(l_dir);
+        const y = l_pos.get_y() + Math.sin(l_dir);
+        this.set_pos(x, y);
     }
 
 }
