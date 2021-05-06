@@ -40,9 +40,13 @@ export class Auditorium<S extends State> implements Frontend<S> {
                 if (stream != undefined) {
                     const pa_ctrl = PosAudioCtrl.create_connect_positional_audio(this.audio_ctx, stream, this.ref_dist);                                        
                     this.pa_ctrls[id] = pa_ctrl;
+                    const maximized = client_cfg.is_maximized(id);
+                    this.update_player_audio(id, states[id], self_state, client_cfg, maximized);
                 }
             } else {
                 //update position of existing panners
+                const maximized = client_cfg.is_maximized(id);
+                this.update_player_audio(id, states[id], self_state, client_cfg, maximized);
             }
         }
     }
