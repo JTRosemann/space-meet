@@ -14,7 +14,6 @@ type Track = {
 };
 export class MediaManager {
 
-    //TODO initialize fields
     private conf: Conference;
     private jitsi_connect: any;
     private jitsi_conf: any;
@@ -22,7 +21,12 @@ export class MediaManager {
     private loc_tracks: Track[];
     private user_id: string;
     private carrier: CallIDEmitter;
+    private audio_streams: Record<string,MediaStream>;
 
+    /**
+     * Update the conference.
+     * @param conf the updated conference
+     */
     incorporate_update(conf: Conference) {
         this.conf = conf;
     }
@@ -31,24 +35,50 @@ export class MediaManager {
         this.conf = conf;
         this.user_id = user_id;
         this.carrier = carrier;
+        this.audio_streams = {};
         this.init_jitsi();
     }
 
+    /**
+     * Get the HTMLVideoElement corresponding to this id, if any. Undefined otherwise.
+     * @param id of the requested video
+     * @returns the video corresponding to `id`
+     */
     get_video(id: string) : HTMLVideoElement {
-        return document.getElementById('vid' + this.conf.get_cid(id)) as HTMLVideoElement;
+        const call_id = this.conf.get_cid(id);
+        if (call_id != undefined) {
+            const vid_jQ = $(`#vid${call_id}`);
+            if (vid_jQ != undefined) {
+                return vid_jQ[0] as HTMLVideoElement;
+            }
+        }
+        return undefined;
     }
 
+    /**
+     * Get the audio MediaStream corresponding to this id, if any. Undefined otherwise.
+     * @param id of the requested audio
+     * @returns the audio MediaStream corresponding to `id`
+     */
     get_audio(id: string) {
-
+        const call_id = this.conf.get_cid(id);
+        return call_id == undefined 
+            ? undefined 
+            : this.audio_streams[this.conf.get_cid(id)];
     }
 
+    /**
+     * Initialize the Jitsi conference.
+     * This starts the the process to join the conference given in `this.conf`.
+     * The actual joining takes places two callbacks later.
+     */
     init_jitsi() {
         const init_opt = {};
         const connect_opt = {
         hosts: {
             domain: 'meet.jit.si',
             muc: 'conference.meet.jit.si'
-        },//TODO change to game id
+        },
             serviceUrl: '//meet.jit.si/http-bind?room=' + this.conf.get_conf_id(),
             // The name of client node advertised in XEP-0115 'c' stanza
             clientNode: 'meet.jit.si'
@@ -78,7 +108,10 @@ export class MediaManager {
             .catch((error: Error) => console.log(error)); // 'desktop' for screensharing
     }
 
-    on_connection_success() {
+    /**
+     * If a connection could successfully established we can join a conference.
+     */
+    private on_connection_success() {
         console.log('onConnectionSuccess');
         const conf_opt = { openBridgeChannel: true };
         // initialize the conference
@@ -98,43 +131,42 @@ export class MediaManager {
         this.jitsi_conf.join();
     }
 
-    on_remote_track(track: Track) {
+    /**
+     * Handle a newly surfacing remote track.
+     * @param track the new remote track
+     */
+    private on_remote_track(track: Track) {
         if (track.isLocal()) {
             return;
         }
-        const p_id = track.getParticipantId();
-        const sid = this.conf.get_sid(p_id);
+        const call_id = track.getParticipantId();
+        // we add audio & indexed by call_id, because sio_id may not be available it the time
         if (track.getType() == 'audio') {
-            // if there is a player with a matching id, add the audio track
-            // FIXME: what if this client retrieves the audio track before it sees the player ? we have to fire init audio also on push_player
-            //this.audio_tracks.push(track.stream, this.audio_ctx, sid);
-            // this.add_audio_track(track.stream, this.audio_ctx, sid);
+            this.audio_streams[call_id] = track.stream;
         } else if (track.getType() == 'video') {
-            if (sid != undefined) {
-                const vid  = $(`<video autoplay='1' id='vid${p_id}' style='position:absolute; left:0; top:0;' />`);
-                $('#hide').append(vid);
-                track.attach(vid[0]);
-            }
+            const vid  = $(`<video autoplay='1' id='vid${call_id}' style='position:absolute; left:0; top:0;' />`);
+            $('#hide').append(vid);
+            track.attach(vid[0]);
         }
     }
 
-    on_user_left(id: string) {
+    private on_user_left(id: string) {
         const left_vid = $(`#vid${id}`);
         if (left_vid) {
             left_vid.remove();
         }
     }
 
-    on_connection_failed = function() {
+    private on_connection_failed() {
         console.warn('onConnectionFailed');
     }
 
-    on_conference_joined() {
+    private on_conference_joined() {
         this.joined_jitsi = true;
         this.add_all_loc_tracks();
     }
 
-    add_all_loc_tracks() {
+    private add_all_loc_tracks() {
         if (this.joined_jitsi) {
             for (const track of this.loc_tracks) {
                 this.jitsi_conf.addTrack(track);
@@ -142,12 +174,9 @@ export class MediaManager {
         }
     }
     
-    on_local_tracks(tracks: Track[]) {
+    private on_local_tracks(tracks: Track[]) {
         this.loc_tracks = tracks;
         this.add_all_loc_tracks();
     }
 
-    add_audio_track(stream: MediaStream, audio_ctx: AudioContext, id: string) {
-        
-    }
 }
