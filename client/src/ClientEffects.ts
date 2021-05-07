@@ -1,7 +1,7 @@
 import { PresentationConfig } from "../../common/src/PresentationConfig";
 
 
-export class ClientConfig implements PresentationConfig {
+export class ClientEffects implements PresentationConfig {
 
     private muted: string[] = [];
     private maximized: string[] = [];

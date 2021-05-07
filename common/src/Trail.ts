@@ -116,10 +116,9 @@ export class Trail<S extends State> {
      * @param time timestamp when `new_state` is reached 
      */
     push_mark(new_state: S, time: number): void {
-        if (this.marks.latest()[1] < time) {
+        if (this.marks.latest()[1] <= time) {
             this.marks.enqueue([new_state, time]);
         } else {
-            //TODO should this really make the server crash?
             console.warn("trying to change history");
         }
     }

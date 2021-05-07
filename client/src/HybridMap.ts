@@ -11,7 +11,7 @@ import { EuclideanVector } from "../../common/src/EuclideanVector";
 import { ArrowShape } from "./ArrowShape";
 import { JitsiProjectable } from "./JitsiProjectable";
 import { Projectable } from "./Projectable";
-import { ClientConfig } from "./ClientConfig";
+import { ClientEffects } from "./ClientEffects";
 
 export class HybridMap implements Frontend<EuclideanCircle> {
 
@@ -32,7 +32,6 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         //Adjust viewport size
         viewport.width = viewport.offsetWidth;
         viewport.height = viewport.offsetHeight;
-        console.warn("HybridMap doesn't apply effectors");//TODO fix this
     }
 
     /**
@@ -41,7 +40,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
      * - render a the videos as bubbles around the player
      * @param snap snap to render
      */
-    render(snap: Snap<EuclideanCircle>, client_cfg: ClientConfig): void {
+    render(snap: Snap<EuclideanCircle>, client_cfg: ClientEffects): void {
         //MAYDO find a better way (generalize over physics?) 
         const eu_snap = snap as EuclideanCircleSnap;
 
@@ -160,7 +159,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
      * @param sqrt boolean flag to indicate how to compute the radius from the distance.
      */
      private draw_positional_projections(ctx: CanvasRenderingContext2D, snap: Snap<EuclideanCircle>,
-            width: number, sqrt: boolean, client_cfg: ClientConfig) {
+            width: number, sqrt: boolean, client_cfg: ClientEffects) {
         const self_state = snap.get_player_state(this.viewer_id);
         // order projectables in reverse order with respect to distance, i.e. furthest first
         let players : [string,EuclideanCircle][] = [];

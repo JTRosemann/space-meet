@@ -1,5 +1,4 @@
 import { CarrierClient, FullUpdateData, PongData, ResponderClient } from "../../common/src/protocol";
-import { Debugger } from "./Debugger";
 import { FrontEnd as Frontend } from "./Frontend";
 import * as sio from 'socket.io-client';
 import { HybridMap } from "./HybridMap";
@@ -12,9 +11,10 @@ import { ArrowInputProcessor } from "./ArrowInputProcessor";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { Timer } from "./Timer";
 import { Conference } from "../../common/src/Conference";
-import { Effector } from "../../common/src/Effector";
 import { Snap } from "../../common/src/Snap";
-import { ClientConfig } from "./ClientConfig";
+import { ClientEffects } from "./ClientEffects";
+import * as dat from 'dat.gui';
+import { Debugger } from "./Debugger";
 
 /**
  * This class represents a client UI.
@@ -23,9 +23,7 @@ import { ClientConfig } from "./ClientConfig";
  */
 export class ClientInstance implements ResponderClient<EuclideanCircle> {
 
-    private static offset = 100//ms
-    private static offset_self = 500//ms
-    private static ping_interval = 20//ms
+    private static ping_interval = 100//ms
 
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
@@ -47,9 +45,9 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
             this.debugger = new Debugger();
         }
         this.viewport = viewport;
-        this.connect_to_server();
-        this.timer = new Timer();
+        this.timer = new Timer(this.debugger);
         this.my_id = '';
+        this.connect_to_server();
     }
 
     /**
@@ -60,14 +58,14 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         const socket = sio.connect();
         console.log('Connect to server with id ' + socket.id)// here we don't know the id yet
         this.carrier = new CarrierClient(socket, this);
-        console.warn("Ping timer disabled");//TODO fix ping
         console.warn("client prediction disabled");
-        //window.setInterval(this.ping_server.bind(this), ClientInstance.ping_interval);
+        this.ping_server();
     }
 
     private ping_server() {
         const ping = this.timer.get_server_time();
         this.carrier.emit_ping(ping);
+        window.setTimeout(this.ping_server.bind(this), ClientInstance.ping_interval);
     }
 
     /**
@@ -114,13 +112,13 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      */
     run() {
         //FIXME when tbuf is directly dependent of the lag, a change in the lag may reverse time
-        const tbuf = ClientInstance.offset + this.timer.get_lag();
         const server_time = this.timer.get_server_time();
+        const self_time = this.timer.get_self_time();
+        const others_time = this.timer.get_others_time();
         // read the input and distribute it
         this.read_sync_input(server_time);
         // select a snapshot to render
-        const snap = this.view_selector.select_view(server_time - tbuf, 
-                                                    server_time - ClientInstance.offset_self);
+        const snap = this.view_selector.select_view(others_time, self_time);
         // render the chosen snapshot of the simulation
         const client_cfg = this.create_client_config(snap);
         this.videoFrontend.render(snap, client_cfg);
@@ -131,7 +129,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
 
     private create_client_config(snap: Snap<EuclideanCircle>) {
         const effs = snap.get_effectors();
-        const client_cfg = new ClientConfig();
+        const client_cfg = new ClientEffects();
         effs.forEach(eff => {
             eff.provoke(client_cfg, snap);
         });

@@ -4,7 +4,7 @@ import { Snap } from "../../common/src/Snap";
 import { State } from "../../common/src/State";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { PosAudioCtrl } from "./PosAudioCtrl";
-import { ClientConfig } from "./ClientConfig";
+import { ClientEffects } from "./ClientEffects";
 
 export class Auditorium<S extends State> implements Frontend<S> {
     
@@ -20,10 +20,9 @@ export class Auditorium<S extends State> implements Frontend<S> {
         this.viewer_id = viewer_id;
         this.audio_ctx = new AudioContext();
         this.listener = this.audio_ctx.listener;
-        console.warn("Auditorium doesn't support effectors");
     }
 
-    render(snap: Snap<S>, client_cfg: ClientConfig): void {
+    render(snap: Snap<S>, client_cfg: ClientEffects): void {
         const self_state = snap.get_states()[this.viewer_id];
         if (this.ref_dist == 0) {
             //TODO fix casting
@@ -52,7 +51,7 @@ export class Auditorium<S extends State> implements Frontend<S> {
     }
 
     private update_player_audio(id: string, state: State, listener_state: State,
-            client_cfg: ClientConfig, maximized: boolean) {
+            client_cfg: ClientEffects, maximized: boolean) {
         const pa_ctrl = this.pa_ctrls[id];
         if (client_cfg.is_maximized(id)) {
             pa_ctrl.set_max(listener_state);

@@ -70,6 +70,7 @@ export interface CallIDEmitter {
 }
 
 export class CarrierClient<S extends State> implements CallIDEmitter {
+    static fake_lag = 0;
     private socket: io.Socket; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient<S>) {
         this.socket = socket;
@@ -103,7 +104,11 @@ export class CarrierClient<S extends State> implements CallIDEmitter {
             console.log('SEND ' + key);
             console.log(data);
         }
-        this.socket.emit(key, (data));
+        if (CarrierClient.fake_lag > 0) {
+            window.setTimeout(() => this.socket.emit(key,data), CarrierClient.fake_lag);
+        } else {
+            this.socket.emit(key, (data));
+        }
     }
 }
 
