@@ -17,7 +17,6 @@ export class GameServer<S extends State> {
     private server: io.Server;
     private conf: Conference;
     private id: string;
-    private update_loop_interval: NodeJS.Timeout;
 
     constructor(init_sim: ServerSimulation<S>, id: string, carrier: CarrierServer<S>, sio: io.Server) {
         this.sim = init_sim;// starts timer & update_physics loop

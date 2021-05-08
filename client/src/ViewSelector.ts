@@ -14,6 +14,9 @@ import { Queue } from "../../common/src/Queue";
  * Here only geometric information is handled - not the respective media.
  */
 export class ViewSelector<S extends State> {
+
+    static client_prediction: boolean = false;
+
     private simulation: ClientSimulation<S>;
     private viewer_id: string;
     private client_inputs: Queue<ParsedInput>;
@@ -35,10 +38,11 @@ export class ViewSelector<S extends State> {
      * @param input to register for client prediction
      */
     register_input(input: ParsedInput, server_time: number) : void {
-        return;
-        const new_state = this.simulation.interpret_input(this.viewer_id, input);
-        const end_time = input.start + input.duration;
-        this.client_inputs.enqueue(input);
+        if (ViewSelector.client_prediction) {
+            const new_state = this.simulation.interpret_input(this.viewer_id, input);
+            const end_time = input.start + input.duration;
+            this.client_inputs.enqueue(input);
+        }
     }
 
     /**
@@ -47,10 +51,11 @@ export class ViewSelector<S extends State> {
      * @returns the resulting state
      */
     private replay_inputs(snap: Snap<S>, time_base: number, time_self: number) : void {
-        while (this.client_inputs.inhabited() && this.client_inputs.peek().start <= time_base) {
+        while (this.client_inputs.inhabited() && this.client_inputs.peek().start < time_base) {
             this.client_inputs.dequeue();
         }
         if (this.client_inputs.inhabited()) {
+            // this.client_inputs.peek().start >= time_base
             const inps = this.client_inputs.peek_all();
             for (let i = 0; i < inps.length; i++) {
                 const end_time = inps[i].start + inps[i].duration;
@@ -85,7 +90,9 @@ export class ViewSelector<S extends State> {
         // MAYDO it would be better to first overwrite self position with most recent position from server
         //        - and only apply inputs after that
         // for now: apply all inputs between `time_others` and `time_self`
-        //this.replay_inputs(snap, time_others, time_self);
+        if (ViewSelector.client_prediction) {
+            this.replay_inputs(snap, time_others, time_self);
+        }
         // return smoothened & predicted snap
         return snap;
     }

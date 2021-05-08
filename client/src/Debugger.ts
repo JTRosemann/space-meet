@@ -2,6 +2,7 @@ import * as dat from 'dat.gui';
 import { CarrierClient } from '../../common/src/protocol';
 import { ClientInstance } from './ClientInstance';
 import { Timer } from './Timer';
+import { ViewSelector } from './ViewSelector';
 
 export class Debugger {
 
@@ -19,6 +20,7 @@ export class Debugger {
         this.client_debug.add(CarrierClient, 'fake_lag');
         this.client_debug.add(Timer, 'timer_cache_size');
         this.client_debug.add(Timer, 'timer_max_diff');
+        this.client_debug.add(ViewSelector, 'client_prediction');
         this.monitor = this.debugui.addFolder('monitor');
         this.monitor.open();
     }

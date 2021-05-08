@@ -111,7 +111,6 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Produce a snap of the simulation and hit the frontends to render it.
      */
     run() {
-        //FIXME when tbuf is directly dependent of the lag, a change in the lag may reverse time
         const server_time = this.timer.get_server_time();
         const self_time = this.timer.get_self_time();
         const others_time = this.timer.get_others_time();

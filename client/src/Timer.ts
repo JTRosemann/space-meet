@@ -49,13 +49,13 @@ export class Timer {
     }
 
     get_self_time() : number {
-        const self_time = Math.max(this.last_self_time, Date.now() + this.diff + Timer.offset_self);
+        const self_time = Math.max(this.last_self_time, Date.now() + this.diff - Timer.offset_self);
         this.last_self_time = self_time;
         return self_time;
     }
 
     get_others_time() : number {
-        const others_time = Math.max(this.last_others_time, Date.now() + this.diff + Timer.offset_others);
+        const others_time = Math.max(this.last_others_time, Date.now() + this.diff - Timer.offset_others);
         this.last_others_time = others_time;
         return others_time;
     }
