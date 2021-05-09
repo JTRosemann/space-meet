@@ -4,6 +4,8 @@ export interface ConferenceData {
     call_ids: Record<string,string>
 }
 
+export type VideoMap = Record<string,string>;
+
 /**
  * This class represents a Jitsi Conference.
  * It has an id and a table that associates player ids with their call ids.
