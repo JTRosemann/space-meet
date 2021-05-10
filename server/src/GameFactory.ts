@@ -1,9 +1,9 @@
-import * as UUID from 'uuid';
 import { EuclideanCircle } from '../../common/src/EuclideanCircle';
 import { EuclideanCircleSnap } from '../../common/src/EuclideanCircleSnap';
 import { EuclideanStepPhysics } from '../../common/src/EuclideanStepPhysics';
 import { EuclideanVector } from '../../common/src/EuclideanVector';
 import { Podium } from '../../common/src/Podium';
+import { Trail, TrailFactory } from '../../common/src/Trail';
 import { ServerSimulation } from './ServerSimulation';
 
 export class GameFactory {
@@ -19,7 +19,14 @@ export class GameFactory {
         const phy = new EuclideanStepPhysics(
             GameFactory.std_mv_speed, GameFactory.std_trn_speed, 15, 10
         );
-        const g = new ServerSimulation({}, [p], phy, GameFactory.x_plus_2)
+        const players : Record<string,Trail<EuclideanCircle>> = {};
+        if (true) {
+            const pos = EuclideanVector.create_cartesian(3, 3);
+            const state = EuclideanCircle.create_from_pos_dir_rad(pos, 1, 0);
+            const trail = (new TrailFactory<EuclideanCircle>()).create_singleton_trail(state, 0);
+            players['dogs'] = trail;
+        }
+        const g = new ServerSimulation(players, [p], phy, GameFactory.x_plus_2)
         return g;
     }
 

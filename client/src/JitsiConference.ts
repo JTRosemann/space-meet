@@ -63,9 +63,14 @@ export class JitsiConference implements MediaManagerI<Conference> {
      */
     get_audio(id: string, audio_ctx: AudioContext) {
         const call_id = this.conf.get_cid(id);
-        return call_id == undefined
-            ? undefined
-            : audio_ctx.createMediaStreamSource(this.audio_streams[this.conf.get_cid(id)]);
+        if (call_id == undefined) {
+            return undefined;
+        }
+        const stream = this.audio_streams[call_id];
+        if (stream == undefined) {
+            return undefined;
+        }
+        return audio_ctx.createMediaStreamSource(stream);
     }
 
     /**

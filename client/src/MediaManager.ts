@@ -45,5 +45,6 @@ export class MediaManager implements MediaManagerI<RessourceMap> {
      */
     incorporate_update(res_map: RessourceMap) {
         this.j_conf.incorporate_update(res_map.get_conf());
+        this.direct_vid.incorporate_update(res_map.get_vid_map());
     }
 }
