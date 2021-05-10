@@ -35,9 +35,9 @@ export class Auditorium<S extends State> implements Frontend<S> {
         for (let id of Object.keys(states)) {
             if (this.pa_ctrls[id] == undefined) {
                 //create missing panners
-                const stream = this.mediaManager.get_audio(id);
-                if (stream != undefined) {
-                    const pa_ctrl = PosAudioCtrl.create_connect_positional_audio(this.audio_ctx, stream, this.ref_dist);                                        
+                const audio_src = this.mediaManager.get_audio(id, this.audio_ctx);
+                if (audio_src != undefined) {
+                    const pa_ctrl = PosAudioCtrl.create_connect_positional_audio(this.audio_ctx, audio_src, this.ref_dist);                                        
                     this.pa_ctrls[id] = pa_ctrl;
                     const maximized = client_cfg.is_maximized(id);
                     this.update_player_audio(id, states[id], self_state, client_cfg, maximized);

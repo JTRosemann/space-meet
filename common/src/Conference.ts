@@ -1,17 +1,10 @@
 
-export interface ConferenceData {
-    conf_id: string;
-    call_ids: Record<string,string>
-}
-
-export type VideoMap = Record<string,string>;
-
 /**
  * This class represents a Jitsi Conference.
  * It has an id and a table that associates player ids with their call ids.
  */
 export class Conference {
-    static establish(conf: ConferenceData) {
+    static establish(conf: Conference) {
         return new this(conf.conf_id, conf.call_ids);
     }
 
@@ -52,7 +45,7 @@ export class Conference {
      * @param sid socket.io ID
      * @param cid call_id
      */
-    set_cid(sid: string, cid: string) {
+    set_call_id(sid: string, cid: string) {
         this.call_ids[sid] = cid;
     }
 
@@ -70,12 +63,5 @@ export class Conference {
      */
     rm_player(id: string) {
         delete this.call_ids[id];
-    }
-
-    to_data() : ConferenceData {
-        return {
-            conf_id: this.conf_id,
-            call_ids: this.call_ids
-        }
     }
 }

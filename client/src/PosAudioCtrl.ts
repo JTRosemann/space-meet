@@ -1,11 +1,12 @@
 import { State } from "../../common/src/State";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
+import { AudioSourceNode } from "./MediaManagerI";
 
 
 export class PosAudioCtrl<S extends State> {
 
     private audio_ctx: AudioContext;
-    private track: MediaStreamAudioSourceNode;
+    private track: AudioSourceNode;
     private gain_node: GainNode;
     private stereo_panner: StereoPannerNode;
     private panner_node: PannerNode;
@@ -34,17 +35,16 @@ export class PosAudioCtrl<S extends State> {
         return panner;
     }
 
-    static create_connect_positional_audio(audio_ctx: AudioContext, stream: MediaStream, ref_dist: number) {
+    static create_connect_positional_audio(audio_ctx: AudioContext, audio_src: AudioSourceNode, ref_dist: number) {
         const gain_node = audio_ctx.createGain();
         const stereo_panner = new StereoPannerNode(audio_ctx, { pan: 0 });
-        const track = audio_ctx.createMediaStreamSource(stream);
         const panner = PosAudioCtrl.create_default_pannernode(audio_ctx, ref_dist);
-        const audio_ctrl = new PosAudioCtrl(audio_ctx, track, gain_node, stereo_panner, panner);
+        const audio_ctrl = new PosAudioCtrl(audio_ctx, audio_src, gain_node, stereo_panner, panner);
         audio_ctrl.set_pos_connection();
         return audio_ctrl;
     }
 
-    constructor(audio_ctx: AudioContext, track: MediaStreamAudioSourceNode, gain_node: GainNode,
+    constructor(audio_ctx: AudioContext, track: AudioSourceNode, gain_node: GainNode,
         stereo_panner: StereoPannerNode, panner_node: PannerNode) {
         this.audio_ctx = audio_ctx;
         this.track = track;

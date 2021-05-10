@@ -10,12 +10,13 @@ import * as io from 'socket.io';
 import { Conference } from '../../common/src/Conference';
 import { ServerSimulation } from './ServerSimulation';
 import { State } from '../../common/src/State';
+import { RessourceMap } from '../../common/src/RessourceMap';
 
 export class GameServer<S extends State> {
     private sim: ServerSimulation<S>;
     private carrier: CarrierServer<S>;
     private server: io.Server;
-    private conf: Conference;
+    private res_map: RessourceMap;
     private id: string;
 
     constructor(init_sim: ServerSimulation<S>, id: string, carrier: CarrierServer<S>, sio: io.Server) {
@@ -23,7 +24,8 @@ export class GameServer<S extends State> {
         this.id = id;
         this.carrier = carrier;
         this.server = sio;
-        this.conf = new Conference(id);
+        const conf = new Conference(id);
+        this.res_map = new RessourceMap(conf, {});
     }
 
     /**
@@ -37,7 +39,7 @@ export class GameServer<S extends State> {
         //about that as well, so it can remove from the game they are
         //in, and make sure the other player knows that they left and so on.
         this.sim.rm_player(client.id);
-        this.conf.rm_player(client.id);
+        this.res_map.rm_player(client.id);
     }
     
     /**
@@ -59,7 +61,7 @@ export class GameServer<S extends State> {
     push_client(client: sio.Socket, time: number) {
         const p_id = client.id;
         this.sim.add_player(p_id, time);
-        this.conf.set_cid(p_id, '');
+        this.res_map.set_call_id(p_id, '');
     }
 
     /**
@@ -69,7 +71,7 @@ export class GameServer<S extends State> {
      */
     on_update_cid(client: sio.Socket, cid: string) {
         console.log('update cid');
-        this.conf.set_cid(client.id, cid);
+        this.res_map.set_call_id(client.id, cid);
     }
 
     /**
@@ -80,8 +82,7 @@ export class GameServer<S extends State> {
         //Send the current state of simulation to clients
         const data = {
             sim: this.sim.to_data(),
-            time: server_time,
-            conf: this.conf.to_data()
+            res_map: this.res_map
         }
         this.carrier.emit_update(this.server, data);
         //console.warn("memory leak");

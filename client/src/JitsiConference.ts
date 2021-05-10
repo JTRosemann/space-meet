@@ -1,5 +1,6 @@
 import { Conference } from "../../common/src/Conference";
 import { CallIDEmitter } from "../../common/src/protocol";
+import { MediaManagerI } from "./MediaManagerI";
 
 declare const JitsiMeetJS : any;
 
@@ -12,7 +13,7 @@ type Track = {
     attach: (arg0: HTMLElement) => void; 
     dispose: () => any;
 };
-export class JitsiConference {
+export class JitsiConference implements MediaManagerI<Conference> {
 
     private conf: Conference;
     private jitsi_connect: any;
@@ -60,11 +61,11 @@ export class JitsiConference {
      * @param id of the requested audio
      * @returns the audio MediaStream corresponding to `id`
      */
-    get_audio(id: string) {
+    get_audio(id: string, audio_ctx: AudioContext) {
         const call_id = this.conf.get_cid(id);
         return call_id == undefined
             ? undefined
-            : this.audio_streams[this.conf.get_cid(id)];
+            : audio_ctx.createMediaStreamSource(this.audio_streams[this.conf.get_cid(id)]);
     }
 
     /**
@@ -125,7 +126,7 @@ export class JitsiConference {
         this.jitsi_conf.on(JitsiMeetJS.events.conference.USER_LEFT,
             this.on_user_left.bind(this));
         const cid = this.jitsi_conf.myUserId();
-        this.conf.set_cid(this.user_id, cid);
+        this.conf.set_call_id(this.user_id, cid);
         this.carrier.emit_call_id(cid);
 
         this.jitsi_conf.join();

@@ -4,7 +4,8 @@ const JSONIFY = false; // this is exactly what is done anyway:
 //https://stackoverflow.com/questions/37512304/send-object-in-socket-io
 
 import * as io from 'socket.io';
-import { ConferenceData } from './Conference';
+import { Conference } from './Conference';
+import { RessourceMap } from './RessourceMap';
 import { SimulationData } from "./Simulation";
 import { State } from './State';
 
@@ -54,8 +55,7 @@ export type PongData = [number, number];
 
 export interface FullUpdateData<S extends State> {
     sim: SimulationData<S>;
-    conf: ConferenceData;
-    time: number;
+    res_map: RessourceMap;
 }
 
 export interface ResponderClient<S extends State> {

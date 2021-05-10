@@ -1,6 +1,7 @@
-import { VideoMap } from "../../common/src/Conference";
+import { VideoMap } from "../../common/src/RessourceMap";
+import { MediaManagerI } from "./MediaManagerI";
 
-export class DirectVideoRsrcs {
+export class DirectVideoRsrcs implements MediaManagerI<VideoMap> {
 
     private vid_map: VideoMap;
 
@@ -8,14 +9,18 @@ export class DirectVideoRsrcs {
         this.vid_map = vid_map;
     }
 
-    get_audio(id: string) : MediaStream {
+    get_audio(id: string, audio_ctx: AudioContext) : MediaElementAudioSourceNode {
         const vid = this.get_video(id);
-        const track = (new AudioContext()).createMediaElementSource(vid);
-        //TODO fix interface: returning MediaElementAudioSourceNode is the more generic way
-        throw new Error("Method not implemented");
+        return audio_ctx.createMediaElementSource(vid);
     }
+
     get_video(id: string): HTMLVideoElement {
         throw new Error("Method not implemented.");
+    }
+
+    incorporate_update(vid_map: VideoMap) {
+        //TODO fix initialization of video elements
+        this.vid_map = vid_map;
     }
 
 }

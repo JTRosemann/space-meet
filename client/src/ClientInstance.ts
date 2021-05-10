@@ -13,8 +13,8 @@ import { Timer } from "./Timer";
 import { Conference } from "../../common/src/Conference";
 import { Snap } from "../../common/src/Snap";
 import { ClientEffects } from "./ClientEffects";
-import * as dat from 'dat.gui';
 import { Debugger } from "./Debugger";
+import { RessourceMap } from "../../common/src/RessourceMap";
 
 /**
  * This class represents a client UI.
@@ -75,8 +75,9 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      */
     private init_core(data: FullUpdateData<EuclideanCircle>) {
         this.simulation = ClientSimulation.establish(data.sim);
+        const res_map = RessourceMap.establish(data.res_map);
         this.my_id = this.carrier.get_id();
-        this.media_manager = new MediaManager(Conference.establish(data.conf), this.my_id, this.carrier);
+        this.media_manager = new MediaManager(res_map, this.my_id, this.carrier);
         this.in_proc = new ArrowInputProcessor(
             this.simulation.get_latest_state_time(this.my_id));
         this.view_selector = new ViewSelector(this.simulation, this.my_id);
@@ -156,7 +157,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
             this.init_frontends();
         } else {
             this.simulation.incorporate_update(data.sim);
-            this.media_manager.incorporate_update(Conference.establish(data.conf));
+            this.media_manager.incorporate_update(RessourceMap.establish(data.res_map));
         }
     }
 
