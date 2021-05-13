@@ -19,11 +19,24 @@ export class DirectVideoRsrcs implements MediaManagerI<VideoMap> {
     }
 
     get_video(id: string): HTMLVideoElement {
-        const vid_jQ = $(`#vid${id}`);
-        if (vid_jQ != undefined) {
-            return vid_jQ[0] as HTMLVideoElement;
+        const src = this.vid_map[id];
+        if (src != undefined) {
+            const vid_jQ = $(`#vid${id}`);
+            if (vid_jQ.length > 0) {
+                return vid_jQ[0] as HTMLVideoElement;
+            } else {
+                this.init_video(id, src);
+                const vid_jQ2 = $(`#vid${id}`);
+                if (vid_jQ2.length > 0) {
+                    return vid_jQ[0] as HTMLVideoElement;
+                } else {
+                    console.warn('Failure in video retrival of id ' + id + ' with src ' + src);
+                    return undefined;
+                }
+            }
+        } else {
+            return undefined;
         }
-        return undefined;
     }
 
     incorporate_update(new_map: VideoMap) {
@@ -34,16 +47,11 @@ export class DirectVideoRsrcs implements MediaManagerI<VideoMap> {
                 target.remove();
             }
         }
-        for (let k of Object.keys(new_map)) {
-            const target = $(`#vid${k}`);
-            if (target.length == 0 && this.vid_map[k] != undefined) {
-                const src = this.vid_map[k];
-                const vid = $(`<video autoplay='true' id='vid${k}' style='position:absolute; left:0; top:0;' src='${src}'/>`);
-                $('#hide').append(vid);
-                (vid[0] as HTMLVideoElement).muted = false;
-            }
-        }
         this.vid_map = new_map;
     }
 
+    private init_video(id: string, src: string) {
+        const vid = $(`<video crossOrigin='anonymous' autoplay='true' id='vid${id}' style='position:absolute; left:0; top:0;' src='${src}'/>`);
+        $('#hide').append(vid);
+    }
 }

@@ -22,9 +22,9 @@ export class GameFactory {
         const players : Record<string,Trail<EuclideanCircle>> = {};
         if (true) {
             const pos = EuclideanVector.create_cartesian(3, 3);
-            const state = EuclideanCircle.create_from_pos_dir_rad(pos, 1, 0);
+            const state = EuclideanCircle.create_from_pos_dir_rad(pos, 0.5, 0);
             const trail = (new TrailFactory<EuclideanCircle>()).create_singleton_trail(state, 0);
-            players['dogs'] = trail;
+            players['goats'] = trail;
         }
         const g = new ServerSimulation(players, [p], phy, GameFactory.x_plus_2)
         return g;

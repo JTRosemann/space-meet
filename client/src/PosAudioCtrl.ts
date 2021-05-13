@@ -45,7 +45,7 @@ export class PosAudioCtrl<S extends State> {
     }
 
     constructor(audio_ctx: AudioContext, track: AudioSourceNode, gain_node: GainNode,
-        stereo_panner: StereoPannerNode, panner_node: PannerNode) {
+            stereo_panner: StereoPannerNode, panner_node: PannerNode) {
         this.audio_ctx = audio_ctx;
         this.track = track;
         this.gain_node = gain_node;

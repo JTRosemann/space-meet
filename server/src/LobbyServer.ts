@@ -31,7 +31,10 @@ export class LobbyServer implements ResponderServer {
         const game = GameFactory.create_podium_game();
         //TODO fix the factory setup or create a media Factory
         //const vid_map = {dogs: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv'};
-        const vid_map = {dogs: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv.480p.vp9.webm'};
+        const vid_map = {
+            dogs: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv.480p.vp9.webm',
+            goats: 'https://upload.wikimedia.org/wikipedia/commons/d/dd/Goats_in_Sunnyvale.webm'
+        };
         this.simS = new GameServer(game, vid_map, id, this.carrier, sio);
     }
 

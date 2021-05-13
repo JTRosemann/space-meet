@@ -30,6 +30,7 @@ export class Auditorium<S extends State> implements Frontend<S> {
             // even if self diameter changes, the ref_distance does not
             this.ref_dist = (self_state as unknown as EuclideanCircle).get_rad() * 2;
         }
+        // TODO fix handling removal
         this.set_listener_pos(self_state);
         const states = snap.get_states();
         for (let id of Object.keys(states)) {
