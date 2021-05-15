@@ -8,7 +8,7 @@ export class RessourceMap {
     }
 
     private conf: Conference;
-    private vid_map: VideoMap;
+    protected vid_map: VideoMap;
 
     constructor(conf: Conference, vid_map: VideoMap) {
         this.conf = conf;
@@ -17,6 +17,10 @@ export class RessourceMap {
 
     get_conf(): Conference {
         return this.conf;
+    }
+
+    set_conf(conf: Conference) {
+        this.conf = conf;
     }
 
     set_call_id(p_id: string, c_id: string) {
@@ -32,6 +36,10 @@ export class RessourceMap {
     
     get_vid_map(): VideoMap {
         return this.vid_map;
+    }
+
+    set_vid(id: string, src: string): void {
+        this.vid_map[id] = src;
     }
 
 }

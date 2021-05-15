@@ -12,6 +12,8 @@ import {
 import { GameServer } from './GameServer';
 import { GameFactory } from './GameFactory';
 import { EuclideanCircle } from '../../common/src/EuclideanCircle';
+import { YtVideoMap } from './YtVideoMap';
+import { MediaFactory } from './MediaFactory';
 
 /**
  * Perspectively, this class should
@@ -28,15 +30,9 @@ export class LobbyServer implements ResponderServer {
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
         const id = UUID.v4();
+        const vid_map = MediaFactory.create_std_media(id);
         //const game = GameFactory.create_tables_game(6);
         const game = GameFactory.create_podium_game();
-        //TODO fix the factory setup or create a media Factory
-        //const vid_map = {dogs: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv'};
-        const vid_map = {
-            dogs: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv.480p.vp9.webm',
-            goats: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/Goats_in_Sunnyvale.webm/Goats_in_Sunnyvale.webm.480p.webm',
-            lynxen: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Rustende_lynxen_in_bos-Stichting_Natuurbeelden-172347.webm'
-        };
         this.simS = new GameServer(game, vid_map, id, this.carrier, sio);
     }
 

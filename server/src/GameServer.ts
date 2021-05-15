@@ -7,10 +7,9 @@
 import * as sio from 'socket.io';
 import { CarrierServer, ParsedInput } from '../../common/src/protocol';
 import * as io from 'socket.io';
-import { Conference } from '../../common/src/Conference';
 import { ServerSimulation } from './ServerSimulation';
 import { State } from '../../common/src/State';
-import { RessourceMap, VideoMap } from '../../common/src/RessourceMap';
+import { RessourceMap } from '../../common/src/RessourceMap';
 
 export class GameServer<S extends State> {
     private sim: ServerSimulation<S>;
@@ -19,13 +18,12 @@ export class GameServer<S extends State> {
     private res_map: RessourceMap;
     private id: string;
 
-    constructor(init_sim: ServerSimulation<S>, direct_video: VideoMap, id: string, carrier: CarrierServer<S>, sio: io.Server) {
+    constructor(init_sim: ServerSimulation<S>, res_map: RessourceMap, id: string, carrier: CarrierServer<S>, sio: io.Server) {
         this.sim = init_sim;// starts timer & update_physics loop
         this.id = id;
         this.carrier = carrier;
         this.server = sio;
-        const conf = new Conference(id);
-        this.res_map = new RessourceMap(conf, direct_video);
+        this.res_map = res_map;
     }
 
     /**
