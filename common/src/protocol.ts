@@ -69,7 +69,15 @@ export interface CallIDEmitter {
     emit_call_id(data: CidData) : void;
 }
 
-export class CarrierClient<S extends State> implements CallIDEmitter {
+export interface ServerCfg {
+    update_loop: number;
+}
+
+export interface ServerCfgEmitter {
+    emit_server_cfg(data: ServerCfg) : void;
+}
+
+export class CarrierClient<S extends State> implements CallIDEmitter, ServerCfgEmitter {
     static fake_lag = 0;
     private socket: io.Socket; // SocketIOClient.Socket
     constructor(socket: any, msgC: ResponderClient<S>) {
@@ -96,6 +104,9 @@ export class CarrierClient<S extends State> implements CallIDEmitter {
     emit_ping(data: PingData){
         this.emit('ping', data, false);
     }
+    emit_server_cfg(data: ServerCfg) {
+        this.emit('scfg', data, true);
+    }
     get_id() {
         return this.socket.id;
     }
@@ -118,6 +129,7 @@ export interface ResponderServer {
     on_input(client: io.Socket, data: ParsedInput) : void;
     on_disconnect(client: io.Socket, data: DisconnectData) : void;
     on_ping(client: io.Socket, data: PingData) : void;
+    on_server_cfg(client: io.Socket, data: ServerCfg) : void;
 }
 
 function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
@@ -131,6 +143,7 @@ export class CarrierServer<S extends State> {
         socket.on('input', (curry(msgS.on_input.bind(msgS),socket)));
         socket.on('disconnect', (curry(msgS.on_disconnect.bind(msgS),socket)));
         socket.on('ping', (curry(msgS.on_ping.bind(msgS), socket)));
+        socket.on('scfg', (curry(msgS.on_server_cfg.bind(msgS),socket)));
     }
 
     emit_pong(client: io.Socket, data: PongData) {

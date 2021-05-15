@@ -5,7 +5,8 @@ import {
     ResponderServer,
     DisconnectData,
     PingData,
-    ParsedInput
+    ParsedInput,
+    ServerCfg
 } from '../../common/src/protocol';
 
 import { GameServer } from './GameServer';
@@ -33,26 +34,35 @@ export class LobbyServer implements ResponderServer {
         //const vid_map = {dogs: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv'};
         const vid_map = {
             dogs: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv.480p.vp9.webm',
-            goats: 'https://upload.wikimedia.org/wikipedia/commons/d/dd/Goats_in_Sunnyvale.webm'
+            goats: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/Goats_in_Sunnyvale.webm/Goats_in_Sunnyvale.webm.480p.webm',
+            lynxen: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Rustende_lynxen_in_bos-Stichting_Natuurbeelden-172347.webm'
         };
         this.simS = new GameServer(game, vid_map, id, this.carrier, sio);
+    }
+
+    /** 
+     * Update the server configuration according to client message.
+     */
+    on_server_cfg(_client: io.Socket, data: ServerCfg): void {
+        LobbyServer.update_loop = data.update_loop;
     }
 
     /**
      * Start the update loop, i.e. start repeatedly notifying the clients about the state.
      */
     create_update_loop() {
-        //TODO Remove notify_all & instead call do_update directly with corresponding time arg
-        setInterval(this.notify_all.bind(this), LobbyServer.update_loop);
         console.log('start game ' + this.simS.get_id());
+        this.update();
     }
 
     /**
      * Notify all clients about the state of the game.
      */
-    notify_all() {
+    private update() {
+        //TODO instead call do_update directly with corresponding time arg
         const server_time = Date.now();
         this.simS.do_update(server_time);
+        setTimeout(this.update.bind(this), LobbyServer.update_loop);
     }
 
     /**

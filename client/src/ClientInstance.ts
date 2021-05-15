@@ -37,27 +37,23 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private my_id: string;
     private timer: Timer;
 
-    constructor(viewport: HTMLCanvasElement) {
-        if (String(window.location).indexOf('debug') != -1 ) {
-            // if desired, a debugging UI is created
-            // TODO: the debugger needs access to some interface view of this
-            // TODO: a GUI could be instantiated in a similar way
-            this.debugger = new Debugger();
-        }
-        this.viewport = viewport;
-        this.timer = new Timer(this.debugger);
-        this.my_id = '';
-        this.connect_to_server();
-    }
-
     /**
      * Connect to the server.
      * The own socket ID is only visible after the first server message is witnessed.
      */
-    private connect_to_server() {
+    constructor(viewport: HTMLCanvasElement) {
         const socket = sio.connect();
         console.log('Connect to server with id ' + socket.id)// here we don't know the id yet
         this.carrier = new CarrierClient(socket, this);
+        if (String(window.location).indexOf('debug') != -1 ) {
+            // if desired, a debugging UI is created
+            // TODO: the debugger needs access to some interface view of this
+            // TODO: a GUI could be instantiated in a similar way
+            this.debugger = new Debugger(this.carrier);
+        }
+        this.viewport = viewport;
+        this.timer = new Timer(this.debugger);
+        this.my_id = '';
         console.warn("client prediction disabled");
         this.ping_server();
     }
