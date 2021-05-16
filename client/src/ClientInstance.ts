@@ -23,7 +23,8 @@ import { RessourceMap } from "../../common/src/RessourceMap";
  */
 export class ClientInstance implements ResponderClient<EuclideanCircle> {
 
-    private static ping_interval = 100//ms
+    private static ping_interval = 100;//ms
+    private static input_interval = 91;
 
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
@@ -89,19 +90,25 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
          = new Auditorium<EuclideanCircle>(this.media_manager, this.my_id);
         //start animation loop
         window.requestAnimationFrame(this.run.bind(this));
+        console.log('Start animation loop');
+        // read the input and distribute it
+        this.read_sync_input();
+        console.log('Start listening for inputs');
     }
 
     /**
      * Read input, register it in the ViewSelector and emit it to the server.
      * @returns the read input
      */
-    private read_sync_input(server_time: number) {
+    private read_sync_input() {
+        const server_time = this.timer.get_server_time();
         const input = this.in_proc.fetch_input(server_time);
         //if (input == undefined) return;
         // register input for client prediction
         this.view_selector.register_input(input, server_time);
         // emit input to server
         this.carrier.emit_input(input);
+        window.setTimeout(this.read_sync_input.bind(this), ClientInstance.input_interval);
     }
 
     /**
@@ -111,8 +118,6 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         const server_time = this.timer.get_server_time();
         const self_time = this.timer.get_self_time();
         const others_time = this.timer.get_others_time();
-        // read the input and distribute it
-        this.read_sync_input(server_time);
         // select a snapshot to render
         const snap = this.view_selector.select_view(others_time, self_time);
         // render the chosen snapshot of the simulation

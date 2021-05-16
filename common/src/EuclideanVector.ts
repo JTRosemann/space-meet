@@ -55,6 +55,7 @@ export class EuclideanVector {
 
     /**
      * Get the angle of the polar representation of this vector.
+     * The codomain of this function is an interval of length 2*PI.
      * @returns the angle phi
      */
     get_phi(): number {
@@ -113,7 +114,7 @@ export class EuclideanVector {
      */
     static lin_interpolate(a: number, b: number, frac: number) {
         const g_frac = Math.min(1, Math.max(0, frac));
-        return a * g_frac + (1 - g_frac) * b;
+        return b * g_frac + (1 - g_frac) * a;
     }
 
     /**
@@ -136,7 +137,18 @@ export class EuclideanVector {
      */
     interpolate_polar(other: EuclideanVector, frac: number) : EuclideanVector {
         const   r = EuclideanVector.lin_interpolate(this.get_abs(), other.get_abs(), frac);
-        const phi = EuclideanVector.lin_interpolate(this.get_phi(), other.get_phi(), frac);
+        let t_phi = this.get_phi();
+        let o_phi = other.get_phi();
+        // we want to interpolate the shortest path between two angles,
+        // thus if their radians are e.g. 0 & 3/2*PI, we need to add 2*PI to the smaller angle.
+        // this relies on the fact that two values returned `get_phi()` always have difference < 2*PI
+        if (t_phi - o_phi > Math.PI) {
+            o_phi += 2*Math.PI;
+        }
+        if (o_phi - t_phi > Math.PI) {
+            t_phi += 2*Math.PI;
+        }
+        const phi = EuclideanVector.lin_interpolate(t_phi, o_phi, frac);
         return EuclideanVector.create_polar(r, phi);
     }
 

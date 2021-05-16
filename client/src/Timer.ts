@@ -8,7 +8,7 @@ export class Timer {
     static timer_max_diff : number = 1000;
 
     static offset_self : number = 50;//TODO this is dependent on refresh rate (animationFrame)
-    static offset_others : number = 100;//TODO this is dependent on server updates
+    static offset_others : number = 200;//TODO this is dependent on server updates
 
     private diff : number = 0;
     private lag : number = 0;

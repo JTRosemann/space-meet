@@ -25,10 +25,10 @@ export class GameFactory {
             const state = EuclideanCircle.create_from_pos_dir_rad(pos, 0.5, 0);
             const trail = (new TrailFactory<EuclideanCircle>()).create_singleton_trail(state, 0);
             players['goats'] = trail;
-            const fpos = EuclideanVector.create_cartesian(5, 5);
+            /*const fpos = EuclideanVector.create_cartesian(5, 5);
             const fstate = EuclideanCircle.create_from_pos_dir_rad(fpos, 0.5, 0);
             const ftrail = (new TrailFactory<EuclideanCircle>()).create_singleton_trail(fstate, 0);
-            players['fire'] = ftrail;
+            players['fire'] = ftrail;*/
         }
         const g = new ServerSimulation(players, [p], phy, GameFactory.x_plus_2)
         return g;

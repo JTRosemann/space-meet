@@ -20,6 +20,7 @@ export class Debugger {
         this.client_debug.open();
         this.client_debug.add(Timer, 'offset_others');
         this.client_debug.add(Timer, 'offset_self');
+        this.client_debug.add(ClientInstance, 'input_interval');
         this.client_debug.add(ClientInstance, 'ping_interval');
         this.client_debug.add(CarrierClient, 'fake_lag');
         this.client_debug.add(Timer, 'timer_cache_size');

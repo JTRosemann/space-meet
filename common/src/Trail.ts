@@ -137,7 +137,6 @@ export class Trail<S extends State> {
      * @returns the interpolated state
      */
     state_at_time(time: number): S {
-        //TODO also use peek2 and dequeue older stuff
         while (true) {
             if (this.marks.length() < 2) {
                 //Assume stable position, if no new info is available
