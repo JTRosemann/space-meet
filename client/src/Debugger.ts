@@ -32,7 +32,10 @@ export class Debugger {
         // server
         this.carrier = carrier;
         this.server_debug = this.debugui.addFolder('server');
-        this.server_cfg = { update_loop: 45 }; //TODO purge code duplication (put somewhere in common)
+        this.server_cfg = { 
+            update_loop: 45,
+            fake_lag: 0
+        }; //TODO purge code duplication (put somewhere in common)
         for (let k of Object.keys(this.server_cfg)) {
             // we don't send the server_cfg back from the server (on purpose, only one debugging client supported),
             // so the info may be outdated, if several clients debug

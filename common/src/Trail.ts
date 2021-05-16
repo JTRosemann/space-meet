@@ -48,6 +48,14 @@ export class Trail<S extends State> {
     get_latest_time(): number {
         return this.marks.latest()[1];
     }
+
+    /**
+     * Get the latest state.
+     * @returns the latest state
+     */
+    get_latest_state() : S {
+        return this.marks.latest()[0];
+    }
     
     /**
      * Expose the data of this trail for communication.

@@ -18,12 +18,12 @@ export class ViewSelector<S extends State> {
     static client_prediction: boolean = false;
 
     private simulation: ClientSimulation<S>;
-    private viewer_id: string;
+    private self_id: string;
     private client_inputs: Queue<ParsedInput>;
 
     constructor(simulation: ClientSimulation<S>, viewer_id: string) {
         this.simulation = simulation;
-        this.viewer_id = viewer_id;
+        this.self_id = viewer_id;
         this.client_inputs = new Queue();
     }
 
@@ -39,7 +39,7 @@ export class ViewSelector<S extends State> {
      */
     register_input(input: ParsedInput, server_time: number) : void {
         if (ViewSelector.client_prediction) {
-            const new_state = this.simulation.interpret_input(this.viewer_id, input);
+            const new_state = this.simulation.interpret_input(this.self_id, input);
             const end_time = input.start + input.duration;
             this.client_inputs.enqueue(input);
         }
@@ -51,7 +51,9 @@ export class ViewSelector<S extends State> {
      * @returns the resulting state
      */
     private replay_inputs(snap: Snap<S>, time_base: number, time_self: number) : void {
-        while (this.client_inputs.inhabited() && this.client_inputs.peek().start < time_base) {
+        while (this.client_inputs.inhabited() 
+                && this.client_inputs.peek().start 
+                   + this.client_inputs.peek().duration <= time_base) {
             this.client_inputs.dequeue();
         }
         if (this.client_inputs.inhabited()) {
@@ -60,12 +62,12 @@ export class ViewSelector<S extends State> {
             for (let i = 0; i < inps.length; i++) {
                 const end_time = inps[i].start + inps[i].duration;
                 if (end_time <= time_self) {
-                    snap.interpret_input(this.viewer_id, inps[i], 1);
+                    snap.interpret_input(this.self_id, inps[i], 1);
                 } else {
                     const diff_bef = time_self - inps[i].start;// >= 0
                     const diff_aft = end_time - time_self;// > 0
                     const frac = diff_bef / (diff_bef + diff_aft);// >= 0 & < 1
-                    snap.interpret_input(this.viewer_id, inps[i], frac);
+                    snap.interpret_input(this.self_id, inps[i], frac);
                     break;
                 }
             }
@@ -86,12 +88,17 @@ export class ViewSelector<S extends State> {
         // make a snap at `time_others` in the past
         const snap = this.simulation.interpolate_snap(time_others);
         // clear all older data
-        this.simulation.clear_all_before(time_others);
-        // MAYDO it would be better to first overwrite self position with most recent position from server
-        //        - and only apply inputs after that
-        // for now: apply all inputs between `time_others` and `time_self`
+        this.simulation.clear_all_before(time_others);//MAYDO this shouldn't be necessary anymore
         if (ViewSelector.client_prediction) {
-            this.replay_inputs(snap, time_others, time_self);
+            //TODO this is not correct: we need the latest state BEFORE time_self
+            //TODO but there is also another bug: with enough lag it looks like reverse interpolation
+            // see e.g. offset_others = 600, offset_self = 100, input_interval = 200, fake_lag = 400
+            const self_state = this.simulation.get_latest_player_state(this.self_id);
+            const time_base = this.simulation.get_latest_state_time(this.self_id);
+            // overwrite self position with most recent position from server
+            snap.set_player(this.self_id, self_state);
+            // apply all registered input on that position
+            this.replay_inputs(snap, time_base, time_self);
         }
         // return smoothened & predicted snap
         return snap;

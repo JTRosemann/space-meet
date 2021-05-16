@@ -71,6 +71,7 @@ export interface CallIDEmitter {
 
 export interface ServerCfg {
     update_loop: number;
+    fake_lag: number;
 }
 
 export interface ServerCfgEmitter {
@@ -137,7 +138,7 @@ function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {
 }
 
 export class CarrierServer<S extends State> {
-    
+    static fake_lag: number = 0;
     init_socket(socket: io.Socket, msgS: ResponderServer) {
         socket.on('on_update_cid', (curry(msgS.on_update_cid.bind(msgS),socket)));
         socket.on('input', (curry(msgS.on_input.bind(msgS),socket)));
@@ -159,6 +160,10 @@ export class CarrierServer<S extends State> {
             console.log('SEND ' + key);
             console.log(data);
         }
-        socket.emit(key, (data));
+        if (CarrierServer.fake_lag > 0) {
+            setTimeout(() => socket.emit(key, data), CarrierServer.fake_lag);
+        } else {
+            socket.emit(key, (data));
+        }
     }
 }

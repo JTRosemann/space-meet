@@ -82,6 +82,15 @@ export class ClientSimulation<S extends State>
     }
 
     /**
+     * Get the latest state of player `id`.
+     * @param id id of requested player
+     * @returns latest state of this player
+     */
+    get_latest_player_state(id: string) : S {
+        return this.trails[id].get_latest_state();
+    }
+
+    /**
      * Get the timestamp of the latest state of player `id`.
      * @param id id of requested player
      * @returns latest state time of this player

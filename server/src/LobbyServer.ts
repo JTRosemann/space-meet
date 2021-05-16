@@ -41,6 +41,7 @@ export class LobbyServer implements ResponderServer {
      */
     on_server_cfg(_client: io.Socket, data: ServerCfg): void {
         LobbyServer.update_loop = data.update_loop;
+        CarrierServer.fake_lag = data.fake_lag;
     }
 
     /**
