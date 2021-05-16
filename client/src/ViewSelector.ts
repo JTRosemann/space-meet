@@ -39,8 +39,6 @@ export class ViewSelector<S extends State> {
      */
     register_input(input: ParsedInput, server_time: number) : void {
         if (ViewSelector.client_prediction) {
-            const new_state = this.simulation.interpret_input(this.self_id, input);
-            const end_time = input.start + input.duration;
             this.client_inputs.enqueue(input);
         }
     }

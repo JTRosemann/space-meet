@@ -113,6 +113,7 @@ export class Queue<T> {
      * @returns all elements in the order they were enqueued
      */
     peek_all() : T[] {
-        return this.hd.reverse().concat(this.tl);
+        const clone = this.hd.slice();//.reverse() reverses in-place --> we don't want side-effects here
+        return clone.reverse().concat(this.tl);
     }
 }
