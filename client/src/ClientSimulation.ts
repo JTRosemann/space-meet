@@ -99,4 +99,8 @@ export class ClientSimulation<S extends State>
         return this.trails[id].get_latest_time()
     }
 
+    has_player(id: string) : boolean {
+        return this.trails[id] != undefined;
+    }
+
 }

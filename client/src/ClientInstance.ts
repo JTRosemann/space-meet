@@ -70,14 +70,21 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * This is only possible as soon as we have received the first server update.
      * @param data the data to create the initial simulation etc
      */
-    private init_core(data: FullUpdateData<EuclideanCircle>) {
+    private init(data: FullUpdateData<EuclideanCircle>) {
         this.simulation = ClientSimulation.establish(data.sim);
         const res_map = RessourceMap.establish(data.res_map);
         this.my_id = this.carrier.get_id();
+        if (!this.simulation.has_player(this.my_id)) {
+            // resilience against old messages (due to lag) (actually probably only bc. of fake_lag)
+            // we have to ignore update that don't include us
+            this.my_id = '';
+            return;
+        }
         this.media_manager = new MediaManager(res_map, this.my_id, this.carrier);
         this.in_proc = new ArrowInputProcessor(
             this.simulation.get_latest_state_time(this.my_id));
         this.view_selector = new ViewSelector(this.simulation, this.my_id);
+        this.init_frontends();
     }
 
     /**
@@ -154,8 +161,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
             //   (c) data for conference (conference id)
             // a & b together form the simulation on server & client: same datastructure, different methods to access them
             //core initialization includes incorporating the update in simulation & media_manager
-            this.init_core(data);
-            this.init_frontends();
+            this.init(data);
         } else {
             this.simulation.incorporate_update(data.sim);
             this.media_manager.incorporate_update(RessourceMap.establish(data.res_map));

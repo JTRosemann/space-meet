@@ -54,6 +54,8 @@ export class Timer {
         return self_time;
     }
 
+    // self_ & others_time are computed continously, depending on Date.now()
+    // relying on the actual time of the last update or when it was sent leads to "stumbling" behaviour
     get_others_time() : number {
         const others_time = Math.max(this.last_others_time, Date.now() + this.diff - Timer.offset_others);
         this.last_others_time = others_time;
