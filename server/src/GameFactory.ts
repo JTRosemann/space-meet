@@ -34,6 +34,31 @@ export class GameFactory {
         return g;
     }
 
+    static create_frontend_test(): ServerSimulation<EuclideanCircle> {
+        const players : Record<string,Trail<EuclideanCircle>> = {};
+        const rad = 8;
+        const center_x = 2 * rad;
+        const center_y = 2 * rad;
+        const width = 2 * center_x;
+        const height = 2 * center_y;
+        const p = new Podium(EuclideanVector.create_cartesian(center_x, center_y), 2);
+        const phy = new EuclideanStepPhysics(
+            GameFactory.std_mv_speed, GameFactory.std_trn_speed, width, height
+        );
+        const num_player = 13;
+        const seg = 2 * Math.PI / num_player; //angle between tables
+        for (let i=0; i<num_player; i++) {
+            const x = Math.cos(i * seg) * rad + center_x;
+            const y = Math.sin(i * seg) * rad + center_y;
+            const pos = EuclideanVector.create_cartesian(x,y);
+            const state = EuclideanCircle.create_from_pos_dir_rad(pos, GameFactory.std_rad, 0);
+            const id = 'num' + i;
+            const trail = (new TrailFactory<EuclideanCircle>()).create_singleton_trail(state, 0);
+            players[id] = trail;
+        }
+        return new ServerSimulation(players, [p], phy, GameFactory.x_plus_2);
+    }
+
     static create_tables_game(n: number): EuclideanCircleSnap {
         /*const table_rad = 2;
         const rad = 8;

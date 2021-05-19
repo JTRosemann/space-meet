@@ -30,9 +30,11 @@ export class LobbyServer implements ResponderServer {
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
         const id = UUID.v4();
-        const vid_map = MediaFactory.create_std_media(id);
+        //const vid_map = MediaFactory.create_std_media(id);
+        const vid_map = MediaFactory.create_many_media(id);
         //const game = GameFactory.create_tables_game(6);
-        const game = GameFactory.create_podium_game();
+        //const game = GameFactory.create_podium_game();
+        const game = GameFactory.create_frontend_test();
         this.simS = new GameServer(game, vid_map, id, this.carrier, sio);
     }
 
