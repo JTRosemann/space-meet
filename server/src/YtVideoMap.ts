@@ -1,6 +1,10 @@
 import * as nf from 'node-fetch';
 import { RessourceMap } from '../../common/src/RessourceMap';
 
+/**
+ * EXPERIMENTAL
+ * This child of the `RessourceMap` is used to enable media from yt, but this has a lot of implications...
+ */
 export class YtVideoMap extends RessourceMap {
     //MAYDO let this inherit from VideoMap instead of RessourceMap
     

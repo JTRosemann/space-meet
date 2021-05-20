@@ -1,8 +1,3 @@
-/*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
-    Copyright 2020 Julian Rosemann
-
-    MIT Licensed.
-*/
 
 import * as sio from 'socket.io';
 import { CarrierServer, ParsedInput } from '../../common/src/protocol';
@@ -11,6 +6,9 @@ import { ServerSimulation } from './ServerSimulation';
 import { State } from '../../common/src/State';
 import { RessourceMap } from '../../common/src/RessourceMap';
 
+/**
+ * An instance of this class represents a running game on the server.
+ */
 export class GameServer<S extends State> {
     private sim: ServerSimulation<S>;
     private carrier: CarrierServer<S>;

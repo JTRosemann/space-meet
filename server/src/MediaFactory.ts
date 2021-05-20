@@ -1,6 +1,9 @@
 import { Conference } from "../../common/src/Conference";
 import { YtVideoMap } from "./YtVideoMap";
 
+/**
+ * This class is used to instantiate some some default media maps.
+ */
 export class MediaFactory {
 
     static create_std_media(conf_id: string) : YtVideoMap {

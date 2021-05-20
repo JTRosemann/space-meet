@@ -14,7 +14,11 @@ export class EuclideanCircle implements State {
         return new EuclideanCircle(pos, EuclideanVector.create_polar(rad, phi))
     }
 
-    //MAYDO enforce specific EuclideanCircleData type
+    /**
+     * Establish an EuclideanCircle from transmission data.
+     * @param data the data to establish
+     * @returns an established EuclideanCircle
+     */
     static establish(data : EuclideanCircle) {
         return new EuclideanCircle(EuclideanVector.establish(data.pos), EuclideanVector.establish(data.ext))
     }
@@ -27,12 +31,23 @@ export class EuclideanCircle implements State {
         this.ext = ext;
     }
 
+    /**
+     * Create a default EuclideanCircle
+     * @returns a default State
+     */
     create_default(): State {
         const pos = EuclideanVector.create_cartesian(0,0);
-        const ext = EuclideanVector.create_polar(0.5, 0);
+        const ext = EuclideanVector.create_polar(0.5, 0);//TODO is it reaaally necessary to define a default here?
         return new EuclideanCircle(pos, ext);
     }
 
+    /** 
+     * @inheritdoc
+     * Realized by linear interpolation of position and size and angular interpolation of the direction.
+     * @param other the target State to interpolate to
+     * @param frac 
+     * @returns 
+     */
     interpolate(other: EuclideanCircle, frac: number): EuclideanCircle {
         const pos = this.pos.interpolate_cartesian(other.get_pos(), frac);
         const ext = this.ext.interpolate_polar(other.get_ext(), frac);

@@ -6,6 +6,10 @@ import { Podium } from '../../common/src/Podium';
 import { Trail, TrailFactory } from '../../common/src/Trail';
 import { ServerSimulation } from './ServerSimulation';
 
+// TODO: fix implicit dependencies between GameFactory & MediaFactory
+/**
+ * This Factory is used to provide some standard game configurations. 
+ */
 export class GameFactory {
     static std_mv_speed = 1.4/1000; //m/ms (1.4m/s = 5km/h)
     static std_trn_speed = 0.2/1000;// whole turns per ms
