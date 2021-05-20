@@ -39,14 +39,13 @@ export class GameServer<S extends State> {
     }
     
     /**
-     * Update the simulation according to the input `i_input` at server_time `time` for client `client`.
-     * @param client who made the input
+     * Update the simulation according to the input `i_input` at server_time `time` for client `id`.
+     * @param id who made the input
      * @param p_input input to process
      * @param time server_time when the client made the input
      */
-    on_input(client: sio.Socket, p_input: ParsedInput) {
-        const p_id = client.id;
-        this.sim.interpret_input(p_id, p_input);
+    on_input(id: string, p_input: ParsedInput) {
+        this.sim.interpret_input(id, p_input);
     }
 
     /**
@@ -91,6 +90,15 @@ export class GameServer<S extends State> {
      */
     get_id() {
         return this.id;
+    }
+
+    /**
+     * Check whether the player `id` exists.
+     * @param id the id of requested player
+     * @returns whether the player exists
+     */
+    has_player(id: string) : boolean {
+        return this.sim.has_player(id);
     }
 
 }

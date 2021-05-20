@@ -72,10 +72,16 @@ export interface CallIDEmitter {
 export interface ServerCfg {
     update_loop: number;
     fake_lag: number;
+    allow_remote: boolean;
 }
 
 export interface ServerCfgEmitter {
     emit_server_cfg(data: ServerCfg) : void;
+}
+
+export interface InputMsg {
+    input: ParsedInput;
+    id: string;
 }
 
 export class CarrierClient<S extends State> implements CallIDEmitter, ServerCfgEmitter {
@@ -99,7 +105,7 @@ export class CarrierClient<S extends State> implements CallIDEmitter, ServerCfgE
     emit_call_id(data: CidData) {
         this.emit('on_update_cid', data);
     }
-    emit_input(data: ParsedInput){
+    emit_input(data: InputMsg){
         this.emit('input', data, false);
     }
     emit_ping(data: PingData){
@@ -127,7 +133,7 @@ export class CarrierClient<S extends State> implements CallIDEmitter, ServerCfgE
 export interface ResponderServer {
     on_connection(client: io.Socket) : void;// missing in CarrierServer by design
     on_update_cid(client: io.Socket, data: CidData) : void;
-    on_input(client: io.Socket, data: ParsedInput) : void;
+    on_input(client: io.Socket, data: InputMsg) : void;
     on_disconnect(client: io.Socket, data: DisconnectData) : void;
     on_ping(client: io.Socket, data: PingData) : void;
     on_server_cfg(client: io.Socket, data: ServerCfg) : void;

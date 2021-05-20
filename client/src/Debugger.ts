@@ -10,6 +10,7 @@ export class Debugger {
     private client_debug: dat.GUI;
     private monitor: dat.GUI;
     private server_debug: dat.GUI;
+    private host: dat.GUI;
     private carrier: ServerCfgEmitter;
     private server_cfg: ServerCfg;
 
@@ -32,9 +33,11 @@ export class Debugger {
         // server
         this.carrier = carrier;
         this.server_debug = this.debugui.addFolder('server');
+        this.server_debug.open();
         this.server_cfg = { 
             update_loop: 45,
-            fake_lag: 0
+            fake_lag: 0,
+            allow_remote: false
         }; //TODO purge code duplication (put somewhere in common)
         for (let k of Object.keys(this.server_cfg)) {
             // we don't send the server_cfg back from the server (on purpose, only one debugging client supported),
@@ -43,6 +46,10 @@ export class Debugger {
                 v => this.carrier.emit_server_cfg(this.server_cfg)
             );
         }
+        // host
+        this.host = this.debugui.addFolder('host');
+        this.host.open();
+        this.host.add(ClientInstance, 'remote');
     }
 
     add_monitor(obj: Object, str: string) {

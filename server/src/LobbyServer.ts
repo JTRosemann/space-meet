@@ -6,7 +6,8 @@ import {
     DisconnectData,
     PingData,
     ParsedInput,
-    ServerCfg
+    ServerCfg,
+    InputMsg
 } from '../../common/src/protocol';
 
 import { GameServer } from './GameServer';
@@ -24,6 +25,7 @@ import { MediaFactory } from './MediaFactory';
 export class LobbyServer implements ResponderServer {
     //static update_loop = 500;//ms DEBUGGING
     static update_loop = 45;//ms
+    static allow_remote = false;
     private simS: GameServer<EuclideanCircle>;
     private carrier: CarrierServer<EuclideanCircle>;
 
@@ -44,6 +46,7 @@ export class LobbyServer implements ResponderServer {
     on_server_cfg(_client: io.Socket, data: ServerCfg): void {
         LobbyServer.update_loop = data.update_loop;
         CarrierServer.fake_lag = data.fake_lag;
+        LobbyServer.allow_remote = data.allow_remote;
     }
 
     /**
@@ -101,10 +104,20 @@ export class LobbyServer implements ResponderServer {
      * @param client who has sent an input
      * @param data the input data, consisting of the input and the corresponding timestamp
      */
-    on_input(client: io.Socket, data: ParsedInput) {
+    on_input(client: io.Socket, data: InputMsg) {
         //TODO security threat: If client gives timestamp as data, they may "rewrite history"
         //console.log(data);//DEBUG
-        this.simS.on_input(client, data);
+        const id = data.id;
+        const input = data.input;
+        if (LobbyServer.allow_remote) {
+            if (this.simS.has_player(id)) {
+                this.simS.on_input(id, input);
+            } else {
+                console.warn('player ' + id + ' does not exist');
+            }
+        } else {
+            this.simS.on_input(client.id, input);
+        }
     }
 
     /**

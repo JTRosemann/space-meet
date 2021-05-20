@@ -10,7 +10,6 @@ import { InputProcessor } from "./InputProcessor";
 import { ArrowInputProcessor } from "./ArrowInputProcessor";
 import { EuclideanCircle } from "../../common/src/EuclideanCircle";
 import { Timer } from "./Timer";
-import { Conference } from "../../common/src/Conference";
 import { Snap } from "../../common/src/Snap";
 import { ClientEffects } from "./ClientEffects";
 import { Debugger } from "./Debugger";
@@ -25,6 +24,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
 
     private static ping_interval = 100;//ms
     private static input_interval = 91;
+    private static remote : string = '';//TODO purge static variables
 
     private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
@@ -74,6 +74,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         this.simulation = ClientSimulation.establish(data.sim);
         const res_map = RessourceMap.establish(data.res_map);
         this.my_id = this.carrier.get_id();
+        ClientInstance.remote = this.my_id;
         if (!this.simulation.has_player(this.my_id)) {
             // resilience against old messages (due to lag) (actually probably only bc. of fake_lag)
             // we have to ignore update that don't include us
@@ -114,7 +115,11 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         // register input for client prediction
         this.view_selector.register_input(input, server_time);
         // emit input to server
-        this.carrier.emit_input(input);
+        const input_msg = {
+            input: input,
+            id: ClientInstance.remote
+        };
+        this.carrier.emit_input(input_msg);
         window.setTimeout(this.read_sync_input.bind(this), ClientInstance.input_interval);
     }
 

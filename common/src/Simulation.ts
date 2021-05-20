@@ -168,4 +168,8 @@ export class Simulation<S extends State> {
     get_effectors() {
         return this.effectors;
     }
+
+    has_player(id: string) : boolean {
+        return this.trails[id] != undefined;
+    }
 }
