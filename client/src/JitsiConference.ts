@@ -1,6 +1,7 @@
 import { Conference } from "../../common/src/Conference";
 import { CallIDEmitter } from "../../common/src/protocol";
 import { MediaManagerI } from "./MediaManagerI";
+import * as $ from "jquery";
 
 declare const JitsiMeetJS : any;
 

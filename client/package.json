@@ -6,7 +6,7 @@
   "version": "1.0.0",
   "main": "webpack.config.js",
   "devDependencies": {
-    "@types/jquery": "^3.5.5",
+    "@types/jquery": "^3.5.11",
     "@types/node": "^8.0.53",
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.6.1",
@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@types/dat.gui": "^0.7.6",
-    "@types/jquery": "^3.5.5",
     "@types/socket.io-client": "^1.4.35",
     "dat.gui": "^0.7.7",
+    "jquery": "^3.6.0",
     "socket.io-client": "^3.1.1",
     "strophe": "^1.2.4",
     "xmlhttprequest": "^1.8.0"

@@ -150,6 +150,11 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         ctx.restore();
     }
 
+    // MAYDO non-overlapping, max-size view such that one always reaches someone if one stears towards that person
+    // thus the person directly ahead is always the next one in the sixth in front (and it is arranged such that it is shown at the correct position)
+    // problem: this may lead to flickering if one person leaves and re-enters the sixth..
+    // also there is circle switching when people change in the distance order or angular order
+
     /**
      * Draw the projectables as actual positional projections:
      * The projection is drawn at the same angle as the corresponding item is viewed from the viewer,
