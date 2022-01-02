@@ -86,4 +86,13 @@ export class EuclideanCircle implements State {
     get_rad() {
         return this.ext.get_abs();
     }
+
+    /**
+     * Retrieve the angle between the direction of `this` and the relative position of `v`
+     * @param v a vector
+     * @returns angle between the direction of `this` and the relative position of `v`
+     */
+    get_relative_angle(v: EuclideanVector) {
+        return this.get_pos().angle_between_at_this(this.get_pos().add(this.get_ext()), v);
+    }
 }

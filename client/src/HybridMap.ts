@@ -93,6 +93,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
 
         //draw bubbles
         ctx.restore();
+        //this.draw_maximal_projections(ctx, snap, width);
         this.draw_positional_projections(ctx, snap, width, true, client_cfg);
     }
 
@@ -150,10 +151,21 @@ export class HybridMap implements Frontend<EuclideanCircle> {
         ctx.restore();
     }
 
-    // MAYDO non-overlapping, max-size view such that one always reaches someone if one stears towards that person
-    // thus the person directly ahead is always the next one in the sixth in front (and it is arranged such that it is shown at the correct position)
-    // problem: this may lead to flickering if one person leaves and re-enters the sixth..
-    // also there is circle switching when people change in the distance order or angular order
+    /**
+     * Retrieve the positions of all other players.
+     * @param snap Snap containing the positional data
+     * @returns a map from IDs to positions, excluding self
+     */
+    private get_other_players(snap: Snap<EuclideanCircle>) : [string,EuclideanCircle][] {
+        let players : [string,EuclideanCircle][] = [];
+        const all_states = snap.get_states();
+        for (const id of Object.keys(all_states)) {
+            if (id != this.viewer_id) {
+                players.push([id,all_states[id]]);
+            }
+        }
+        return players;
+    }
 
     /**
      * Draw the projectables as actual positional projections:
@@ -167,13 +179,7 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             width: number, sqrt: boolean, client_cfg: ClientEffects) {
         const self_state = snap.get_player_state(this.viewer_id);
         // order projectables in reverse order with respect to distance, i.e. furthest first
-        let players : [string,EuclideanCircle][] = [];
-        const all_states = snap.get_states();
-        for (const id of Object.keys(all_states)) {
-            if (id != this.viewer_id) {
-                players.push([id,all_states[id]]);
-            }
-        }
+        const players = this.get_other_players(snap);
         const sorted = players.sort(
             (a: [string,EuclideanCircle], b: [string,EuclideanCircle]) =>
              self_state.get_pos().sub(b[1].get_pos()).get_abs()
@@ -200,6 +206,79 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             const proj = new JitsiProjectable(rad, this.mediaManager.get_video(id));
             this.positional_draw_projection(ctx, self_state.get_dir(), center_x, center_y, rad, proj);
         }
+    }
+
+    // MAYDO non-overlapping, max-size view such that one always reaches someone if one stears towards that person
+    // thus the person directly ahead is always the next one in the sixth in front (and it is arranged such that it is shown at the correct position)
+    // problem: this may lead to flickering if one person leaves and re-enters the sixth..
+    // also there is circle switching when people change in the distance order or angular order
+    /**
+     * Draw the projectables such that they are loosely in the correct direction, but priority is that the whole screen is used.
+     * If you move towards a projection of someone you will reach that person in almost the direct path.
+     * @param ctx context to be drawn upon
+     * @param snap snap including the positional info of projections
+     * @param width width of said context
+     */
+    private draw_maximal_projections(ctx: CanvasRenderingContext2D, snap: Snap<EuclideanCircle>, width: number) {
+        const self_state = snap.get_player_state(this.viewer_id);
+        // order projectables corresponding to their relative angular position to self
+        const players = this.get_other_players(snap);
+        const sorted = players.sort(
+            (a: [string,EuclideanCircle], b: [string,EuclideanCircle]) =>
+            // use [0,2π) range, such that first element is the one with smallest positive angle
+            EuclideanVector.to_range_zero_2pi(self_state.get_relative_angle(a[1].get_pos())) -
+            EuclideanVector.to_range_zero_2pi(self_state.get_relative_angle(b[1].get_pos()))
+        );
+        const n = sorted.length;
+        // compute the angles relative to the direction of self
+        const alpha = sorted.map((value: [string,EuclideanCircle]) => self_state.get_relative_angle(value[1].get_pos()));
+        // one of the differences between alpha[i] and its angular fraction should minimize the sum
+        /*let beta = 0;
+        let s = 1000;
+        for (let i=0; i++; i<n) {
+            const old_s = s;
+            const beta_try = alpha[i] - i*2*Math.PI/n;
+            s = 0;
+            for (let j=0; j++; j<n) {
+                s += Math.abs(beta_try + j*2*Math.PI/n - alpha[j]);//TODO is this in the correct range?
+                //s += Math.abs((beta_try + j*2*Math.PI/n) % (2*Math.PI) - alpha[j] % (2*Math.PI));
+            }
+            if (s < old_s) {
+                beta = beta_try;
+            }
+        }*/
+        const eps = 0.01;
+        const beta = alpha.reduce((s, c, i) => 
+            {
+                const ang = EuclideanVector.to_range_mpi_pi(c - i*2*Math.PI/n);
+                const pol = EuclideanVector.create_polar(eps + 1/Math.abs(c), ang);
+                return s.add(pol);
+            }, EuclideanVector.create_polar(0,0)).get_phi();//averaging directions by summing them up as vectors and retrieving the polar angle
+        const beta_i = alpha.reduce((s,c,i) => Math.abs(c) < Math.abs(alpha[s]) ? i : s, 0);
+        //const beta = alpha[beta_i] - beta_i*2*Math.PI/n;
+        //const beta = 0;
+        // Problems: jumping/flickering, not sure if the correct arrangement, size is broken
+        let i = 0;
+        ctx.save();
+        ctx.rotate(self_state.get_dir()); // rewind the rotation from outside
+        for (const idp of sorted) {
+            const id = idp[0];
+            const p = idp[1];
+
+            const dist_c = width / 6;
+            const pre_rad = width/n;//TODO WRONG
+            const rad = Math.min(pre_rad, dist_c);
+            const dist = dist_c + rad;
+            const pos = EuclideanVector.create_polar(1, beta + i*2*Math.PI/n);
+            
+            const center_x = dist * pos.get_x();
+            const center_y = dist * pos.get_y();
+            const proj = new JitsiProjectable(rad, this.mediaManager.get_video(id));
+
+            this.positional_draw_projection(ctx, 0, center_x, center_y, rad, proj);
+            i++;
+        }
+        ctx.restore();
     }
 
     /**

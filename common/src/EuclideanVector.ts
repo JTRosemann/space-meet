@@ -29,6 +29,19 @@ export class EuclideanVector {
         return new EuclideanVector(r * Math.cos(phi), r * Math.sin(phi));
     }
 
+    static mod(n: number, m: number) : number {
+        return ((n % m) + m) % m;
+    }
+
+    static to_range_zero_2pi(alpha: number) : number {
+        return EuclideanVector.mod(alpha, 2*Math.PI);
+    }
+
+    static to_range_mpi_pi(alpha: number) : number {
+        const res = EuclideanVector.to_range_zero_2pi(alpha);
+        return res >= Math.PI ? res - 2*Math.PI : res;
+    }
+
     private x: number;
     private y: number;
 
@@ -63,11 +76,19 @@ export class EuclideanVector {
     }
 
     /**
+     * Get the square of the absolute value of this vector
+     * @returns the square of the absolute value
+     */
+    get_abs_sq(): number {
+        return this.x * this.x + this.y * this.y;
+    }
+
+    /**
      * Get the absolute value of this vector.
      * @returns the absolute value
      */
     get_abs(): number {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
+        return Math.sqrt(this.get_abs_sq());
     }
 
     /**
@@ -103,6 +124,18 @@ export class EuclideanVector {
      */
     clone() {
         return new EuclideanVector(this.get_x(), this.get_y());
+    }
+
+    /**
+     * Compute the angle between `a` and `b` corresponding to the origin `this`.
+     * @param a one vector
+     * @param b another vector
+     * @returns angle between `a` and `b` in range (-π,π]
+     */
+    angle_between_at_this(a: EuclideanVector, b: EuclideanVector) {
+        const alpha = a.sub(this).get_phi();
+        const beta  = b.sub(this).get_phi();
+        return EuclideanVector.to_range_mpi_pi(beta - alpha);
     }
 
     /**

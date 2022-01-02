@@ -38,6 +38,27 @@ export class GameFactory {
         return g;
     }
 
+    static create_lynxen_dogs_goats(): ServerSimulation<EuclideanCircle> {
+        const p = new Podium(EuclideanVector.create_cartesian(5,5), 2);
+        const wid = 15;
+        const hei = 10;
+        const phy = new EuclideanStepPhysics(
+            GameFactory.std_mv_speed, GameFactory.std_trn_speed, wid, hei
+        );
+        const posL = EuclideanVector.create_cartesian(wid - 3, 3);
+        const posD = EuclideanVector.create_cartesian(wid - 3, hei - 3);
+        const posG = EuclideanVector.create_cartesian(3, hei - 3);
+        const to_trail = (p: EuclideanVector) =>
+         (new TrailFactory<EuclideanCircle>()).create_singleton_trail(
+             EuclideanCircle.create_from_pos_dir_rad(p, 0.5, 0), 0);
+        const players : Record<string,Trail<EuclideanCircle>> 
+         = {'lynxen': to_trail(posL),
+             'dogs' : to_trail(posD),
+             'goats': to_trail(posG)
+            };
+        return new ServerSimulation(players, [p], phy, GameFactory.x_plus_2);
+    }
+
     static create_frontend_test(): ServerSimulation<EuclideanCircle> {
         const players : Record<string,Trail<EuclideanCircle>> = {};
         const rad = 8;
