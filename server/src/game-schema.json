@@ -1,0 +1,89 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "title": "Space-Meet Game Config",
+    "type": "object",
+        
+    "properties": {        
+        "width": {
+            "type": "number"
+        },
+        "height": {
+            "type": "number"
+        },
+        "std_mv_speed": {
+            "type": "number"
+        },
+        "std_trn_speed": {
+            "type": "number"
+        },
+        "std_rad": {
+            "type": "number"
+        },
+        "std_step": {
+            "type": "number"
+        },
+        "players": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pos_x": {
+                        "type": "number"
+                    },
+                    "pos_y": {
+                        "type": "number"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "rsrc": {
+                        "type": "string"
+                    },
+                    "rsrc-url": {
+                        "type": "string"
+                    }
+                },
+                "required": ["pos_x", "pos_y"],
+                "additionalProperties": false
+            }
+        },
+        "podiums": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pos_x": {
+                        "type": "number"
+                    },
+                    "pos_y": {
+                        "type": "number"
+                    },
+                    "rad": {
+                        "type": "number"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "rsrcs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "$schema": {
+            "type": "string"
+        }
+    },
+    "required": ["width", "height"],
+    "additionalProperties": false
+}

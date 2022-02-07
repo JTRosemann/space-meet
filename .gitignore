@@ -11,3 +11,4 @@ yarn.lock
 */build*/*
 cert.pem
 key.pem
+server/src/GameSchema.d.ts

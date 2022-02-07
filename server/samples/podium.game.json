@@ -1,0 +1,17 @@
+{
+    "$schema": "../src/game-schema.json",
+    "width": 15,
+    "height": 10,
+    "std_mv_speed": 0.0014,
+    "std_trn_speed": 0.0002,
+    "std_rad": 0.5,
+    "std_step": 0.25,
+    "players": [],
+    "podiums": [
+        {
+            "pos_x": 5,
+            "pos_y": 5,
+            "rad": 2
+        }
+    ]
+}

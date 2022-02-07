@@ -1,2 +1,2 @@
 #!/bin/sh
-yarn --cwd client run buildforce && tsc -p server
+yarn --cwd client run buildforce && mkdir -p codegen/built && cp server/src/game-schema.json codegen/built/ && tsc -p codegen && node codegen/built/CompileSchema.js && cp codegen/built/GameSchema.d.ts server/src && tsc -p server
