@@ -3,11 +3,13 @@
         "outDir": "./built",
         "allowJs": true,
         "target": "es5",
-        "module": "UMD", // this removes the 'exports' not defined error
+        "module": "commonjs", // 'UMD' removes the 'exports' not defined error
         "esModuleInterop": true,
 	    "moduleResolution": "node",
 	    "noImplicitAny": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "resolveJsonModule": true,
+        "strictNullChecks": true
     },
-    "include": ["../common/src", "./src"]
+    "include": ["../common/src", "./src", "./samples/*.json"]
 }

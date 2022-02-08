@@ -24,12 +24,12 @@
     ],
     "rsrcs": [
         {
-            "id": "ly",
+            "id": "lynxen",
             "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Rustende_lynxen_in_bos-Stichting_Natuurbeelden-172347.webm"
         }
         ,
         {
-            "id": "go",
+            "id": "goats",
             "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/Goats_in_Sunnyvale.webm/Goats_in_Sunnyvale.webm.480p.webm"
         }
     ]

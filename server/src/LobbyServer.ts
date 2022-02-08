@@ -15,6 +15,7 @@ import { GameFactory } from './GameFactory';
 import { EuclideanCircle } from '../../common/src/EuclideanCircle';
 import { YtVideoMap } from './YtVideoMap';
 import { MediaFactory } from './MediaFactory';
+import { Factory, SampleConfig } from './Factory';
 
 /**
  * Perspectively, this class should
@@ -32,11 +33,14 @@ export class LobbyServer implements ResponderServer {
     constructor(sio: io.Server) {
         this.carrier = new CarrierServer();
         const id = UUID.v4();
-        const vid_map = MediaFactory.create_std_media(id);
+        //const vid_map = MediaFactory.create_std_media(id); <-- old approach
         //const vid_map = MediaFactory.create_many_media(id);
         //const game = GameFactory.create_tables_game(6);
         //const game = GameFactory.create_podium_game();
-        const game = GameFactory.create_lynxen_dogs_goats();
+        //const game = GameFactory.create_lynxen_dogs_goats(); <-- old approach
+        const F = new Factory(SampleConfig.PODIUM);
+        const game = F.parse_game();
+        const vid_map = F.parse_media(id);
         //const game = GameFactory.create_frontend_test();
         this.simS = new GameServer(game, vid_map, id, this.carrier, sio);
     }

@@ -62,6 +62,7 @@
                         "type": "number"
                     }
                 },
+                "required": ["pos_x", "pos_y", "rad"],
                 "additionalProperties": false
             }
         },
@@ -77,6 +78,7 @@
                         "type": "string"
                     }
                 },
+                "required": ["id", "url"],
                 "additionalProperties": false
             }
         },

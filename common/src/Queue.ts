@@ -7,7 +7,7 @@
 export class Queue<T> {
     private hd: T[] = [];
     private tl: T[] = [];
-    private last: T = undefined;
+    private last?: T = undefined;
 
     /**
      * Enqueue `elem`.
@@ -59,9 +59,14 @@ export class Queue<T> {
                 this.hd = this.tl.reverse();
                 this.tl = [];
             }
-            return this.hd.pop();
+            const r = this.hd.pop();
+            if (r !== undefined) {
+                return r;
+            } else {
+                throw Error('Dequeue on empty queque, Unreachable Code');
+            }
         } else {
-            throw Error('Dequeue on empty queque')
+            throw Error('Dequeue on empty queque');
         }
     }
 
