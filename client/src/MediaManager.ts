@@ -26,7 +26,7 @@ export class MediaManager implements MediaManagerI<RessourceMap> {
      */
     get_video(id: string) : HTMLVideoElement | undefined {
         const jitsi_vid = this.j_conf.get_video(id);
-        return jitsi_vid ? jitsi_vid : this.direct_vid.get_video(id);
+        return (jitsi_vid !== undefined) ? jitsi_vid : this.direct_vid.get_video(id);
     }
 
     /**
@@ -36,7 +36,7 @@ export class MediaManager implements MediaManagerI<RessourceMap> {
      */
     get_audio(id: string, audio_ctx: AudioContext) : AudioSourceNode | undefined {
         const jitsi_audio = this.j_conf.get_audio(id, audio_ctx);
-        return jitsi_audio ? jitsi_audio : this.direct_vid.get_audio(id, audio_ctx);
+        return (jitsi_audio !== undefined) ? jitsi_audio : this.direct_vid.get_audio(id, audio_ctx);
     }
 
     /**
