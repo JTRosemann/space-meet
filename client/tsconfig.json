@@ -6,8 +6,8 @@
     "rootDir": "../",      /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
     "allowJs": true,
     "checkJs": false,
-    "noImplicitAny": true/*, TODO enable strictNullChecks & fix issues
-    "strictNullChecks": true*/
+    "noImplicitAny": true,
+    "strictNullChecks": true
   },
   "include": ["../common/src", "./src", "./lib"]
 }

@@ -19,7 +19,7 @@ export class Timer {
     private last_self_time : number = 0;
     private last_others_time : number = 0;
 
-    constructor(debugui: Debugger = null) {
+    constructor(debugui?: Debugger) {
         if (debugui) {
             debugui.add_monitor(this, 'lag');
             debugui.add_monitor(this, 'diff');

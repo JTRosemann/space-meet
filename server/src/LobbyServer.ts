@@ -38,7 +38,7 @@ export class LobbyServer implements ResponderServer {
         //const game = GameFactory.create_tables_game(6);
         //const game = GameFactory.create_podium_game();
         //const game = GameFactory.create_lynxen_dogs_goats(); <-- old approach
-        const F = new Factory(SampleConfig.PODIUM);
+        const F = new Factory(SampleConfig.LYDOGO);
         const game = F.parse_game();
         const vid_map = F.parse_media(id);
         //const game = GameFactory.create_frontend_test();

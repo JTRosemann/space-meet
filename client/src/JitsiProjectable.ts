@@ -5,9 +5,9 @@ import { Projectable } from "./Projectable";
 export class JitsiProjectable implements Projectable {
     private color: string;
     private rad : number;
-    private vid : HTMLVideoElement;
+    private vid? : HTMLVideoElement;
 
-    constructor(rad : number, vid : HTMLVideoElement) {
+    constructor(rad : number, vid? : HTMLVideoElement) {
         this.color = "rgba(255, 255, 255, 0.5)";
         this.rad = rad;
         this.vid = vid;

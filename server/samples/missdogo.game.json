@@ -1,0 +1,36 @@
+{
+    "$schema": "../src/game-schema.json",
+    "width": 15,
+    "height": 10,
+    "players": [
+        {
+            "id": "lynxen",
+            "rsrc": "ly",
+            "pos_x": 12,
+            "pos_y": 3
+        },
+        {
+            "id": "goats",
+            "rsrc": "go",
+            "pos_x": 12,
+            "pos_y": 7
+        },
+        {
+            "id": "dogs",
+            "rsrc-url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/08/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv/Alaskan_Huskies_-_Sled_Dogs_-_Ivalo_2013.ogv.480p.vp9.webm",
+            "pos_x": 3,
+            "pos_y": 7
+        }
+    ],
+    "rsrcs": [
+        {
+            "id": "miss",
+            "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Rustende_lynxen_in_bos-Stichting_Natuurbeelden-172347.webm"
+        }
+        ,
+        {
+            "id": "goats",
+            "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/Goats_in_Sunnyvale.webm/Goats_in_Sunnyvale.webm.480p.webm"
+        }
+    ]
+}

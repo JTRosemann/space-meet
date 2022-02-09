@@ -46,7 +46,7 @@ export class JitsiConference implements MediaManagerI<Conference> {
      * @param id of the requested video
      * @returns the video corresponding to `id`
      */
-    get_video(id: string): HTMLVideoElement {
+    get_video(id: string): HTMLVideoElement | undefined {
         const call_id = this.conf.get_cid(id);
         if (call_id != undefined) {
             const vid_jQ = $(`#vid${call_id}`);

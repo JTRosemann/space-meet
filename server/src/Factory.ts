@@ -1,4 +1,5 @@
 import { SpaceMeetGameConfig } from "./GameSchema";
+import * as missdogo from '../samples/missdogo.game.json';
 import * as lydogo from '../samples/lydogo.game.json';
 import * as podium from '../samples/podium.game.json';
 import { EuclideanVector } from "../../common/src/EuclideanVector";
@@ -15,7 +16,8 @@ import { YtVideoMap } from "./YtVideoMap";
 
 export enum SampleConfig {
     LYDOGO,
-    PODIUM
+    PODIUM,
+    MISSDOGO
 }
 
 export class Factory {
@@ -36,6 +38,9 @@ export class Factory {
                 break;
             case SampleConfig.PODIUM:
                 this.config = podium;
+                break;
+            case SampleConfig.MISSDOGO:
+                this.config = missdogo;
                 break;
         }
     }

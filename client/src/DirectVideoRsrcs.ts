@@ -11,7 +11,7 @@ export class DirectVideoRsrcs implements MediaManagerI<VideoMap> {
         this.incorporate_update(vid_map);
     }
 
-    get_audio(id: string, audio_ctx: AudioContext) : MediaElementAudioSourceNode {
+    get_audio(id: string, audio_ctx: AudioContext) : MediaElementAudioSourceNode | undefined {
         const vid = this.get_video(id);
         if (vid != undefined) {
             return audio_ctx.createMediaElementSource(vid);
@@ -19,7 +19,7 @@ export class DirectVideoRsrcs implements MediaManagerI<VideoMap> {
         return undefined;
     }
 
-    get_video(id: string): HTMLVideoElement {
+    get_video(id: string): HTMLVideoElement | undefined {
         const src = this.vid_map[id];
         if (src != undefined) {
             const vid_jQ = $(`#vid${id}`);

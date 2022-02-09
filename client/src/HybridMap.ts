@@ -46,6 +46,10 @@ export class HybridMap implements Frontend<EuclideanCircle> {
 
         // get a fresh context - this is necessary in case some resizing has happenend
         const ctx = this.viewport.getContext('2d');
+        if (ctx == null) {
+            console.warn('ctx == null');
+            return;
+        }
         this.viewport.width = this.viewport.offsetWidth;
         this.viewport.height = this.viewport.offsetHeight;
         const map_width = eu_snap.get_width();
@@ -203,7 +207,8 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             const dist = dist_c + rad;
             const center_x = dist * pos.get_x() / abs_val; //FIXME: divide by zero
             const center_y = dist * pos.get_y() / abs_val;
-            const proj = new JitsiProjectable(rad, this.mediaManager.get_video(id));
+            const vid = this.mediaManager.get_video(id);
+            const proj = new JitsiProjectable(rad, vid);
             this.positional_draw_projection(ctx, self_state.get_dir(), center_x, center_y, rad, proj);
         }
     }
@@ -273,7 +278,8 @@ export class HybridMap implements Frontend<EuclideanCircle> {
             
             const center_x = dist * pos.get_x();
             const center_y = dist * pos.get_y();
-            const proj = new JitsiProjectable(rad, this.mediaManager.get_video(id));
+            const vid = this.mediaManager.get_video(id);
+            const proj = new JitsiProjectable(rad, vid);
 
             this.positional_draw_projection(ctx, 0, center_x, center_y, rad, proj);
             i++;
