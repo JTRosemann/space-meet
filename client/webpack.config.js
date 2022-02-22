@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  entry: './build-babel/client/src/client.js',
+  entry: './build-babel/client/src/lobby.js',
   mode: 'development',
   output: {
     filename: 'bundle.js',

@@ -26,7 +26,6 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
     private static input_interval = 91;
     private static remote : string = '';//TODO purge static variables
 
-    private viewport: HTMLCanvasElement;
     private carrier: CarrierClient<EuclideanCircle>;
     private debugger: Debugger;
     private simulation: ClientSimulation<EuclideanCircle>;
@@ -42,7 +41,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * Connect to the server.
      * The own socket ID is only visible after the first server message is witnessed.
      */
-    constructor(viewport: HTMLCanvasElement) {
+    constructor() {
         const socket = sio.connect();
         console.log('Connect to server with id ' + socket.id)// here we don't know the id yet
         this.carrier = new CarrierClient(socket, this);
@@ -52,7 +51,6 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
             // TODO: a GUI could be instantiated in a similar way
             this.debugger = new Debugger(this.carrier);
         }
-        this.viewport = viewport;
         this.timer = new Timer(this.debugger);
         this.my_id = '';
         console.warn("client prediction disabled");
@@ -70,7 +68,7 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
      * This is only possible as soon as we have received the first server update.
      * @param data the data to create the initial simulation etc
      */
-    private init(data: FullUpdateData<EuclideanCircle>) {
+    private init(data: FullUpdateData<EuclideanCircle>, viewport: HTMLCanvasElement) {
         this.simulation = ClientSimulation.establish(data.sim);
         const res_map = RessourceMap.establish(data.res_map);
         this.my_id = this.carrier.get_id();
@@ -85,15 +83,15 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         this.in_proc = new ArrowInputProcessor(
             this.simulation.get_latest_state_time(this.my_id));
         this.view_selector = new ViewSelector(this.simulation, this.my_id);
-        this.init_frontends();
+        this.init_frontends(viewport);
     }
 
     /**
      * Initialize the different frontends and start the animation loop.
      */
-    private init_frontends() {
+    private init_frontends(viewport : HTMLCanvasElement) {
         this.videoFrontend
-         = new HybridMap(this.media_manager, this.viewport, this.my_id);
+         = new HybridMap(this.media_manager, viewport, this.my_id);
         this.audioFrontend
          = new Auditorium<EuclideanCircle>(this.media_manager, this.my_id);
         //start animation loop
@@ -160,13 +158,17 @@ export class ClientInstance implements ResponderClient<EuclideanCircle> {
         this.last_update = data;//DEBUG
         // the own id should be available after the first update, as soon as we have it we can initialize stuff
         if (this.my_id == '') {
+            // TODO here we should check for the viewport
             // FullUpdate should include: 
             //   (a) player position(s) with timestamp <- don't send them twice
             //   (b) static map data
             //   (c) data for conference (conference id)
             // a & b together form the simulation on server & client: same datastructure, different methods to access them
             //core initialization includes incorporating the update in simulation & media_manager
-            this.init(data);
+            const viewport = document.getElementById('viewport');
+            if (viewport != null) {
+                this.init(data, viewport as HTMLCanvasElement);
+            }
         } else {
             this.simulation.incorporate_update(data.sim);
             this.media_manager.incorporate_update(RessourceMap.establish(data.res_map));

@@ -1,6 +1,6 @@
 
 import * as sio from 'socket.io';
-import { CarrierServer, ParsedInput } from '../../common/src/protocol';
+import { CarrierServer, InputMsg, ParsedInput, ServerCfg } from '../../common/src/protocol';
 import * as io from 'socket.io';
 import { ServerSimulation } from './ServerSimulation';
 import { State } from '../../common/src/State';
@@ -10,6 +10,9 @@ import { RessourceMap } from '../../common/src/RessourceMap';
  * An instance of this class represents a running game on the server.
  */
 export class GameServer<S extends State> {
+    //static update_loop = 500;//ms DEBUGGING
+    static update_loop = 45;//ms
+    static allow_remote = false;
     private sim: ServerSimulation<S>;
     private carrier: CarrierServer<S>;
     private server: io.Server;
@@ -44,8 +47,18 @@ export class GameServer<S extends State> {
      * @param p_input input to process
      * @param time server_time when the client made the input
      */
-    on_input(id: string, p_input: ParsedInput) {
-        this.sim.interpret_input(id, p_input);
+    on_input(cid: string, data: InputMsg) {
+        const id = data.id;
+        const input = data.input;
+        if (GameServer.allow_remote) {
+            if (this.has_player(id)) {
+                this.sim.interpret_input(id, input);
+            } else {
+                console.warn('player ' + id + ' does not exist');
+            }
+        } else {
+            this.sim.interpret_input(cid, input);
+        }
     }
 
     /**
@@ -67,6 +80,32 @@ export class GameServer<S extends State> {
     on_update_cid(client: sio.Socket, cid: string) {
         console.log('update cid');
         this.res_map.set_call_id(client.id, cid);
+    }
+
+    /** 
+     * Update the server configuration according to client message.
+     */
+     on_server_cfg(data: ServerCfg): void {
+        GameServer.update_loop = data.update_loop;
+        CarrierServer.fake_lag = data.fake_lag;
+        GameServer.allow_remote = data.allow_remote;
+    }
+
+    /**
+     * Start the update loop, i.e. start repeatedly notifying the clients about the state.
+     */
+    create_update_loop() {
+        console.log('start game ' + this.id);
+        this.update();
+    }
+
+    /**
+     * Notify all clients about the state of the game.
+     */
+    private update() {
+        const server_time = Date.now();
+        this.do_update(server_time);
+        setTimeout(this.update.bind(this), GameServer.update_loop);
     }
 
     /**

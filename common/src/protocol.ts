@@ -6,13 +6,16 @@ const JSONIFY = false; // this is exactly what is done anyway:
 import * as io from 'socket.io';
 import { Conference } from './Conference';
 import { RessourceMap } from './RessourceMap';
+import { SampleConfig } from './Samples';
 import { SimulationData } from "./Simulation";
 import { State } from './State';
 
 /*
  * client connects via socket.io
  *      server_on_client_connect/connected: sends ID to client
+ *          TODO and possible configs
  * client_onconnected
+ * client_emit_join
  * 
  *      server_joingame/push_player: sends game data & call data to client, creating game if non-existent & starting update & physics loop os server, pushes new player to existing players
  * client_onjoingame: starts update & physics loop on client, initialize meeting
@@ -84,6 +87,10 @@ export interface InputMsg {
     id: string;
 }
 
+export interface ClientStartConfig {
+    template: SampleConfig;
+}
+
 export class CarrierClient<S extends State> implements CallIDEmitter, ServerCfgEmitter {
     static fake_lag = 0;
     private socket: io.Socket; // SocketIOClient.Socket
@@ -137,6 +144,7 @@ export interface ResponderServer {
     on_disconnect(client: io.Socket, data: DisconnectData) : void;
     on_ping(client: io.Socket, data: PingData) : void;
     on_server_cfg(client: io.Socket, data: ServerCfg) : void;
+    on_start_game(client: io.Socket, data: ClientStartConfig) : void;
 }
 
 function curry<A,B,C>(f: (x: A, y: B) => C, arg: A) : (x: B) => C {

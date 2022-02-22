@@ -3,7 +3,10 @@
     "title": "Space-Meet Game Config",
     "type": "object",
         
-    "properties": {        
+    "properties": {
+        "jitsi": {
+            "type": "boolean"
+        },
         "width": {
             "type": "number"
         },

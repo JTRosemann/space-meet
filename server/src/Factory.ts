@@ -13,13 +13,11 @@ import * as UUID from 'uuid';
 import { ServerSimulation } from "./ServerSimulation";
 import { Conference } from "../../common/src/Conference";
 import { YtVideoMap } from "./YtVideoMap";
+import { SampleConfig } from "../../common/src/Samples";
 
-export enum SampleConfig {
-    LYDOGO,
-    PODIUM,
-    MISSDOGO
-}
-
+// TODO define a server config schema which also generates a scheme for the options client has
+// then use https://jsonforms.io/ to generate forms for the client to configure the game,
+// the type-checked result is send to server to initialize such a game
 export class Factory {
     std_mv_speed = 1.4/1000; //m/ms (1.4m/s = 5km/h)
     std_trn_speed = 0.2/1000;// whole turns per ms
@@ -32,7 +30,7 @@ export class Factory {
     private config : SpaceMeetGameConfig;
 
     constructor(sc: SampleConfig) {
-        switch (sc) {
+        switch (sc) { //TODO this switch should be outsourced & auto-generated from the available templates
             case SampleConfig.LYDOGO:
                 this.config = lydogo;
                 break;
